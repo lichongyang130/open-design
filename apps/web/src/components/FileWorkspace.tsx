@@ -132,6 +132,10 @@ import type { PluginFolderAgentAction } from './design-files/pluginFolderActions
 import { designSystemGithubEvidenceState, repoConnectCopy } from './design-system-github-evidence';
 import { APP_CHROME_FILE_ACTIONS_ID } from './AppChromeHeader';
 import { FileViewer, LiveArtifactViewer } from './FileViewer';
+import { VersionTimelineBar } from './timeline/VersionTimelineBar';
+import { CanvasComparisonSplit } from './comparison/CanvasComparisonSplit';
+import { A11yHealthModal } from './a11y/A11yHealthModal';
+import { ExportPresetsModal } from './export/ExportPresetsModal';
 import { useIframeKeepAlivePool } from './IframeKeepAlivePool';
 import { Icon, type IconName } from './Icon';
 import { projectIsSharedWithWorkspace } from '../collab/project-shared-status';
@@ -1464,6 +1468,10 @@ export function FileWorkspace({
 
   const [showLibraryPicker, setShowLibraryPicker] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [timelineVersionId, setTimelineVersionId] = useState('v4');
+  const [compareModeActive, setCompareModeActive] = useState(false);
+  const [a11yAuditModalOpen, setA11yAuditModalOpen] = useState(false);
+  const [exportPresetsModalOpen, setExportPresetsModalOpen] = useState(false);
   useExperienceError(uploadError, 'workspace_upload', projectId);
   // The folder the Design Files panel is currently viewing (synced via
   // onCurrentDirChange). New files — uploads, pastes, sketches, dropped files —
@@ -4267,7 +4275,25 @@ export function FileWorkspace({
           <span>{readonlyNotice}</span>
         </div>
       ) : null}
+      <VersionTimelineBar
+        activeVersionId={timelineVersionId}
+        onSelectVersion={setTimelineVersionId}
+        compareMode={compareModeActive}
+        onToggleCompareMode={() => setCompareModeActive((prev) => !prev)}
+        onOpenA11yAudit={() => setA11yAuditModalOpen(true)}
+        onOpenExportPresets={() => setExportPresetsModalOpen(true)}
+        commentMode={Boolean(commentPortalId)}
+        onToggleCommentMode={() => onCommentModeChange?.(!commentPortalId)}
+      />
       <div className="ws-body">
+        {compareModeActive ? (
+          <CanvasComparisonSplit
+            leftLabel="基准版本 (v1 Initial Concept)"
+            rightLabel="当前版本 (v4 Refined Version)"
+            leftUrl={activeViewerFile ? projectFileUrl(projectId, activeViewerFile.name) : undefined}
+            rightUrl={activeViewerFile ? projectFileUrl(projectId, activeViewerFile.name) : undefined}
+          />
+        ) : null}
         {/* Banner moved into DesignFilesPanel for the Design Files tab so
             single-click preview (which keeps activeTab on DESIGN_FILES_TAB)
             no longer leaves a stale banner mounted above the preview.
@@ -4720,6 +4746,30 @@ export function FileWorkspace({
           />
         ) : null}
       </AnimatePresence>
+      <A11yHealthModal
+        open={a11yAuditModalOpen}
+        onClose={() => setA11yAuditModalOpen(false)}
+        onAutoFixByAgent={(prompt) => {
+          window.dispatchEvent(
+            new CustomEvent('od-a11y-fix-request', { detail: { prompt } }),
+          );
+        }}
+      />
+      <ExportPresetsModal
+        open={exportPresetsModalOpen}
+        onClose={() => setExportPresetsModalOpen(false)}
+        projectName={projectId}
+        onExportPreset={(presetId, options) => {
+          if (options.runA11yBeforeExport) {
+            setA11yAuditModalOpen(true);
+          }
+          void downloadProjectArchive({
+            projectId,
+            fallbackTitle: projectId,
+            workspaceContext,
+          });
+        }}
+      />
     </div>
   );
 }

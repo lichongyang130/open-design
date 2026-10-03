@@ -1,0 +1,185 @@
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.modalCard {
+  width: 520px;
+  max-width: 90vw;
+  background: var(--bg-panel);
+  border: 1px solid var(--od-glass-border);
+  border-radius: var(--od-radius-lg);
+  box-shadow: var(--od-shadow-float);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--od-glass-surface);
+}
+
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.closeButton {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--od-radius-xs);
+}
+
+.closeButton:hover {
+  background: var(--bg-subtle);
+  color: var(--text-strong);
+}
+
+.content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.scoreBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: var(--od-color-success-light);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: var(--od-radius-md);
+}
+
+.scoreLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.scoreCircle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--od-color-success);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.auditItem {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 12px;
+  background: var(--bg-subtle);
+  border-radius: var(--od-radius-sm);
+  border: 1px solid var(--border-soft);
+  gap: 12px;
+}
+
+.auditLeft {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.auditTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-strong);
+  margin-bottom: 2px;
+}
+
+.auditDesc {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.auditBadgePass {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--od-radius-pill);
+  background: var(--od-color-success-light);
+  color: var(--od-color-success);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  white-space: nowrap;
+}
+
+.auditBadgeWarn {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--od-radius-pill);
+  background: var(--od-color-warning-light);
+  color: var(--od-color-warning);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  white-space: nowrap;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border-soft);
+  background: var(--bg-fill-tertiary);
+}
+
+.fixButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--od-color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--od-radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.fixButton:hover {
+  opacity: 0.92;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.96); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}

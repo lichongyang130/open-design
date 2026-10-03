@@ -1,0 +1,235 @@
+.wizardContainer {
+  background: var(--bg-panel);
+  border: 1px solid var(--od-glass-border);
+  border-radius: var(--od-radius-lg);
+  box-shadow: var(--od-shadow-card);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  overflow: hidden;
+  margin: 10px 0;
+}
+
+.wizardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.headerTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.stepIndicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stepDot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  border: 1px solid var(--border-soft);
+  transition: all 0.2s ease;
+}
+
+.stepDotActive {
+  background: var(--od-color-primary);
+  color: #fff;
+  border-color: var(--od-color-primary);
+  box-shadow: 0 0 10px rgba(37, 99, 235, 0.3);
+}
+
+.stepDotDone {
+  background: var(--od-color-success-light);
+  color: var(--od-color-success);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.stepConnector {
+  width: 14px;
+  height: 2px;
+  background: var(--border-soft);
+}
+
+.stepConnectorActive {
+  background: var(--od-color-primary);
+}
+
+.stepBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 180px;
+}
+
+.stepKicker {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.cardsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.selectionCard {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--od-radius-md);
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: left;
+}
+
+.selectionCard:hover {
+  background: var(--bg-panel);
+  border-color: var(--border-selected);
+  transform: translateY(-2px);
+  box-shadow: var(--od-shadow-ambient);
+}
+
+.selectionCardSelected {
+  background: var(--od-color-primary-light);
+  border-color: var(--od-color-primary);
+  box-shadow: 0 0 0 1px var(--od-color-primary);
+}
+
+.cardIconBox {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--od-radius-xs);
+  background: var(--bg-panel);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--od-color-primary);
+  border: 1px solid var(--border-soft);
+}
+
+.cardTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.cardDesc {
+  font-size: 10px;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+/* Direction Blend Interpolator */
+.blendSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--bg-subtle);
+  border-radius: var(--od-radius-md);
+  padding: 14px;
+  border: 1px solid var(--border-soft);
+}
+
+.blendHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.blendSliderRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sliderInput {
+  flex: 1;
+  accent-color: var(--od-color-primary);
+  cursor: pointer;
+}
+
+.blendLabels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.previewPaletteBar {
+  display: flex;
+  height: 24px;
+  border-radius: var(--od-radius-xs);
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--od-shadow-ambient);
+}
+
+.paletteCell {
+  flex: 1;
+  transition: background-color 0.15s ease;
+}
+
+.stepFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.navButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--od-radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel);
+  color: var(--text);
+  transition: all 0.15s ease;
+}
+
+.navButton:hover {
+  background: var(--bg-subtle);
+  color: var(--text-strong);
+}
+
+.navButtonPrimary {
+  background: var(--od-color-primary);
+  color: #fff;
+  border-color: var(--od-color-primary);
+}
+
+.navButtonPrimary:hover {
+  opacity: 0.92;
+  color: #fff;
+}

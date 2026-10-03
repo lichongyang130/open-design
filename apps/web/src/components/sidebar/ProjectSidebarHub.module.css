@@ -1,0 +1,344 @@
+.sidebarContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--od-glass-surface);
+  backdrop-filter: var(--od-glass-blur);
+  -webkit-backdrop-filter: var(--od-glass-blur);
+  border-right: 1px solid var(--od-glass-border);
+  transition: width 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s ease;
+  position: relative;
+  z-index: 25;
+  user-select: none;
+  overflow: hidden;
+}
+
+.sidebarExpanded {
+  width: 280px;
+  min-width: 280px;
+}
+
+.sidebarCollapsed {
+  width: 44px;
+  min-width: 44px;
+}
+
+.collapsedTrigger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 6px;
+  gap: 16px;
+  height: 100%;
+}
+
+.collapsedButton {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--od-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.collapsedButton:hover {
+  background: var(--bg-subtle);
+  color: var(--text-strong);
+  border-color: var(--border-selected);
+}
+
+.collapsedVerticalLabel {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-top: 12px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.headerTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-strong);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.collapseToggle {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--od-radius-xs);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.collapseToggle:hover {
+  background: var(--bg-subtle);
+  color: var(--text-strong);
+}
+
+.tabBar {
+  display: flex;
+  padding: 6px 12px;
+  gap: 6px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--bg-fill-tertiary);
+}
+
+.tabButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--od-radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tabButton:hover {
+  color: var(--text-strong);
+  background: var(--bg-fill-secondary);
+}
+
+.tabButtonActive {
+  color: var(--text-strong);
+  background: var(--bg-panel);
+  border-color: var(--border-soft);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.contentArea {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--od-radius-sm);
+}
+
+.searchInput {
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  color: var(--text-strong);
+  outline: none;
+  width: 100%;
+}
+
+.searchInput::placeholder {
+  color: var(--text-faint);
+}
+
+.sectionBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.sectionBadge {
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  padding: 1px 6px;
+  border-radius: var(--od-radius-pill);
+  font-size: 10px;
+}
+
+.fileList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fileItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-radius: var(--od-radius-xs);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  font-size: 12px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.fileItem:hover {
+  background: var(--bg-subtle);
+  color: var(--text-strong);
+}
+
+.fileItemActive {
+  background: var(--od-color-primary-light);
+  color: var(--od-color-primary);
+  font-weight: 500;
+}
+
+.fileLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileSize {
+  font-size: 10px;
+  color: var(--text-faint);
+}
+
+/* Design System Tab Styles */
+.brandCard {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--od-radius-md);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: var(--od-shadow-ambient);
+}
+
+.brandHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brandNameGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.activeBadge {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: var(--od-radius-pill);
+  background: var(--brand-soft);
+  color: var(--brand-text);
+  border: 1px solid var(--brand-weak);
+}
+
+.swatchStrip {
+  display: flex;
+  height: 22px;
+  border-radius: var(--od-radius-xs);
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+}
+
+.swatchItem {
+  flex: 1;
+  position: relative;
+  cursor: pointer;
+  transition: flex-grow 0.15s ease;
+}
+
+.swatchItem:hover {
+  flex-grow: 2;
+}
+
+.typographyPreview {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-subtle);
+  padding: 6px 8px;
+  border-radius: var(--od-radius-xs);
+  display: flex;
+  justify-content: space-between;
+}
+
+.switchDsButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  border-radius: var(--od-radius-sm);
+  background: var(--bg-panel);
+  border: 1px dashed var(--border-strong);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.switchDsButton:hover {
+  border-color: var(--od-color-primary);
+  color: var(--od-color-primary);
+  background: var(--od-color-primary-light);
+}
+
+.pinnedCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: var(--od-radius-sm);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pinnedCard:hover {
+  border-color: var(--border-selected);
+  box-shadow: var(--od-shadow-ambient);
+}

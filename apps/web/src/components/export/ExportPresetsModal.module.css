@@ -1,0 +1,180 @@
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.modalCard {
+  width: 560px;
+  max-width: 90vw;
+  background: var(--bg-panel);
+  border: 1px solid var(--od-glass-border);
+  border-radius: var(--od-radius-lg);
+  box-shadow: var(--od-shadow-float);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--od-glass-surface);
+}
+
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.closeButton {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--od-radius-xs);
+}
+
+.closeButton:hover {
+  background: var(--bg-subtle);
+  color: var(--text-strong);
+}
+
+.content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.presetCard {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--od-radius-md);
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.presetCard:hover {
+  background: var(--bg-panel);
+  border-color: var(--border-selected);
+  box-shadow: var(--od-shadow-ambient);
+}
+
+.presetCardSelected {
+  background: var(--od-color-primary-light);
+  border-color: var(--od-color-primary);
+  box-shadow: 0 0 0 1px var(--od-color-primary);
+}
+
+.presetLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.iconBox {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--od-radius-sm);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--od-color-primary);
+}
+
+.presetTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-strong);
+  margin-bottom: 2px;
+}
+
+.presetDesc {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.tagPill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  color: var(--text-muted);
+}
+
+.optionsSection {
+  margin-top: 6px;
+  padding: 10px 14px;
+  background: var(--bg-fill-tertiary);
+  border-radius: var(--od-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border-soft);
+  background: var(--bg-fill-tertiary);
+}
+
+.exportButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--od-color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--od-radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.exportButton:hover {
+  opacity: 0.92;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.96); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}

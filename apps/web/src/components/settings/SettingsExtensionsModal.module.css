@@ -1,0 +1,204 @@
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.modalCard {
+  width: 640px;
+  max-width: 90vw;
+  background: var(--bg-panel);
+  border: 1px solid var(--od-glass-border);
+  border-radius: var(--od-radius-lg);
+  box-shadow: var(--od-shadow-float);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--od-glass-surface);
+}
+
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.closeButton {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--od-radius-xs);
+}
+
+.closeButton:hover {
+  background: var(--bg-subtle);
+  color: var(--text-strong);
+}
+
+.tabBar {
+  display: flex;
+  padding: 8px 16px;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--bg-fill-tertiary);
+}
+
+.tabBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--od-radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tabBtn:hover {
+  color: var(--text-strong);
+  background: var(--bg-fill-secondary);
+}
+
+.tabBtnActive {
+  color: var(--text-strong);
+  background: var(--bg-panel);
+  border-color: var(--border-soft);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 65vh;
+  overflow-y: auto;
+}
+
+/* Shortcuts Table */
+.shortcutList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.shortcutItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--bg-subtle);
+  border-radius: var(--od-radius-xs);
+  font-size: 12px;
+}
+
+.keyBadge {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-strong);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* Team Seats */
+.memberList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.memberItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--bg-subtle);
+  border-radius: var(--od-radius-sm);
+}
+
+.roleBadge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--od-radius-pill);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+}
+
+/* Usage Charts */
+.usageCard {
+  background: var(--bg-subtle);
+  border-radius: var(--od-radius-md);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chartBarGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chartBarItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.barTrack {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-fill);
+  border-radius: var(--od-radius-pill);
+  margin: 0 12px;
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: var(--od-radius-pill);
+  transition: width 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.96); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}

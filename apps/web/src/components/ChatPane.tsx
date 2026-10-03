@@ -130,11 +130,9 @@ import { PlanPill } from './chat/PlanPill';
 import { QueuedSendStack, type QueuedSendDropEdge } from './chat/QueuedSendStack';
 import { ChatScrollEdge } from './chat/ChatScrollEdge';
 import { planPillState } from '../runtime/chat/plan-pill';
-import {
-  assistantMessageNeverHadARun,
-  lastAssistantTurnId,
-  trailingMessageIgnoringHostCards,
-} from '../runtime/chat/host-authored-message';
+import { assistantMessageNeverHadARun, lastAssistantTurnId, trailingMessageIgnoringHostCards } from '../runtime/chat/host-authored-message';
+import { StructuredBriefCard } from './brief/StructuredBriefCard';
+import { AgentDecisionBubble } from './chat/AgentDecisionBubble';
 import { Reconnect } from './chat/Reconnect';
 import { UserStatusCard } from './chat/UserStatusCard';
 import type { ChatReconnectView } from '../runtime/chat/reconnect-state';
@@ -5512,12 +5510,38 @@ function ChatRows({
         nextStepVariant={nextStepVariant}
       />
     );
-    if (turnBalanceUsd == null) return assistantRow;
+    const isFirstAssistant = messages.find((msg) => msg.role === 'assistant')?.id === m.id;
+    const briefCard = isFirstAssistant ? (
+      <StructuredBriefCard
+        initialData={{
+          brandName: activeDesignSystem?.title || 'Stripe Design System',
+        }}
+      />
+    ) : null;
+    const decisionBubble = isFirstAssistant ? (
+      <AgentDecisionBubble
+        selectedSkill={activePluginSnapshot?.pluginId ?? 'Landing Page Builder'}
+        selectedDesignSystem={activeDesignSystem?.title ?? 'Stripe Design System'}
+        currentStage={messageStreaming ? 3 : 4}
+      />
+    ) : null;
+
+    if (turnBalanceUsd == null) {
+      return (
+        <Fragment key={m.id}>
+          {briefCard}
+          {decisionBubble}
+          {assistantRow}
+        </Fragment>
+      );
+    }
     return (
-      <>
+      <Fragment key={m.id}>
+        {briefCard}
+        {decisionBubble}
         {assistantRow}
         <UpgradeCard balanceUsd={turnBalanceUsd} onUpgrade={onLowBalanceTurnCardUpgrade} />
-      </>
+      </Fragment>
     );
   };
 

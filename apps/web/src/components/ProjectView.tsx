@@ -358,6 +358,12 @@ import {
   type BrowserOpenRequest,
   type FileRefreshResult,
 } from './FileWorkspace';
+import { ProjectSidebarHub } from './sidebar/ProjectSidebarHub';
+import { DesignSystemInspector, type InspectedElementInfo } from './inspector/DesignSystemInspector';
+import { BriefWizardStepper } from './wizard/BriefWizardStepper';
+import { SettingsExtensionsModal } from './settings/SettingsExtensionsModal';
+import { QuickSwitcherModal } from './quick-switcher/QuickSwitcherModal';
+import { Sparkles } from 'lucide-react';
 import {
   type PluginFolderAgentAction,
 } from './design-files/pluginFolderActions';
@@ -3249,6 +3255,58 @@ export function ProjectView({
     tabs: [],
     active: null,
   });
+  const [sidebarHubCollapsed, setSidebarHubCollapsed] = useState(false);
+  const [inspectorCollapsed, setInspectorCollapsed] = useState(false);
+  const [inspectedElement, setInspectedElement] = useState<InspectedElementInfo | null>(null);
+  const [briefWizardOpen, setBriefWizardOpen] = useState(false);
+  const [studioSettingsOpen, setStudioSettingsOpen] = useState(false);
+  const [quickSwitcherOpen, setQuickSwitcherOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setQuickSwitcherOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const composerLeadingAccessory = useMemo(() => (
+    <button
+      type="button"
+      className="studio-brief-wizard-pill"
+      onClick={() => setBriefWizardOpen(true)}
+      title="打开结构化需求 Brief 向导 (Brief Wizard)"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '5px',
+        padding: '3px 8px',
+        fontSize: '11px',
+        fontWeight: 500,
+        borderRadius: '12px',
+        border: '1px solid var(--od-glass-border, rgba(0,0,0,0.08))',
+        background: 'var(--od-glass-surface, rgba(255,255,255,0.7))',
+        color: 'var(--text-strong, #1f2937)',
+        cursor: 'pointer',
+        backdropFilter: 'blur(4px)',
+        WebkitBackdropFilter: 'blur(4px)',
+        transition: 'all 0.15s ease',
+      }}
+    >
+      <Sparkles size={12} color="var(--od-color-primary, #635bff)" />
+      <span>Brief 向导</span>
+    </button>
+  ), []);
+
+  const handleCommitTokenPatch = useCallback((token: string, newValue: string) => {
+    setProjectActionsToast({
+      message: `已同步设计令牌至规范: ${token} ➔ ${newValue}`,
+      details: null,
+    });
+  }, []);
   // Artifact context for the header actions (settings gear, handoff) that live
   // in this workspace's header alongside FileViewer's present/share/download.
   // Mirrors the artifact_id / artifact_kind that FileViewer attaches, derived
@@ -4415,6 +4473,13 @@ export function ProjectView({
       projectTabsCanPersistToDaemon,
     ],
   );
+
+  const handleSidebarOpenFile = useCallback((name: string) => {
+    persistTabsState({
+      tabs: openTabsState.tabs.includes(name) ? openTabsState.tabs : [...openTabsState.tabs, name],
+      active: name,
+    });
+  }, [openTabsState.tabs, persistTabsState]);
 
   // Revocation can arrive without another tab interaction. Discard a queued
   // write immediately instead of letting its old authority fire after the
@@ -13629,8 +13694,28 @@ export function ProjectView({
       {/* ProjectActionsToolbar removed per 00efdcba — hide finalize-design
           toolbar from project header. Restore from cf1cd9bb if product
           wants the Finalize + Continue-in-CLI buttons back in the chrome. */}
-      <div
-        ref={splitRef}
+      <div className="od-four-zone-studio">
+        <ProjectSidebarHub
+          projectId={project.id}
+          projectName={currentProject.name}
+          files={projectFiles}
+          activeFileName={openTabsState.active ?? undefined}
+          onSelectFile={handleSidebarOpenFile}
+          designSystems={designSystems}
+          currentDesignSystemId={projectDesignSystemId}
+          onChangeDesignSystem={(id) => handleChangeDesignSystemId(id)}
+          collapsed={sidebarHubCollapsed}
+          onToggleCollapse={() => setSidebarHubCollapsed((prev) => !prev)}
+          conversationsCount={conversations.length}
+          onOpenDesignSystemModal={() => {
+            const first = designSystems[0];
+            if (first) setContextDesignSystemDetails(first);
+          }}
+          onOpenQuickSwitcher={() => setQuickSwitcherOpen(true)}
+          onOpenStudioSettings={() => setStudioSettingsOpen(true)}
+        />
+        <div
+          ref={splitRef}
         className={[
           projectSplitClassName(workspaceFocused),
           resizingChatPanel && !workspaceFocused ? 'is-resizing-chat' : '',
@@ -13955,6 +14040,7 @@ export function ProjectView({
               collapseControlLifted={!workspaceFocused}
               backLabel={t('project.backToProjects')}
               composerFooterAccessory={executionControls}
+              composerLeadingAccessory={composerLeadingAccessory}
               designSystemPicker={(
                 <DesignSystemPicker
                   variant="home"
@@ -14135,6 +14221,55 @@ export function ProjectView({
           conversationId={activeConversationId}
         />
       </div>
+      <DesignSystemInspector
+        collapsed={inspectorCollapsed}
+        onToggleCollapse={() => setInspectorCollapsed((prev) => !prev)}
+        activeBrandName={projectDesignSystemId ? projectDesignSystemId.toUpperCase() : 'Brand Tokens'}
+        inspectedElement={inspectedElement}
+        onCommitTokenPatch={handleCommitTokenPatch}
+        onEditDesignMd={() => handleSidebarOpenFile('DESIGN.md')}
+      />
+      {briefWizardOpen ? (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.4)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+          onClick={() => setBriefWizardOpen(false)}
+        >
+          <div onClick={(e) => e.stopPropagation()}>
+            <BriefWizardStepper
+              onApplyBrief={(prompt) => {
+                setComposerDraftSignal({ text: prompt, nonce: Date.now() });
+                setBriefWizardOpen(false);
+              }}
+              onClose={() => setBriefWizardOpen(false)}
+            />
+          </div>
+        </div>
+      ) : null}
+      <SettingsExtensionsModal
+        open={studioSettingsOpen}
+        onClose={() => setStudioSettingsOpen(false)}
+      />
+      <QuickSwitcherModal
+        open={quickSwitcherOpen}
+        onClose={() => setQuickSwitcherOpen(false)}
+        onSelectProject={(selectedId) => {
+          setProjectActionsToast({
+            message: `已切换至项目: ${selectedId}`,
+            details: null,
+          });
+        }}
+      />
+    </div>
       {contextPluginDetails ? (
         <PluginDetailsModal
           record={contextPluginDetails}
