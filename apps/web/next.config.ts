@@ -149,6 +149,7 @@ function configuredAllowedDevHosts(): string[] {
   const bindHost = parseAllowedDevHost(process.env.OD_HOST ?? '');
   return Array.from(new Set([
     '127.0.0.1',
+    '*.e2b.app',
     ...localPrivateLanHosts(),
     ...(bindHost != null && bindHost !== '0.0.0.0' && bindHost !== '::' ? [bindHost] : []),
     ...configured,
