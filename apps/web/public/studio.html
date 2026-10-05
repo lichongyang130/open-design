@@ -160,6 +160,16 @@
   .composer .row { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; position: relative; }
   .chip.sel { color: var(--lime-deep); border-color: rgba(135,234,92,0.55); background: rgba(135,234,92,0.12); }
   /* 资源选择器（技能 / 插件 / 设计系统） */
+  /* ── 第二大脑视图 ── */
+  .bn-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; }
+  .bn-card { position: relative; background: var(--glass); border: 1px solid var(--glass-border); border-radius: 16px; padding: 14px 15px 13px; overflow: hidden; transition: 0.2s; }
+  .bn-card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(58,70,52,0.12); }
+  .bn-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3.5px; background: var(--bnc, #7ccbb8); }
+  .bn-card .ty { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 800; letter-spacing: 0.04em; color: var(--bnc, #5b7d6d); text-transform: uppercase; margin-bottom: 7px; }
+  .bn-card .tx { font-size: 13.5px; line-height: 1.62; color: var(--ink); font-weight: 500; }
+  .bn-card .w { margin-top: 9px; font-size: 11px; color: var(--faint); }
+  .bn-empty { grid-column: 1 / -1; padding: 44px 20px; text-align: center; color: var(--faint); font-size: 13px; border: 1.5px dashed var(--glass-border); border-radius: 16px; }
+
   /* ── 生成过程视图（左：对话修改；右：设计文件）── */
   .gen-wrap { display: grid; grid-template-columns: minmax(340px, 46%) 1fr; height: calc(100dvh - 148px); min-height: 560px; border-radius: 22px; overflow: hidden; border: 1px solid var(--glass-border); background: #fff; box-shadow: 0 18px 44px rgba(58,70,52,0.12); }
   .gen-left { display: flex; flex-direction: column; background: #eceef0; border-right: 1px solid #e2e5e7; min-width: 0; }
@@ -706,6 +716,17 @@
         </section>
         </section><!-- /view-home -->
 
+        <section class="view" id="view-brain">
+          <div class="page-head">
+            <div>
+              <h1 data-i18n="bnTitle">第二大脑</h1>
+              <p data-i18n="bnSub" id="bnSub">灵感、决策与素材在这里自动沉淀，随时取用。</p>
+            </div>
+          </div>
+          <div class="pills" id="bnPills"></div>
+          <div class="bn-grid" id="bnGrid"></div>
+        </section>
+
         <section class="view" id="view-projects">
           <div class="page-head">
             <div>
@@ -875,7 +896,7 @@
   var I18N = {
     zh: {
       title: "DesignBuddy · 工作台",
-      navHome: "首页", navProjects: "项目", navTemplates: "模板", navSystems: "设计系统", navCommunity: "社区",
+      navHome: "首页", navProjects: "项目", navTemplates: "模板", navSystems: "设计系统", navCommunity: "社区", navBrain: "第二大脑",
       userName: "设计师", userPlan: "免费版", switchLang: "切换语言", signOut: "退出登录",
       greetPre: "让我们创建", greetSub: "好的作品，从这里开始 —— ", greetSig: "和你的 AI 设计搭子一起。",
       phPrompt: "描述你想生成的内容…",
@@ -997,11 +1018,25 @@
       tpTitle: "模板", tpSub: "从模板开始，事半功倍。", tpFeaturedK: "本周主推", tpUse: "使用模板", tpUses: "次使用",
       syTitle: "设计系统", sySub: "为你的作品选择一种视觉语言。", syApply: "套用",
       cmTitle: "社区", cmSub: "看看大家用 DesignBuddy 做了什么。", cmPick: "本周精选",
+      bnTitle: "第二大脑", bnSub: "灵感、决策与素材在这里自动沉淀，随时取用。",
+      bnAll: "全部", bnIns: "灵感", bnDec: "决策", bnMat: "素材", bnPref: "偏好",
+      bnEmpty: "还没有记忆，创作过程会自动沉淀到这里。",
+      brainData: [
+        { ty: "ins", x: "玻璃拟态仪表盘配色：青绿 #7ccbb8 + 暖橙 #ff9d76，浅灰底", w: "2 小时前" },
+        { ty: "dec", x: "注册流程默认采用「三步式」，首屏只留邮箱+密码", w: "昨天" },
+        { ty: "mat", x: "一套 24px 线性图标，描边 1.9px，圆角端点", w: "昨天" },
+        { ty: "pref", x: "中文界面优先使用思源黑体，标题字重 800", w: "2 天前" },
+        { ty: "ins", x: "海报大字排版参考：主次字号对比 1:6，负空间留白 40%", w: "3 天前" },
+        { ty: "dec", x: "移动端断点从 640px 起算，栅格 4 的倍数", w: "3 天前" },
+        { ty: "mat", x: "品牌色板：#10161b · #f5f5ef · #7ccbb8 · #ff9d76", w: "5 天前" },
+        { ty: "pref", x: "生成的页面页脚统一标注版本号与所用设计系统", w: "上周" },
+        { ty: "ins", x: "加载动画用呼吸式圆点，节奏 0.9s 循环", w: "上周" }
+      ],
       toastTpl: "✦ 已套用模板，为你预填了创作器",
       toastApplied: "✦ 已套用「{name}」视觉语言（演示）",
       tplPrefill: "使用「{name}」模板帮我创建…",
       pjFilters: ["全部", "原型", "幻灯片", "文档", "图像"],
-      tplTabs: ["全部", "原型", "幻灯片", "文档", "图像", "视频"],
+      tplTabs: ["全部", "原型", "幻灯片", "文档", "图片", "网站复刻", "HyperFrames", "WebGL", "实时产物", "视频", "音频"],
       projects: [
         { t: "品牌官网改版", k: "原型", ic: "web", time: "2 小时前", st: "done", stT: "已完成" },
         { t: "Q3 汇报幻灯片", k: "幻灯片", ic: "deck", time: "3 天前", st: "run", stT: "生成中", prog: 64 },
@@ -1019,10 +1054,12 @@
         { t: "移动 App 引导页", k: "原型", ic: "mobile", n: "6.7k" },
         { t: "数据仪表盘", k: "原型", ic: "dash", n: "5.1k" },
         { t: "团队周报", k: "文档", ic: "doc", n: "4.3k" },
-        { t: "活动海报", k: "图像", ic: "poster", n: "3.9k" },
+        { t: "活动海报", k: "图片", ic: "poster", n: "3.9k" },
         { t: "产品需求文档", k: "文档", ic: "doc", n: "3.2k" },
         { t: "片头动画", k: "视频", ic: "anim", n: "2.8k" },
-        { t: "商品详情页", k: "文档", ic: "web", n: "2.1k" }
+        { t: "商品详情页", k: "文档", ic: "web", n: "2.1k" },
+        { t: "融资路演 PPT", k: "幻灯片", ic: "deck", n: "7.4k" },
+        { t: "季度汇报幻灯片", k: "幻灯片", ic: "deck", n: "5.6k" }
       ],
       systems: [
         { t: "极简", d: "充裕留白、清晰字体与有限配色，减少视觉杂乱。", c: ["#f5f4f0", "#d9d7d0", "#a8a59c", "#5c5a52", "#20261e"] },
@@ -1048,7 +1085,7 @@
     },
     en: {
       title: "DesignBuddy · Studio",
-      navHome: "Home", navProjects: "Projects", navTemplates: "Templates", navSystems: "Design systems", navCommunity: "Community",
+      navHome: "Home", navProjects: "Projects", navTemplates: "Templates", navSystems: "Design systems", navCommunity: "Community", navBrain: "Second brain",
       userName: "Designer", userPlan: "Free plan", switchLang: "Switch language", signOut: "Sign out",
       greetPre: "Let's create a ", greetSub: "Great work starts here — ", greetSig: "with your AI design buddy.",
       phPrompt: "Describe what you want to make…",
@@ -1170,11 +1207,25 @@
       tpTitle: "Templates", tpSub: "Start from a template, move faster.", tpFeaturedK: "FEATURED", tpUse: "Use template", tpUses: "uses",
       syTitle: "Design systems", sySub: "Pick a visual language for your work.", syApply: "Apply",
       cmTitle: "Community", cmSub: "See what people are making with DesignBuddy.", cmPick: "PICK OF THE WEEK",
+      bnTitle: "Second brain", bnSub: "Ideas, decisions and assets settle here automatically.",
+      bnAll: "All", bnIns: "Ideas", bnDec: "Decisions", bnMat: "Assets", bnPref: "Preferences",
+      bnEmpty: "No memories yet — they settle here as you create.",
+      brainData: [
+        { ty: "ins", x: "Glass dashboard palette: teal #7ccbb8 + warm orange #ff9d76 on light gray", w: "2h ago" },
+        { ty: "dec", x: "Signup defaults to a 3-step flow; first screen keeps email + password only", w: "Yesterday" },
+        { ty: "mat", x: "A 24px line-icon set, 1.9px stroke, round caps", w: "Yesterday" },
+        { ty: "pref", x: "Chinese UI prefers Noto Sans SC, headings weight 800", w: "2d ago" },
+        { ty: "ins", x: "Poster type reference: 1:6 size contrast, 40% negative space", w: "3d ago" },
+        { ty: "dec", x: "Mobile breakpoint starts at 640px, spacing on a 4px grid", w: "3d ago" },
+        { ty: "mat", x: "Brand palette: #10161b · #f5f5ef · #7ccbb8 · #ff9d76", w: "5d ago" },
+        { ty: "pref", x: "Generated pages footnote the version and design system used", w: "Last week" },
+        { ty: "ins", x: "Loading animation: breathing dots on a 0.9s loop", w: "Last week" }
+      ],
       toastTpl: "✦ Template applied — composer prefilled for you",
       toastApplied: "✦ Applied the “{name}” visual language (demo)",
       tplPrefill: 'Create a project with the "{name}" template…',
       pjFilters: ["All", "Prototypes", "Slides", "Documents", "Images"],
-      tplTabs: ["All", "Prototypes", "Slides", "Documents", "Images", "Video"],
+      tplTabs: ["All", "Prototypes", "Slides", "Documents", "Images", "Website replica", "HyperFrames", "WebGL", "Live artifacts", "Video", "Audio"],
       projects: [
         { t: "Brand site redesign", k: "Prototypes", ic: "web", time: "2h ago", st: "done", stT: "Done" },
         { t: "Q3 report deck", k: "Slides", ic: "deck", time: "3d ago", st: "run", stT: "Running", prog: 64 },
@@ -1195,7 +1246,9 @@
         { t: "Event poster", k: "Images", ic: "poster", n: "3.9k" },
         { t: "Product PRD", k: "Documents", ic: "doc", n: "3.2k" },
         { t: "Intro motion", k: "Video", ic: "anim", n: "2.8k" },
-        { t: "Product page", k: "Documents", ic: "web", n: "2.1k" }
+        { t: "Product page", k: "Documents", ic: "web", n: "2.1k" },
+        { t: "Pitch deck", k: "Slides", ic: "deck", n: "7.4k" },
+        { t: "Quarterly review deck", k: "Slides", ic: "deck", n: "5.6k" }
       ],
       systems: [
         { t: "Minimal", d: "Generous whitespace, clear type, a limited palette.", c: ["#f5f4f0", "#d9d7d0", "#a8a59c", "#5c5a52", "#20261e"] },
@@ -1245,6 +1298,7 @@
   var NAV_ICONS = {
     home: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 10.5 12 3.5l8.5 7v9a1.5 1.5 0 0 1-1.5 1.5h-4v-6h-6v6H5a1.5 1.5 0 0 1-1.5-1.5z"/></svg>',
     projects: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="6.5" width="12.5" height="12.5" rx="3"/><path d="M8 6.5V5a1.5 1.5 0 0 1 1.5-1.5H19A1.5 1.5 0 0 1 20.5 5v9.5A1.5 1.5 0 0 1 19 16h-1.5"/></svg>',
+    brain: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6.5" r="2.5"/><circle cx="17.5" cy="6" r="2.2"/><circle cx="12" cy="13" r="2.8"/><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="18.5" r="2.5"/><path d="M8.2 7.6 9.8 11M15.4 7.3 14 10.6M10.4 15.2l-2.6 2.4M13.8 15.4l2.6 1.9"/></svg>',
     templates: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><path d="M17 13.8v6.4M13.8 17h6.4"/></svg>',
     systems: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="7" cy="7" r="3.2"/><circle cx="17" cy="7" r="3.2" fill="currentColor" stroke="none" opacity="0.35"/><circle cx="7" cy="17" r="3.2" fill="currentColor" stroke="none" opacity="0.35"/><circle cx="17" cy="17" r="3.2" fill="currentColor" stroke="none" opacity="0.7"/></svg>',
     community: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="9" cy="8.5" r="3.4"/><path d="M2.8 20c1.4-3 3.6-4.4 6.2-4.4s4.8 1.4 6.2 4.4"/><circle cx="17" cy="9.5" r="2.6"/><path d="M15.5 15.7c2.5.2 4.5 1.5 5.7 4.3"/></svg>',
@@ -1253,13 +1307,13 @@
     members: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="9" cy="8.5" r="3.4"/><path d="M2.8 20c1.4-3 3.6-4.4 6.2-4.4s4.8 1.4 6.2 4.4"/><path d="M16 4.9a3.4 3.4 0 0 1 0 7.2M17.8 15.9c1.7.6 2.9 1.9 3.5 4.1"/></svg>',
     approvals: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 5.5v5c0 4.4 3 8.4 7 9.5 4-1.1 7-5.1 7-9.5v-5L12 3z"/><path d="m9 11.5 2 2 4-4"/></svg>'
   };
-  var NAV_KEYS = { home: "navHome", projects: "navProjects", templates: "navTemplates", systems: "navSystems", community: "navCommunity", review: "navReview", artifacts: "navArtifacts", members: "navMembers", approvals: "navApprovals" };
+  var NAV_KEYS = { home: "navHome", projects: "navProjects", templates: "navTemplates", systems: "navSystems", community: "navCommunity", brain: "navBrain", review: "navReview", artifacts: "navArtifacts", members: "navMembers", approvals: "navApprovals" };
   var ROLES = {
     designer: {
       grad: "#d9f2c9,#8fd483", icon: ROLE_ICONS.designer,
       zh: {
         name: "设计师", desc: "视觉与原型创作",
-        nav: ["home", "projects", "templates", "systems", "community"],
+        nav: ["home", "projects", "templates", "systems", "community", "brain"],
         greetPre: "让我们创建", subPre: "好的作品，从这里开始 —— ", subSig: "和你的 AI 设计搭子一起。",
         ph: "描述你想生成的内容…",
         bubbles: [
@@ -1281,7 +1335,7 @@
       },
       en: {
         name: "Designer", desc: "Visuals & prototypes",
-        nav: ["home", "projects", "templates", "systems", "community"],
+        nav: ["home", "projects", "templates", "systems", "community", "brain"],
         greetPre: "Let's create a ", subPre: "Great work starts here — ", subSig: "with your AI design buddy.",
         ph: "Describe what you want to make…",
         bubbles: [
@@ -1448,6 +1502,8 @@
     realSkills: null,
     realPlugins: null,
     gen: { pid: null, name: "", events: [], status: "idle", runId: 0, timers: [], mod: {}, offline: false, welcome: false },
+    bnFilter: 0,
+    realBrain: null,
     sysShown: 24,
     selDS: null,
     selSkill: null,
@@ -2105,7 +2161,7 @@
   });
 
   /* ── 视图路由 ── */
-  var VIEWS = ["home", "projects", "gen", "templates", "systems", "community", "review", "artifacts", "members", "approvals"];
+  var VIEWS = ["home", "projects", "gen", "brain", "templates", "systems", "community", "review", "artifacts", "members", "approvals"];
   function currentView() {
     var h = (location.hash || "").replace(/^#\/?/, "");
     return VIEWS.indexOf(h) >= 0 ? h : "home";
@@ -2354,6 +2410,24 @@
   }
 
   var SF_LABEL = { web: "sfWeb", image: "sfImage", video: "sfVideo", audio: "sfAudio" };
+  /* 模板分类：固定 10 类（与 i18n tplTabs 顺序对应），真实数据按 关键词→mode→surface 归类 */
+  var TPL_CATS = ["proto", "slides", "doc", "image", "replica", "hyper", "webgl", "live", "video", "audio"];
+  var DEMO_K_MAP = { "原型": "proto", "幻灯片": "slides", "文档": "doc", "图片": "image", "图像": "image", "视频": "video", "Prototypes": "proto", "Slides": "slides", "Documents": "doc", "Images": "image", "Video": "video" };
+  function tplCategoryOf(x) {
+    var hay = ((x.id || "") + " " + (x.name || "") + " " + (x.description || "")).toLowerCase();
+    var sf = x.surface, md = x.mode;
+    if (/hyperframe/.test(hay)) return "hyper";
+    if (/webgl/.test(hay)) return "webgl";
+    if (/live|real-time/.test(hay)) return "live";
+    if (sf === "video") return "video";
+    if (sf === "audio") return "audio";
+    if (sf === "image") return "image";
+    if (md === "deck") return "slides";
+    if (md === "template") return "doc";
+    if (sf === "web" && /web|site|page|portal|blog|docs|landing|homepage/.test(hay)) return "replica";
+    return "proto";
+  }
+  function tplCatOfDemo(tp) { return DEMO_K_MAP[tp.k] || "proto"; }
   var SF_ICON = { web: "web", image: "poster", video: "anim", audio: "doc", mobile: "mobile", deck: "deck" };
   function prettyName(id) {
     return String(id).split(/[-_]/).map(function (w) { return w ? w.charAt(0).toUpperCase() + w.slice(1) : w; }).join(" ");
@@ -2363,15 +2437,16 @@
     var tabs = $("tpTabs");
     tabs.innerHTML = "";
     var real = state.realDTpl && state.realDTpl.length > 0;
-    var tabList;
-    if (real) {
-      var sfs = [];
-      state.realDTpl.forEach(function (x) { if (sfs.indexOf(x.surface) < 0) sfs.push(x.surface); });
-      tabList = [{ k: "all", label: d.pjFilters[0] }].concat(sfs.map(function (sf) { return { k: sf, label: t(SF_LABEL[sf] || "sfWeb") }; }));
-      if (state.tpTab >= tabList.length) state.tpTab = 0;
-    } else {
-      tabList = d.tplTabs.map(function (f) { return { k: f, label: f }; });
-    }
+    var catOf = real ? tplCategoryOf : tplCatOfDemo;
+    var source = real ? state.realDTpl : d.templates;
+    /* 只展示有内容的分类（顺序固定，与 tplTabs 对齐），避免空 tab */
+    var counts = {};
+    source.forEach(function (x) { var c = catOf(x); counts[c] = (counts[c] || 0) + 1; });
+    var tabList = [{ k: "all", label: d.tplTabs[0], n: source.length }];
+    TPL_CATS.forEach(function (c, i) {
+      if (counts[c]) tabList.push({ k: c, label: d.tplTabs[i + 1], n: counts[c] });
+    });
+    if (state.tpTab >= tabList.length) state.tpTab = 0;
     tabList.forEach(function (tb, i) {
       var b = document.createElement("button");
       b.type = "button";
@@ -2400,13 +2475,8 @@
     $("tpUse").addEventListener("click", function () { useTemplate(feat.t); });
     var grid = $("tpGrid");
     grid.innerHTML = "";
-    var list;
-    if (real) {
-      var key = tabList[state.tpTab].k;
-      list = key === "all" ? state.realDTpl : state.realDTpl.filter(function (x) { return x.surface === key; });
-    } else {
-      list = d.templates.filter(function (tp) { return state.tpTab === 0 || d.tplTabs[state.tpTab] === tp.k; });
-    }
+    var key = tabList[state.tpTab].k;
+    var list = key === "all" ? source : source.filter(function (x) { return catOf(x) === key; });
     list.forEach(function (tp, i) {
       var g = GRADS[(i + 3) % GRADS.length].split(",");
       var sub = real ? t(SF_LABEL[tp.surface] || "sfWeb") : tp.k;
@@ -2590,6 +2660,62 @@
       renderTemplates();
     }).catch(function () {});
   }
+  /* 第二大脑：优先接 daemon 的 /api/memory（索引条目），失败回落演示数据 */
+  function loadBrain() {
+    apiGet("/api/memory").then(function (d) {
+      var lines = [];
+      String((d && d.index) || "").split("\n").forEach(function (ln) {
+        var m = /^\s*-\s*\[?([^\]]*)\]?\s*\(?([^)\s]*)\)?/.exec(ln);
+        if (m && m[1] && m[1].length > 3) {
+          lines.push({ ty: "dec", x: m[1].replace(/\.md$/i, "").trim(), w: relTime(Date.now() - 3600e3) });
+        }
+      });
+      state.realBrain = lines.length ? lines.slice(0, 40) : null;
+      renderBrain();
+    }).catch(function () {});
+  }
+  var BN_TYPE = { ins: { k: "bnIns", c: "#e8a33d" }, dec: { k: "bnDec", c: "#5fa77c" }, mat: { k: "bnMat", c: "#5b8fd6" }, pref: { k: "bnPref", c: "#a77fd0" } };
+  function renderBrain() {
+    var d = I18N[state.lang];
+    var live = !!(state.realBrain && state.realBrain.length);
+    var data = live ? state.realBrain : d.brainData;
+    var pills = $("bnPills");
+    if (!pills) return;
+    pills.innerHTML = "";
+    $("bnSub").textContent = d.bnSub + (live ? "  " + d.pjLive : "");
+    var types = ["all", "ins", "dec", "mat", "pref"];
+    var typeKeys = { all: "bnAll", ins: "bnIns", dec: "bnDec", mat: "bnMat", pref: "bnPref" };
+    var counts = {};
+    data.forEach(function (b) { counts[b.ty] = (counts[b.ty] || 0) + 1; });
+    types.forEach(function (ty, i) {
+      var n = ty === "all" ? data.length : (counts[ty] || 0);
+      if (ty !== "all" && !n) return;
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "pill" + (state.bnFilter === i ? " on" : "");
+      b.innerHTML = t(typeKeys[ty]) + '<span class="n">' + n + "</span>";
+      b.addEventListener("click", function () { state.bnFilter = i; renderBrain(); });
+      pills.appendChild(b);
+    });
+    var grid = $("bnGrid");
+    grid.innerHTML = "";
+    var list = state.bnFilter === 0 ? data : data.filter(function (b) { return b.ty === types[state.bnFilter]; });
+    if (!list.length) { grid.innerHTML = '<div class="bn-empty">' + t("bnEmpty") + "</div>"; return; }
+    list.forEach(function (b) {
+      var meta = BN_TYPE[b.ty] || BN_TYPE.dec;
+      var card = document.createElement("div");
+      card.className = "bn-card";
+      card.style.setProperty("--bnc", meta.c);
+      card.innerHTML = '<span class="ty">◍ ' + t(meta.k) + '</span><div class="tx">' + esc(b.x) + '</div><div class="w">' + esc(b.w || "") + "</div>";
+      card.addEventListener("click", function () {
+        $("prompt").value = b.x;
+        go("home");
+        setTimeout(function () { $("prompt").focus(); }, 60);
+        toast(t("tplPrefill").replace("{name}", t(meta.k)));
+      });
+      grid.appendChild(card);
+    });
+  }
   function loadSkills() {
     apiGet("/api/skills").then(function (d) {
       state.realSkills = (d && d.skills) || [];
@@ -2647,6 +2773,7 @@
     renderTemplates();
     renderSystems();
     renderCommunity();
+    renderBrain();
     renderReview();
     renderArtifacts();
     renderMembers();
@@ -2929,6 +3056,7 @@
   loadDTemplates();
   loadSkills();
   loadPlugins();
+  loadBrain();
 })();
 </script>
 </body>
