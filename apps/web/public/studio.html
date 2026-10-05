@@ -128,7 +128,7 @@
   .lang button { appearance: none; border: 0; background: transparent; color: var(--muted); font: 600 12px/1 inherit; padding: 6px 12px; border-radius: 999px; cursor: pointer; transition: 0.2s; }
   .lang button.on { background: var(--ink); color: #f4f8f0; }
 
-  .greet { margin-bottom: 30px; text-align: center; }
+  .greet { margin-bottom: 24px; text-align: center; }
   .greet h1 { font-size: clamp(28px, 4.4vw, 40px); font-weight: 800; letter-spacing: -0.025em; line-height: 1.2; }
   .greet h1 .word { position: relative; display: inline-block; color: var(--lime-deep); }
   .greet h1 .word::after {
@@ -172,7 +172,7 @@
   .cp-shell { border-radius: 26px; padding: 7px; background: rgba(255,255,255,0.34); border: 1px solid rgba(32,38,30,0.10); box-shadow: 0 14px 40px rgba(58,70,52,0.09); }
   .cp-shell .composer { border-radius: 19px; }
   .cp-shell:has(.composer:focus-within) { border-color: rgba(135,234,92,0.55); box-shadow: 0 16px 46px rgba(58,70,52,0.12), 0 0 0 4px rgba(135,234,92,0.10); }
-  .cp-modes { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .cp-modes { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: -12px auto 22px; }
   .cp-mode { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(32,38,30,0.13); background: rgba(255,255,255,0.6); color: var(--muted); font: 650 12px/1 inherit; cursor: pointer; transition: 0.18s; }
   .cp-mode:hover { color: var(--ink); border-color: rgba(32,38,30,0.26); }
   .cp-mode.on { background: rgba(135,234,92,0.2); border-color: rgba(135,234,92,0.65); color: #3f6d33; font-weight: 800; }
@@ -692,10 +692,11 @@
           <p id="greetSub"></p>
         </div>
 
+        <div class="cp-modes" id="cpModes"></div>
+
         <div class="cp-shell">
         <section class="composer" aria-label="composer">
           <div class="cp-refs" id="cpRefs"></div>
-          <div class="cp-modes" id="cpModes"></div>
           <textarea id="prompt" rows="3"></textarea>
           <div class="row">
             <button type="button" class="plus-btn" id="chipPlus" aria-label="add">
@@ -1908,7 +1909,7 @@
     if (!genAlive(runId)) return;
     genPersist("ai", { text: t(hadArtifact ? "genAiIntro2" : "genAiIntro1").replace("{name}", state.gen.name) });
     renderGen();
-    var kind = state.genMode && state.genMode !== "auto" ? state.genMode : genKindOf(prompt + " " + state.gen.name);
+    var kind = state.genMode || genKindOf(prompt + " " + state.gen.name);
     var mods = genModsOf(prompt);
     var isRefine = hadArtifact;
     var steps;
@@ -2298,7 +2299,6 @@
     $("pkPanel").classList.remove("show");
   }
   var MODE_OPTS = [
-    { id: "auto", key: "moAuto" },
     { id: "landing", key: "moLanding" },
     { id: "signup", key: "moSignup" },
     { id: "poster", key: "moPoster" },
@@ -2658,7 +2658,7 @@
     MODE_OPTS.forEach(function (m) {
       var b = document.createElement("button");
       b.type = "button";
-      b.className = "cp-mode" + ((state.genMode || "auto") === m.id ? " on" : "");
+      b.className = "cp-mode" + (state.genMode === m.id ? " on" : "");
       b.textContent = t(m.key);
       b.addEventListener("click", function () { state.genMode = m.id; renderModes(); });
       box.appendChild(b);
