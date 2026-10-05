@@ -1,0 +1,790 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#05070d" />
+<title>DesignBuddy · 登录</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect x='2' y='2' width='44' height='44' rx='12' fill='%2387ea5c'/%3E%3Cpath d='M17 14v20m0-20h6.5a10 10 0 0 1 0 20H17' stroke='%230a120b' stroke-width='5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='34.5' cy='14.5' r='3.5' fill='%230a120b'/%3E%3C/svg%3E" />
+<style>
+  :root {
+    --bg-0: #05070d;
+    --bg-1: #0a1526;
+    --brand: #87ea5c;
+    --brand-strong: #9cf07a;
+    --brand-dim: rgba(135, 234, 92, 0.16);
+    --ink: #f2f6f2;
+    --muted: rgba(226, 238, 231, 0.58);
+    --faint: rgba(226, 238, 231, 0.38);
+    --glass-bg: rgba(15, 23, 36, 0.52);
+    --glass-border: rgba(255, 255, 255, 0.11);
+    --field-bg: rgba(255, 255, 255, 0.05);
+    --field-border: rgba(255, 255, 255, 0.12);
+    --danger: #ff8f8a;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+      "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    background:
+      radial-gradient(1200px 800px at 18% -10%, #0c1c36 0%, transparent 60%),
+      radial-gradient(1000px 700px at 85% 110%, #081a16 0%, transparent 55%),
+      var(--bg-0);
+    color: var(--ink);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::after {
+    content: "";
+    position: fixed; inset: 0; z-index: 9; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+    opacity: 0.035;
+  }
+
+  /* ───────────── 场景：极光 / 星点 / 漂浮元素 / 协作光标 ───────────── */
+  .scene { position: fixed; inset: -6%; z-index: 0; pointer-events: none; }
+  .aurora { position: absolute; border-radius: 50%; filter: blur(72px); will-change: transform; }
+  .aurora.a1 {
+    width: 62vw; height: 46vh; left: -6vw; top: -8vh;
+    background: radial-gradient(closest-side, rgba(38, 148, 104, 0.5), rgba(38, 148, 104, 0) 72%);
+    animation: drift-a 26s ease-in-out infinite alternate;
+  }
+  .aurora.a2 {
+    width: 54vw; height: 44vh; right: -8vw; top: 6vh;
+    background: radial-gradient(closest-side, rgba(58, 126, 224, 0.34), rgba(58, 126, 224, 0) 72%);
+    animation: drift-b 32s ease-in-out infinite alternate;
+  }
+  .aurora.a3 {
+    width: 44vw; height: 34vh; left: 30vw; bottom: -12vh;
+    background: radial-gradient(closest-side, rgba(135, 234, 92, 0.24), rgba(135, 234, 92, 0) 70%);
+    animation: drift-c 38s ease-in-out infinite alternate;
+  }
+  @keyframes drift-a { from { transform: translate3d(0, 0, 0) rotate(0deg); } to { transform: translate3d(9vw, 7vh, 0) rotate(8deg); } }
+  @keyframes drift-b { from { transform: translate3d(0, 0, 0) rotate(0deg); } to { transform: translate3d(-8vw, 9vh, 0) rotate(-9deg); } }
+  @keyframes drift-c { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(6vw, -6vh, 0); } }
+
+  .stars { position: absolute; inset: 0; }
+  .star { position: absolute; border-radius: 50%; background: #fff; animation: twinkle var(--d) ease-in-out var(--delay) infinite; }
+  @keyframes twinkle { 0%, 100% { opacity: 0.12; } 50% { opacity: 0.85; } }
+
+  .artifacts { position: absolute; inset: 0; will-change: transform; }
+  .artifact {
+    position: absolute; opacity: 0.92;
+    animation: floaty var(--d) ease-in-out var(--delay) infinite;
+    transform: rotate(var(--r));
+  }
+  @keyframes floaty {
+    0%, 100% { transform: translateY(0) rotate(var(--r)); }
+    50% { transform: translateY(-14px) rotate(calc(var(--r) + 1.6deg)); }
+  }
+  .artifact.far { filter: blur(2.5px); opacity: 0.5; transform: rotate(var(--r)) scale(0.86); }
+  .artifact .chip { font-size: 10px; color: var(--faint); letter-spacing: 0.04em; }
+
+  .mini-ui {
+    width: 158px; padding: 12px; border-radius: 14px;
+    background: rgba(18, 27, 40, 0.72); border: 1px solid rgba(255, 255, 255, 0.09);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+  }
+  .mini-ui .dots { display: flex; gap: 5px; margin-bottom: 10px; }
+  .mini-ui .dots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, 0.22); }
+  .mini-ui .dots i:first-child { background: var(--brand); }
+  .mini-ui .bar { height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.12); margin-bottom: 7px; }
+  .mini-ui .bar.s { width: 58%; }
+  .mini-ui .cta { margin-top: 10px; width: 64px; height: 18px; border-radius: 999px; background: var(--brand); }
+
+  .swatches { display: flex; flex-direction: column; gap: 7px; }
+  .swatches i { width: 74px; height: 22px; border-radius: 7px; box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35); }
+
+  .poster {
+    width: 118px; height: 152px; border-radius: 14px; padding: 12px;
+    background: linear-gradient(150deg, #175c57 0%, #12355f 62%, #1b2a4a 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 20px 44px rgba(0, 0, 0, 0.45);
+    display: flex; flex-direction: column; gap: 9px;
+  }
+  .poster .circle { width: 52px; height: 52px; border-radius: 50%; background: rgba(135, 234, 92, 0.85); box-shadow: 0 0 26px rgba(135, 234, 92, 0.5); }
+  .poster .ln { height: 7px; border-radius: 4px; background: rgba(255, 255, 255, 0.3); }
+  .poster .ln.s { width: 55%; background: rgba(255, 255, 255, 0.16); }
+
+  .bezier { width: 170px; }
+  .mobile {
+    width: 112px; height: 196px; border-radius: 20px; padding: 12px 10px;
+    background: rgba(16, 24, 37, 0.78); border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; gap: 8px;
+  }
+  .mobile .notch { width: 40px; height: 5px; border-radius: 999px; background: rgba(255, 255, 255, 0.22); margin: 0 auto 4px; }
+  .mobile .hero { flex: 1; border-radius: 10px; background: linear-gradient(140deg, rgba(135, 234, 92, 0.35), rgba(92, 214, 234, 0.22)); }
+  .mobile .ln { height: 7px; border-radius: 4px; background: rgba(255, 255, 255, 0.14); }
+  .mobile .ln.s { width: 60%; }
+
+  .frame { border: 1.5px dashed rgba(135, 234, 92, 0.65); border-radius: 10px; padding: 14px 16px 8px; position: relative; }
+  .frame .size {
+    position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
+    background: var(--brand); color: #0a120b; font-size: 10px; font-weight: 700;
+    padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+  }
+  .frame .ghost-ui { width: 132px; height: 84px; border-radius: 8px; background: linear-gradient(140deg, rgba(58, 126, 224, 0.3), rgba(135, 234, 92, 0.16)); }
+
+  .type-card { text-align: center; }
+  .type-card .aa { font-family: Georgia, "Times New Roman", serif; font-size: 64px; line-height: 1; color: #e9f6e6; }
+  .type-card .baseline { width: 76px; height: 1px; background: rgba(255, 255, 255, 0.25); margin: 6px auto; }
+
+  .cursor { position: absolute; left: 0; top: 0; display: flex; align-items: flex-start; gap: 8px; will-change: transform; }
+  .cursor svg { filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5)); }
+  .cursor .tag {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.02em;
+    padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+    background: rgba(10, 16, 25, 0.78); border: 1px solid var(--c);
+    color: #eef4ef; margin-top: 10px;
+  }
+  .cursor .tag::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--c); margin-right: 6px; vertical-align: 1px; }
+  .cur-a { animation: cur-a 56s linear infinite; }
+  .cur-b { animation: cur-b 68s linear infinite; animation-delay: -22s; }
+  .cur-c { animation: cur-c 47s linear infinite; animation-delay: -9s; }
+  @keyframes cur-a {
+    0% { transform: translate(-6vw, 24vh); } 18% { transform: translate(16vw, 34vh); }
+    38% { transform: translate(30vw, 14vh); } 58% { transform: translate(48vw, 40vh); }
+    78% { transform: translate(66vw, 22vh); } 100% { transform: translate(-6vw, 24vh); }
+  }
+  @keyframes cur-b {
+    0% { transform: translate(96vw, 64vh); } 22% { transform: translate(74vw, 46vh); }
+    44% { transform: translate(86vw, 26vh); } 66% { transform: translate(60vw, 70vh); }
+    84% { transform: translate(40vw, 56vh); } 100% { transform: translate(96vw, 64vh); }
+  }
+  @keyframes cur-c {
+    0% { transform: translate(12vw, 78vh); } 25% { transform: translate(38vw, 62vh); }
+    50% { transform: translate(24vw, 40vh); } 75% { transform: translate(52vw, 72vh); }
+    100% { transform: translate(12vw, 78vh); }
+  }
+
+  /* ───────────── 舞台与玻璃卡片 ───────────── */
+  .stage { position: relative; z-index: 2; min-height: 100dvh; display: grid; place-items: center; padding: 28px 20px; }
+  .lang {
+    position: fixed; top: 18px; right: 18px; z-index: 5;
+    display: flex; align-items: center; gap: 2px; padding: 3px;
+    border-radius: 999px; background: rgba(15, 23, 36, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(14px);
+  }
+  .lang button {
+    appearance: none; border: 0; background: transparent; color: var(--muted);
+    font: 600 12px/1 inherit; padding: 6px 12px; border-radius: 999px; cursor: pointer;
+    transition: color 0.2s, background 0.2s;
+  }
+  .lang button.on { background: var(--brand); color: #0a120b; }
+
+  .card {
+    width: min(430px, 100%);
+    border-radius: 24px; padding: 34px 32px 22px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(28px) saturate(150%);
+    -webkit-backdrop-filter: blur(28px) saturate(150%);
+    box-shadow:
+      0 34px 90px rgba(0, 0, 0, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    animation: card-in 0.8s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+  }
+  @keyframes card-in {
+    from { opacity: 0; transform: translateY(26px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .card.leaving { animation: card-out 0.28s ease both; }
+  @keyframes card-out { to { opacity: 0; transform: translateY(10px) scale(0.985); } }
+
+  .brand-row { display: flex; align-items: center; gap: 11px; margin-bottom: 22px; }
+  .mark { width: 40px; height: 40px; border-radius: 12px; flex: none;
+    background: linear-gradient(145deg, #a4f584, #6fdb49);
+    box-shadow: 0 6px 20px rgba(135, 234, 92, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    display: grid; place-items: center; }
+  .wordmark { font-size: 19px; font-weight: 700; letter-spacing: -0.015em; }
+  .wordmark b { color: var(--brand); font-weight: 700; }
+  .wordmark small { display: block; font-size: 10.5px; font-weight: 500; color: var(--faint); letter-spacing: 0.14em; margin-top: 1px; }
+
+  h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.25; }
+  .sub { margin: 8px 0 24px; font-size: 13.5px; line-height: 1.6; color: var(--muted); }
+  .sub b { color: var(--brand); font-weight: 600; }
+
+  .field { position: relative; margin-bottom: 14px; }
+  /* 注册角色选择 */
+  .role-label { display: block; font-size: 12.5px; font-weight: 600; color: var(--ink); opacity: 0.8; margin: 2px 0 8px; letter-spacing: 0.02em; }
+  .role-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .rcard { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 13px; border: 1px solid var(--field-border); background: var(--field-bg); cursor: pointer; color: var(--ink); font: inherit; text-align: left; transition: border-color 0.18s, background 0.18s, box-shadow 0.18s, transform 0.18s; }
+  .rcard:hover { transform: translateY(-1px); }
+  .rcard .ric { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; color: #0a120b; flex: none; }
+  .rcard b { font-size: 13px; display: block; }
+  .rcard small { font-size: 10.5px; color: var(--faint); display: block; margin-top: 1px; }
+  .rcard.sel { border-color: #9cf07a; background: rgba(135, 234, 92, 0.12); box-shadow: 0 0 0 1px #9cf07a; }
+  .rcard.sel small { color: rgba(233, 241, 246, 0.65); }
+  .field input {
+    width: 100%; height: 47px; border-radius: 13px;
+    background: var(--field-bg); border: 1px solid var(--field-border);
+    color: var(--ink); font: 400 14.5px/1 inherit;
+    padding: 0 44px 0 42px; outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  }
+  .field input::placeholder { color: var(--faint); }
+  .field input:focus {
+    border-color: rgba(135, 234, 92, 0.65);
+    box-shadow: 0 0 0 4px var(--brand-dim);
+    background: rgba(255, 255, 255, 0.07);
+  }
+  .field .lead, .field .tail {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    display: grid; place-items: center; color: var(--faint); pointer-events: none;
+  }
+  .field .lead { left: 14px; }
+  .field .tail { right: 6px; pointer-events: auto; }
+  .field .tail button {
+    appearance: none; border: 0; background: transparent; color: var(--faint);
+    width: 34px; height: 34px; border-radius: 9px; cursor: pointer; display: grid; place-items: center;
+    transition: color 0.2s, background 0.2s;
+  }
+  .field .tail button:hover { color: var(--ink); background: rgba(255, 255, 255, 0.07); }
+  .field .err {
+    display: none; margin: 7px 2px 0; font-size: 12px; color: var(--danger);
+    animation: shake 0.34s ease;
+  }
+  .field.bad input { border-color: rgba(255, 143, 138, 0.6); box-shadow: 0 0 0 4px rgba(255, 143, 138, 0.12); }
+  .field.bad .err { display: block; }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+  .field.grow { animation: grow 0.32s ease both; }
+  @keyframes grow { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+  input:-webkit-autofill { -webkit-box-shadow: 0 0 0 60px #141d2c inset; -webkit-text-fill-color: var(--ink); }
+
+  .row-aux { display: flex; justify-content: space-between; align-items: center; margin: 2px 2px 18px; font-size: 12.5px; }
+  .row-aux label { display: flex; gap: 7px; align-items: center; color: var(--muted); cursor: pointer; user-select: none; }
+  .row-aux input { accent-color: var(--brand); width: 14px; height: 14px; }
+  .linkish { color: var(--muted); font-weight: 600; cursor: pointer; background: none; border: 0; padding: 0; font: 600 12.5px/1 inherit; transition: color 0.2s; }
+  .linkish:hover { color: var(--brand); }
+
+  .primary {
+    width: 100%; height: 48px; border: 0; border-radius: 13px; cursor: pointer;
+    background: linear-gradient(180deg, var(--brand-strong), #74df45);
+    color: #0a120b; font: 700 15px/1 inherit; letter-spacing: 0.01em;
+    box-shadow: 0 10px 30px rgba(135, 234, 92, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    transition: transform 0.15s ease, box-shadow 0.2s, filter 0.2s;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .primary:hover { filter: brightness(1.05); box-shadow: 0 14px 38px rgba(135, 234, 92, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.4); }
+  .primary:active { transform: translateY(1px); }
+  .primary.loading { pointer-events: none; color: transparent; }
+  .primary.loading::after {
+    content: ""; width: 19px; height: 19px; border-radius: 50%;
+    border: 2.5px solid rgba(10, 18, 11, 0.3); border-top-color: #0a120b;
+    animation: spin 0.7s linear infinite; position: absolute;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .divider { display: flex; align-items: center; gap: 14px; margin: 20px 0 14px; color: var(--faint); font-size: 12px; }
+  .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: rgba(255, 255, 255, 0.1); }
+
+  .social { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .ghost {
+    height: 44px; border-radius: 12px; cursor: pointer;
+    background: rgba(255, 255, 255, 0.045); border: 1px solid rgba(255, 255, 255, 0.13);
+    color: var(--ink); font: 600 13px/1 inherit;
+    display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  }
+  .ghost:hover { background: rgba(255, 255, 255, 0.09); border-color: rgba(255, 255, 255, 0.22); }
+  .ghost:active { transform: translateY(1px); }
+  .ghost.loading { pointer-events: none; color: transparent; }
+  .ghost.loading svg { opacity: 0.25; }
+  .ghost.loading::after {
+    content: ""; width: 16px; height: 16px; border-radius: 50%; position: absolute;
+    border: 2px solid rgba(255, 255, 255, 0.25); border-top-color: #fff; animation: spin 0.7s linear infinite;
+  }
+
+  .switch { margin-top: 20px; text-align: center; font-size: 13px; color: var(--muted); }
+  .switch .linkish { font-size: 13px; color: var(--brand); }
+  .switch .linkish:hover { color: var(--brand-strong); text-decoration: underline; }
+
+  .legal { margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.07); text-align: center; font-size: 11px; color: var(--faint); }
+  .legal .sep { margin: 0 7px; }
+
+  /* 成功态 */
+  .done { display: none; text-align: center; padding: 14px 0 6px; }
+  .done.show { display: block; animation: grow 0.45s ease both; }
+  .check-ring { width: 84px; height: 84px; margin: 4px auto 18px; position: relative; }
+  .check-ring .halo { position: absolute; inset: -14px; border-radius: 50%; background: radial-gradient(closest-side, rgba(135, 234, 92, 0.28), transparent 72%); animation: pulse 2.2s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.14); opacity: 0.45; } }
+  .check-ring svg { position: relative; }
+  .check-ring .ring { stroke-dasharray: 214; stroke-dashoffset: 214; animation: draw 0.7s 0.1s ease-out forwards; }
+  .check-ring .tick { stroke-dasharray: 44; stroke-dashoffset: 44; animation: draw 0.4s 0.65s ease-out forwards; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  .done h2 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+  .done p { font-size: 13.5px; color: var(--muted); margin-bottom: 24px; line-height: 1.6; }
+  .done .primary { position: relative; text-decoration: none; }
+  .done .back { margin-top: 14px; }
+
+  .toast {
+    position: fixed; top: 20px; left: 50%; transform: translate(-50%, -12px); z-index: 20;
+    background: rgba(15, 23, 36, 0.9); border: 1px solid rgba(255, 255, 255, 0.14);
+    color: var(--ink); font-size: 13px; padding: 10px 18px; border-radius: 999px;
+    backdrop-filter: blur(16px); box-shadow: 0 12px 34px rgba(0, 0, 0, 0.45);
+    opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  .visually-hidden { position: absolute; width: 1px; height: 1px; clip: rect(0 0 0 0); overflow: hidden; white-space: nowrap; }
+
+  @media (max-width: 920px) {
+    .artifact.far { display: none; }
+    .cursor { display: none; }
+  }
+  @media (max-width: 640px) {
+    body { overflow: auto; }
+    .artifact { display: none; }
+    .aurora.a2 { display: none; }
+    .card { padding: 28px 22px 18px; border-radius: 20px; }
+    h1 { font-size: 21px; }
+    .social { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="scene" aria-hidden="true">
+    <div class="aurora a1"></div>
+    <div class="aurora a2"></div>
+    <div class="aurora a3"></div>
+    <div class="stars" id="stars"></div>
+    <div class="artifacts" id="artifacts">
+      <div class="artifact mini-ui" style="--r:-4deg; --d:9s; left:9vw; top:20vh;">
+        <div class="dots"><i></i><i></i><i></i></div>
+        <div class="bar"></div>
+        <div class="bar s"></div>
+        <div class="cta"></div>
+      </div>
+      <div class="artifact swatches" style="--r:5deg; --d:11s; --delay:-4s; right:11vw; top:16vh;">
+        <i style="background:#87ea5c"></i>
+        <i style="background:#5cd6ea"></i>
+        <i style="background:#b18cff"></i>
+        <i style="background:#ffb35c"></i>
+      </div>
+      <div class="artifact poster" style="--r:3.5deg; --d:10s; --delay:-2s; left:16vw; bottom:14vh;">
+        <div class="circle"></div>
+        <div class="ln"></div>
+        <div class="ln s"></div>
+      </div>
+      <div class="artifact bezier" style="--r:-6deg; --d:12s; --delay:-6s; right:14vw; bottom:20vh;">
+        <svg width="170" height="112" viewBox="0 0 170 112" fill="none">
+          <path d="M12 92 C 52 10, 118 102, 158 20" stroke="#87ea5c" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M12 92 L 52 10 M158 20 L 118 102" stroke="rgba(255,255,255,.22)" stroke-width="1" stroke-dasharray="4 5"/>
+          <circle cx="52" cy="10" r="3.5" fill="#0f1724" stroke="#87ea5c" stroke-width="1.6"/>
+          <circle cx="118" cy="102" r="3.5" fill="#0f1724" stroke="#87ea5c" stroke-width="1.6"/>
+          <circle cx="12" cy="92" r="3" fill="#5cd6ea"/>
+          <circle cx="158" cy="20" r="3" fill="#5cd6ea"/>
+        </svg>
+      </div>
+      <div class="artifact mobile far" style="--r:7deg; --d:13s; --delay:-8s; right:24vw; top:38vh;">
+        <div class="notch"></div><div class="hero"></div><div class="ln"></div><div class="ln s"></div>
+      </div>
+      <div class="artifact frame" style="--r:-3deg; --d:9.5s; --delay:-3s; left:22vw; top:8vh;">
+        <span class="size">375 × 812</span>
+        <div class="ghost-ui"></div>
+      </div>
+      <div class="artifact type-card far" style="--r:4deg; --d:14s; --delay:-10s; left:6vw; top:52vh;">
+        <div class="aa">Aa</div>
+        <div class="baseline"></div>
+        <div class="chip">Satoshi · 700</div>
+      </div>
+    </div>
+    <div class="cursor cur-a" style="--c:#ffb35c">
+      <svg width="17" height="23" viewBox="0 0 17 23"><path d="M1.5 1.2 14.8 12l-5.9.7 3 6.4-2.7 1.3-3-6.5-4.7 3.9z" fill="#fff" stroke="#141d2b" stroke-width="1.3" stroke-linejoin="round"/></svg>
+      <span class="tag" data-i18n-tag="deer">小鹿</span>
+    </div>
+    <div class="cursor cur-b" style="--c:#6ec8ff">
+      <svg width="17" height="23" viewBox="0 0 17 23"><path d="M1.5 1.2 14.8 12l-5.9.7 3 6.4-2.7 1.3-3-6.5-4.7 3.9z" fill="#fff" stroke="#141d2b" stroke-width="1.3" stroke-linejoin="round"/></svg>
+      <span class="tag">Marco</span>
+    </div>
+    <div class="cursor cur-c" style="--c:#87ea5c">
+      <svg width="17" height="23" viewBox="0 0 17 23"><path d="M1.5 1.2 14.8 12l-5.9.7 3 6.4-2.7 1.3-3-6.5-4.7 3.9z" fill="#fff" stroke="#141d2b" stroke-width="1.3" stroke-linejoin="round"/></svg>
+      <span class="tag" data-i18n-tag="buddy">Buddy ✦</span>
+    </div>
+  </div>
+
+  <div class="lang" role="group" aria-label="Language">
+    <button type="button" id="lang-zh" class="on">中</button>
+    <button type="button" id="lang-en">EN</button>
+  </div>
+
+  <main class="stage">
+    <section class="card" id="card" aria-labelledby="headline">
+      <div id="authView">
+        <div class="brand-row">
+          <span class="mark" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 48 48"><path d="M17 14v20m0-20h6.5a10 10 0 0 1 0 20H17" stroke="#0a120b" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="35" cy="14.5" r="3.6" fill="#0a120b"/></svg>
+          </span>
+          <div class="wordmark">Design<b>Buddy</b><small data-i18n="tagline">AI DESIGN STUDIO</small></div>
+        </div>
+
+        <h1 id="headline" data-i18n="headline">让灵感即刻成形</h1>
+        <p class="sub" data-i18n-html="sub">和你的 <b>AI 设计搭子</b> 一起，从一句话到高保真。</p>
+
+        <form id="form" novalidate>
+          <div class="field" id="f-name" hidden>
+            <label class="visually-hidden" for="name" data-i18n="labelName">你的名字</label>
+            <span class="lead"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c1.6-3.4 4.3-5 7.5-5s5.9 1.6 7.5 5"/></svg></span>
+            <input id="name" name="name" type="text" autocomplete="name" data-i18n-ph="phName" placeholder="你的名字" />
+            <p class="err" role="alert" data-i18n="errName">请填写你的名字</p>
+          </div>
+
+          <div class="field" id="f-role" hidden>
+            <span class="role-label" data-i18n="labelRole">选择角色</span>
+            <div class="role-cards" id="roleCards">
+              <button type="button" class="rcard sel" data-role="designer">
+                <span class="ric" style="background:linear-gradient(140deg,#d9f2c9,#8fd483)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5a8.5 8.5 0 0 0 0 17c1.4 0 2-.9 2-1.8 0-1.6-1.8-1.9-1.8-3.2 0-1 .8-1.7 2-1.7h1.3a5 5 0 0 0 5-5C20.5 6 16.7 3.5 12 3.5z"/><circle cx="7.5" cy="10.5" r="1" fill="currentColor" stroke="none"/><circle cx="10.5" cy="7" r="1" fill="currentColor" stroke="none"/><circle cx="14.5" cy="7" r="1" fill="currentColor" stroke="none"/></svg></span>
+                <span><b data-i18n="roleDesigner">设计师</b><small data-i18n="roleDesignerD">视觉与原型创作</small></span>
+              </button>
+              <button type="button" class="rcard" data-role="pm">
+                <span class="ric" style="background:linear-gradient(140deg,#d6ecff,#7cb8ee)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4.5" width="14" height="16.5" rx="2"/><path d="M9 4.5V3.2c0-.9.7-1.7 1.6-1.7h2.8c.9 0 1.6.8 1.6 1.7v1.3"/><path d="m9 13 2 2 4-4.5"/></svg></span>
+                <span><b data-i18n="rolePM">产品经理</b><small data-i18n="rolePMD">需求与团队评审</small></span>
+              </button>
+              <button type="button" class="rcard" data-role="dev">
+                <span class="ric" style="background:linear-gradient(140deg,#eadcff,#b39aec)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m9 7.5-4.5 4.5L9 16.5M15 7.5l4.5 4.5L15 16.5"/></svg></span>
+                <span><b data-i18n="roleDev">开发者</b><small data-i18n="roleDevD">代码与交付</small></span>
+              </button>
+              <button type="button" class="rcard" data-role="admin">
+                <span class="ric" style="background:linear-gradient(140deg,#ffe6cf,#f5b183)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 20h16"/><path d="M7 16v-4M12 16V7M17 16v-6"/></svg></span>
+                <span><b data-i18n="roleAdmin">管理者</b><small data-i18n="roleAdminD">团队与用量</small></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="field" id="f-email">
+            <label class="visually-hidden" for="email" data-i18n="labelEmail">邮箱</label>
+            <span class="lead"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="3"/><path d="m4.5 7.5 7.5 6 7.5-6"/></svg></span>
+            <input id="email" name="email" type="email" autocomplete="email" inputmode="email" data-i18n-ph="phEmail" placeholder="邮箱" />
+            <p class="err" role="alert" data-i18n="errEmail">请输入有效的邮箱地址</p>
+          </div>
+
+          <div class="field" id="f-pass">
+            <label class="visually-hidden" for="password" data-i18n="labelPass">密码</label>
+            <span class="lead"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="3"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg></span>
+            <input id="password" name="password" type="password" autocomplete="current-password" data-i18n-ph="phPass" placeholder="密码" />
+            <span class="tail">
+              <button type="button" id="eye" aria-label="show password">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </span>
+            <p class="err" role="alert" data-i18n="errPass">密码至少 6 位</p>
+          </div>
+
+          <div class="row-aux">
+            <label><input type="checkbox" id="remember" checked /><span data-i18n="remember">记住我</span></label>
+            <button type="button" class="linkish" id="forgot" data-i18n="forgot">忘记密码？</button>
+          </div>
+
+          <button class="primary" type="submit" id="submit"><span data-i18n="signin">登录</span></button>
+        </form>
+
+        <div class="divider"><span data-i18n="or">或</span></div>
+
+        <div class="social">
+          <button type="button" class="ghost" id="google">
+            <svg width="17" height="17" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A8.99 8.99 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.72a5.4 5.4 0 0 1 0-3.44V4.95H.96a9 9 0 0 0 0 8.1l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.59C13.46.9 11.42 0 9 0A8.99 8.99 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
+            <span data-i18n="google">使用 Google 继续</span>
+          </button>
+          <button type="button" class="ghost" id="github">
+            <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.99 8.99 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+            <span data-i18n="github">使用 GitHub 继续</span>
+          </button>
+        </div>
+
+        <p class="switch">
+          <span id="switchText" data-i18n="noAccount">还没有账号？</span>
+          <button type="button" class="linkish" id="switchMode" data-i18n="createLink">创建账号</button>
+        </p>
+
+        <footer class="legal">
+          <span>© 2026 DesignBuddy</span><span class="sep">·</span>
+          <button type="button" class="linkish" style="font-size:11px" data-i18n="terms">服务条款</button><span class="sep">·</span>
+          <button type="button" class="linkish" style="font-size:11px" data-i18n="privacy">隐私政策</button>
+        </footer>
+      </div>
+
+      <div class="done" id="doneView">
+        <div class="check-ring">
+          <span class="halo"></span>
+          <svg width="84" height="84" viewBox="0 0 84 84" fill="none">
+            <circle class="ring" cx="42" cy="42" r="34" stroke="#87ea5c" stroke-width="3.5" stroke-linecap="round" transform="rotate(-90 42 42)"/>
+            <path class="tick" d="M27 43.5 37.5 54 57 32" stroke="#87ea5c" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2 id="doneTitle" data-i18n="doneTitleIn">欢迎回来！</h2>
+        <p data-i18n="doneSub">你的设计工作台正在打开…</p>
+        <a class="primary" href="/" id="enterBtn" data-i18n="enter">进入工作台</a>
+        <div class="back"><button type="button" class="linkish" id="back" data-i18n="otherAccount">使用其他账号</button></div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status"></div>
+
+<script>
+(function () {
+  "use strict";
+  var I18N = {
+    zh: {
+      title: "DesignBuddy · 登录",
+      tagline: "AI DESIGN STUDIO",
+      headline: "让灵感即刻成形",
+      sub: "和你的 <b>AI 设计搭子</b> 一起，从一句话到高保真。",
+      labelName: "你的名字", phName: "你的名字", errName: "请填写你的名字",
+      labelRole: "选择角色",
+      roleDesigner: "设计师", roleDesignerD: "视觉与原型创作",
+      rolePM: "产品经理", rolePMD: "需求与团队评审",
+      roleDev: "开发者", roleDevD: "代码与交付",
+      roleAdmin: "管理者", roleAdminD: "团队与用量",
+      labelEmail: "邮箱", phEmail: "邮箱", errEmail: "请输入有效的邮箱地址",
+      labelPass: "密码", phPass: "密码（至少 6 位）", errPass: "密码至少 6 位",
+      remember: "记住我", forgot: "忘记密码？",
+      signin: "登录", signup: "创建账号", or: "或",
+      google: "使用 Google 继续", github: "使用 GitHub 继续",
+      noAccount: "还没有账号？", createLink: "创建账号",
+      hasAccount: "已有账号？", signinLink: "直接登录",
+      terms: "服务条款", privacy: "隐私政策",
+      doneTitleIn: "欢迎回来！", doneTitleUp: "搭子已就位！",
+      doneSub: "你的设计工作台正在打开…",
+      enter: "进入工作台", otherAccount: "使用其他账号",
+      toastDemo: "设计演示页 · 该流程未接入后端",
+      tagDeer: "小鹿", tagBuddy: "Buddy ✦"
+    },
+    en: {
+      title: "DesignBuddy · Sign in",
+      tagline: "AI DESIGN STUDIO",
+      headline: "Design at the speed of thought",
+      sub: "With your <b>AI design buddy</b> — from one prompt to hi-fi.",
+      labelName: "Your name", phName: "Your name", errName: "Please enter your name",
+      labelRole: "Choose your role",
+      roleDesigner: "Designer", roleDesignerD: "Visuals & prototypes",
+      rolePM: "Product Manager", rolePMD: "Briefs & team reviews",
+      roleDev: "Developer", roleDevD: "Code & delivery",
+      roleAdmin: "Admin", roleAdminD: "Team & usage",
+      labelEmail: "Email", phEmail: "Email", errEmail: "Please enter a valid email address",
+      labelPass: "Password", phPass: "Password (min. 6 characters)", errPass: "Password must be at least 6 characters",
+      remember: "Remember me", forgot: "Forgot password?",
+      signin: "Sign in", signup: "Create account", or: "or",
+      google: "Continue with Google", github: "Continue with GitHub",
+      noAccount: "No account yet?", createLink: "Create one",
+      hasAccount: "Already have an account?", signinLink: "Sign in",
+      terms: "Terms", privacy: "Privacy",
+      doneTitleIn: "Welcome back!", doneTitleUp: "Your buddy is ready!",
+      doneSub: "Opening your design studio…",
+      enter: "Enter the studio", otherAccount: "Use another account",
+      toastDemo: "Design demo · this flow is not wired to a backend",
+      tagDeer: "Lu", tagBuddy: "Buddy ✦"
+    }
+  };
+  var state = {
+    mode: "signin",
+    role: "designer",
+    lang: (function () {
+      try {
+        var saved = localStorage.getItem("db-lang");
+        if (saved === "zh" || saved === "en") return saved;
+      } catch (e) {}
+      return (navigator.language || "en").toLowerCase().indexOf("zh") === 0 ? "zh" : "en";
+    })()
+  };
+  var $ = function (id) { return document.getElementById(id); };
+
+  function t(key) { return I18N[state.lang][key]; }
+
+  function applyLang() {
+    var d = I18N[state.lang];
+    document.documentElement.lang = state.lang === "zh" ? "zh-CN" : "en";
+    document.title = d.title;
+    var nodes = document.querySelectorAll("[data-i18n]");
+    for (var i = 0; i < nodes.length; i++) nodes[i].textContent = d[nodes[i].getAttribute("data-i18n")];
+    var htmls = document.querySelectorAll("[data-i18n-html]");
+    for (var j = 0; j < htmls.length; j++) htmls[j].innerHTML = d[htmls[j].getAttribute("data-i18n-html")];
+    var phs = document.querySelectorAll("[data-i18n-ph]");
+    for (var k = 0; k < phs.length; k++) phs[k].setAttribute("placeholder", d[phs[k].getAttribute("data-i18n-ph")]);
+    var tags = document.querySelectorAll("[data-i18n-tag]");
+    for (var m = 0; m < tags.length; m++) {
+      var key = tags[m].getAttribute("data-i18n-tag");
+      tags[m].textContent = key === "deer" ? d.tagDeer : d.tagBuddy;
+    }
+    $("lang-zh").classList.toggle("on", state.lang === "zh");
+    $("lang-en").classList.toggle("on", state.lang === "en");
+    applyMode();
+    try { localStorage.setItem("db-lang", state.lang); } catch (e) {}
+  }
+
+  function applyMode() {
+    var signup = state.mode === "signup";
+    $("f-name").hidden = !signup;
+    $("f-role").hidden = !signup;
+    if (signup) { $("f-name").classList.add("grow"); $("f-role").classList.add("grow"); $("name").setAttribute("autocomplete", "name"); }
+    $("password").setAttribute("autocomplete", signup ? "new-password" : "current-password");
+    $("submit").lastElementChild.textContent = signup ? t("signup") : t("signin");
+    $("switchText").textContent = signup ? t("hasAccount") : t("noAccount");
+    $("switchMode").textContent = signup ? t("signinLink") : t("createLink");
+  }
+
+  function setBad(field, bad) { $(field).classList.toggle("bad", bad); }
+
+  function toast(msg) {
+    var el = $("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { el.classList.remove("show"); }, 2600);
+  }
+
+  function showDone() {
+    $("doneTitle").textContent = state.mode === "signup" ? t("doneTitleUp") : t("doneTitleIn");
+    var card = $("card");
+    card.classList.add("leaving");
+    setTimeout(function () {
+      $("authView").style.display = "none";
+      card.classList.remove("leaving");
+      $("doneView").classList.add("show");
+    }, 260);
+  }
+
+  function fakeAsync(btn, cb) {
+    btn.classList.add("loading");
+    btn.setAttribute("aria-busy", "true");
+    setTimeout(function () {
+      btn.classList.remove("loading");
+      btn.removeAttribute("aria-busy");
+      cb();
+    }, 950);
+  }
+
+  $("form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var ok = true;
+    var email = $("email").value.trim();
+    var pass = $("password").value;
+    if (state.mode === "signup" && !$("name").value.trim()) { setBad("f-name", true); ok = false; } else setBad("f-name", false);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setBad("f-email", true); ok = false; } else setBad("f-email", false);
+    if (pass.length < 6) { setBad("f-pass", true); ok = false; } else setBad("f-pass", false);
+    if (!ok) return;
+    if (state.mode === "signup") persistRole();
+    fakeAsync($("submit"), showDone);
+  });
+
+  ["name", "email", "password"].forEach(function (id) {
+    $(id).addEventListener("input", function () {
+      this.closest(".field").classList.remove("bad");
+    });
+  });
+
+  /* 注册角色选择 */
+  var rcards = document.querySelectorAll("#roleCards .rcard");
+  for (var ri = 0; ri < rcards.length; ri++) {
+    (function (btn) {
+      btn.addEventListener("click", function () {
+        state.role = btn.getAttribute("data-role");
+        for (var k = 0; k < rcards.length; k++) rcards[k].classList.toggle("sel", rcards[k] === btn);
+      });
+    })(rcards[ri]);
+  }
+  function persistRole() {
+    try { localStorage.setItem("db-role", state.role); } catch (e) {}
+    document.cookie = "db-role=" + state.role + "; path=/; max-age=31536000; SameSite=Lax";
+    document.cookie = "db-role=" + state.role + "; path=/; max-age=31536000; SameSite=None; Secure; Partitioned";
+    // 同步到 daemon 数据库（同源 /api 经 Next 代理）
+    try {
+      fetch("/api/db/role", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: state.role }),
+        keepalive: true
+      }).catch(function () {});
+    } catch (e) {}
+  }
+
+  $("eye").addEventListener("click", function () {
+    var p = $("password");
+    p.type = p.type === "password" ? "text" : "password";
+  });
+
+  $("switchMode").addEventListener("click", function () {
+    state.mode = state.mode === "signin" ? "signup" : "signin";
+    applyMode();
+  });
+
+  $("forgot").addEventListener("click", function () { toast(t("toastDemo")); });
+  document.querySelector(".legal").addEventListener("click", function (e) {
+    if (e.target.classList.contains("linkish")) toast(t("toastDemo"));
+  });
+
+  $("google").addEventListener("click", function () { fakeAsync($("google"), showDone); });
+  $("github").addEventListener("click", function () { fakeAsync($("github"), showDone); });
+
+  $("enterBtn").addEventListener("click", function (e) {
+    e.preventDefault();
+    // Cookie writes: in a third-party preview iframe only a Partitioned
+    // (CHIPS) cookie survives; in a normal top-level tab the Lax one does.
+    // Write both so either context keeps the session across refreshes.
+    document.cookie = "db-auth=demo; path=/; max-age=604800; SameSite=None; Secure; Partitioned";
+    document.cookie = "db-auth=demo; path=/; max-age=604800; SameSite=Lax";
+    // New signups land on the role picker (public/role.html);
+    // returning users go straight to the studio (public/studio.html).
+    window.location.href = state.mode === "signup" ? "/role.html" : "/studio.html";
+  });
+
+  $("back").addEventListener("click", function () {
+    document.cookie = "db-auth=; path=/; max-age=0; SameSite=Lax";
+    $("doneView").classList.remove("show");
+    $("authView").style.display = "";
+    $("card").classList.add("grow");
+    setTimeout(function () { $("card").classList.remove("grow"); }, 400);
+  });
+
+  $("lang-zh").addEventListener("click", function () { state.lang = "zh"; applyLang(); });
+  $("lang-en").addEventListener("click", function () { state.lang = "en"; applyLang(); });
+
+  /* 星点 */
+  (function stars() {
+    var box = $("stars"), frag = document.createDocumentFragment();
+    var n = Math.min(70, Math.round(window.innerWidth / 22));
+    for (var i = 0; i < n; i++) {
+      var s = document.createElement("i");
+      s.className = "star";
+      var size = Math.random() < 0.82 ? 1 : 2;
+      s.style.cssText =
+        "left:" + (Math.random() * 100).toFixed(2) + "%;top:" + (Math.random() * 100).toFixed(2) + "%" +
+        ";width:" + size + "px;height:" + size + "px" +
+        ";--d:" + (2.4 + Math.random() * 4).toFixed(2) + "s;--delay:" + (-Math.random() * 6).toFixed(2) + "s";
+      frag.appendChild(s);
+    }
+    box.appendChild(frag);
+  })();
+
+  /* 视差（指针设备 + 未开启减少动效时） */
+  var mq = function (q) { return window.matchMedia ? window.matchMedia(q).matches : false; };
+  (function parallax() {
+    var reduce = mq("(prefers-reduced-motion: reduce)");
+    if (reduce || mq("(pointer: coarse)")) return;
+    var tx = 0, ty = 0, cx = 0, cy = 0;
+    window.addEventListener("pointermove", function (e) {
+      tx = e.clientX / window.innerWidth - 0.5;
+      ty = e.clientY / window.innerHeight - 0.5;
+    });
+    (function loop() {
+      cx += (tx - cx) * 0.045;
+      cy += (ty - cy) * 0.045;
+      $("artifacts").style.transform = "translate(" + (cx * 20).toFixed(1) + "px," + (cy * 14).toFixed(1) + "px)";
+      var auroras = document.querySelectorAll(".aurora");
+      for (var i = 0; i < auroras.length; i++) {
+        auroras[i].style.marginLeft = (cx * -26).toFixed(1) + "px";
+        auroras[i].style.marginTop = (cy * -18).toFixed(1) + "px";
+      }
+      requestAnimationFrame(loop);
+    })();
+  })();
+
+  applyLang();
+})();
+</script>
+</body>
+</html>

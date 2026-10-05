@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#f7f3ec" />
+<title>DesignBuddy · 选择角色</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect x='2' y='2' width='44' height='44' rx='12' fill='%2387ea5c'/%3E%3Cpath d='M17 14v20m0-20h6.5a10 10 0 0 1 0 20H17' stroke='%230a120b' stroke-width='5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='34.5' cy='14.5' r='3.5' fill='%230a120b'/%3E%3C/svg%3E" />
+<style>
+  :root {
+    --paper: #f7f3ec;
+    --ink: #20261e;
+    --muted: rgba(32, 38, 30, 0.62);
+    --faint: rgba(32, 38, 30, 0.4);
+    --lime: #87ea5c;
+    --lime-deep: #3f9c22;
+    --lime-wash: rgba(135, 234, 92, 0.22);
+    --teal-wash: rgba(92, 214, 234, 0.2);
+    --amber-wash: rgba(255, 190, 110, 0.18);
+    --glass: rgba(255, 255, 255, 0.58);
+    --glass-border: rgba(255, 255, 255, 0.85);
+    --hairline: rgba(32, 38, 30, 0.09);
+    --card-shadow: 0 24px 60px rgba(58, 70, 52, 0.13), 0 4px 14px rgba(58, 70, 52, 0.06);
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+      "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    background: var(--paper); color: var(--ink);
+    overflow-x: hidden; -webkit-font-smoothing: antialiased;
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0; z-index: 40; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+    opacity: 0.05;
+  }
+  .scene { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+  .wash { position: absolute; border-radius: 50%; filter: blur(90px); }
+  .w1 { width: 56vw; height: 48vh; left: -10vw; top: -14vh; background: radial-gradient(closest-side, var(--lime-wash), transparent 72%); animation: da 30s ease-in-out infinite alternate; }
+  .w2 { width: 48vw; height: 42vh; right: -8vw; top: 4vh; background: radial-gradient(closest-side, var(--teal-wash), transparent 72%); animation: db 36s ease-in-out infinite alternate; }
+  .w3 { width: 44vw; height: 36vh; left: 32vw; bottom: -14vh; background: radial-gradient(closest-side, var(--amber-wash), transparent 70%); animation: dc 42s ease-in-out infinite alternate; }
+  @keyframes da { to { transform: translate3d(8vw, 6vh, 0) rotate(6deg); } }
+  @keyframes db { to { transform: translate3d(-7vw, 8vh, 0) rotate(-7deg); } }
+  @keyframes dc { to { transform: translate3d(5vw, -5vh, 0); } }
+  .spark { position: absolute; border-radius: 50%; background: #5a7a48; animation: blink var(--d) ease-in-out var(--delay) infinite; }
+  @keyframes blink { 0%, 100% { opacity: 0.06; } 50% { opacity: 0.4; } }
+
+  .stage { position: relative; z-index: 2; min-height: 100dvh; display: grid; place-items: center; padding: 32px 20px; }
+  .lang { position: fixed; top: 18px; right: 18px; z-index: 5; display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--glass); border: 1px solid var(--glass-border); backdrop-filter: blur(14px); }
+  .lang button { appearance: none; border: 0; background: transparent; color: var(--muted); font: 600 12px/1 inherit; padding: 6px 12px; border-radius: 999px; cursor: pointer; transition: 0.2s; }
+  .lang button.on { background: var(--ink); color: #f4f8f0; }
+
+  .card {
+    width: min(620px, 100%); border-radius: 26px; padding: 34px 34px 26px;
+    background: var(--glass); border: 1px solid var(--glass-border);
+    backdrop-filter: blur(28px) saturate(150%); -webkit-backdrop-filter: blur(28px) saturate(150%);
+    box-shadow: var(--card-shadow);
+    animation: rise 0.7s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+  }
+  @keyframes rise { from { opacity: 0; transform: translateY(26px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  .mark { width: 52px; height: 52px; border-radius: 15px; background: linear-gradient(145deg, #a4f584, #6fdb49); box-shadow: 0 8px 24px rgba(110, 200, 70, 0.4), inset 0 1px 0 rgba(255,255,255,0.5); display: grid; place-items: center; margin-bottom: 14px; }
+  .wordmark { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+  .wordmark b { color: var(--lime-deep); }
+  h1 { font-size: clamp(24px, 4vw, 30px); font-weight: 800; letter-spacing: -0.02em; margin-top: 18px; }
+  .sub { margin: 8px 0 24px; font-size: 14px; color: var(--muted); }
+
+  .roles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
+  .rcard {
+    position: relative; display: flex; align-items: center; gap: 12px; text-align: left;
+    padding: 15px 16px; border-radius: 18px; cursor: pointer;
+    background: rgba(255, 255, 255, 0.5); border: 1.5px solid var(--hairline);
+    transition: border-color 0.2s, background 0.2s, transform 0.18s, box-shadow 0.2s;
+    font: inherit; color: var(--ink);
+  }
+  .rcard:hover { transform: translateY(-2px); background: rgba(255, 255, 255, 0.75); }
+  .rcard.on {
+    border-color: var(--lime); background: #fff;
+    box-shadow: 0 12px 30px rgba(110, 200, 70, 0.22), 0 0 0 4px rgba(135, 234, 92, 0.16);
+  }
+  .rcard .ic { width: 42px; height: 42px; border-radius: 13px; flex: none; display: grid; place-items: center; color: #2c3a28; }
+  .rcard b { font-size: 15px; display: block; }
+  .rcard small { font-size: 11.5px; color: var(--muted); display: block; margin-top: 3px; line-height: 1.4; }
+  .rcard .ck {
+    position: absolute; top: 10px; right: 10px; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--lime); color: #0a120b; display: grid; place-items: center;
+    opacity: 0; transform: scale(0.5); transition: 0.2s;
+  }
+  .rcard.on .ck { opacity: 1; transform: scale(1); }
+
+  .go {
+    margin-top: 24px; width: 100%; height: 50px; border: 0; border-radius: 14px; cursor: pointer;
+    background: linear-gradient(180deg, #9cf07a, #74df45); color: #0a120b;
+    font: 700 15px/1 inherit; box-shadow: 0 12px 32px rgba(135, 234, 92, 0.4), inset 0 1px 0 rgba(255,255,255,0.45);
+    transition: filter 0.2s, transform 0.15s;
+  }
+  .go:hover { filter: brightness(1.05); }
+  .go:active { transform: translateY(1px); }
+  .note { margin-top: 14px; font-size: 12px; color: var(--faint); }
+
+  @media (max-width: 560px) {
+    .roles { grid-template-columns: 1fr; }
+    .card { padding: 26px 22px 20px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="scene" aria-hidden="true">
+    <div class="wash w1"></div>
+    <div class="wash w2"></div>
+    <div class="wash w3"></div>
+    <div id="sparks"></div>
+  </div>
+  <div class="lang" role="group" aria-label="Language">
+    <button type="button" id="lang-zh" class="on">中</button>
+    <button type="button" id="lang-en">EN</button>
+  </div>
+
+  <main class="stage">
+    <section class="card">
+      <span class="mark" aria-hidden="true">
+        <svg width="30" height="30" viewBox="0 0 48 48"><path d="M17 14v20m0-20h6.5a10 10 0 0 1 0 20H17" stroke="#0a120b" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="35" cy="14.5" r="3.6" fill="#0a120b"/></svg>
+      </span>
+      <div class="wordmark">Design<b>Buddy</b></div>
+      <h1 data-i18n="title">你是谁？</h1>
+      <p class="sub" data-i18n="sub">选择你的角色，我们会为你定制工作台。</p>
+      <div class="roles" id="roles"></div>
+      <button type="button" class="go" id="go" data-i18n="go">开始工作</button>
+      <p class="note" data-i18n="note">稍后在左侧栏也可以随时切换角色。</p>
+    </section>
+  </main>
+
+<script>
+(function () {
+  "use strict";
+  var I18N = {
+    zh: {
+      title: "你是谁？", sub: "选择你的角色，我们会为你定制工作台。",
+      go: "开始工作", note: "稍后在左侧栏也可以随时切换角色。",
+      roles: [
+        { id: "designer", name: "设计师", desc: "从灵感到高保真", grad: "#d9f2c9,#8fd483" },
+        { id: "pm", name: "产品经理", desc: "写 Brief、评审制品", grad: "#d6ecff,#7cb8ee" },
+        { id: "dev", name: "开发者", desc: "查看代码、导出交付", grad: "#eadcff,#b39aec" },
+        { id: "admin", name: "管理者", desc: "团队用量、成员审批", grad: "#ffe6cf,#f5b183" }
+      ]
+    },
+    en: {
+      title: "Who are you?", sub: "Pick your role — we'll tailor the studio for you.",
+      go: "Start working", note: "You can switch roles anytime from the left rail.",
+      roles: [
+        { id: "designer", name: "Designer", desc: "From idea to hi-fi", grad: "#d9f2c9,#8fd483" },
+        { id: "pm", name: "Product Manager", desc: "Briefs & artifact reviews", grad: "#d6ecff,#7cb8ee" },
+        { id: "dev", name: "Developer", desc: "Code view & exports", grad: "#eadcff,#b39aec" },
+        { id: "admin", name: "Admin", desc: "Usage & approvals", grad: "#ffe6cf,#f5b183" }
+      ]
+    }
+  };
+  var ICONS = {
+    designer: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.4 0 2.1-.9 2.1-1.9 0-1.4-1.2-1.7-1.2-2.9 0-1 .8-1.7 1.9-1.7h1.5a4.3 4.3 0 0 0 4.3-4.3c0-3.6-3.7-6.2-8.6-6.2z"/><circle cx="8.2" cy="10.2" r="1.15" fill="currentColor" stroke="none"/><circle cx="12" cy="7.6" r="1.15" fill="currentColor" stroke="none"/><circle cx="7.2" cy="14.6" r="1.15" fill="currentColor" stroke="none"/></svg>',
+    pm: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4.5" width="14" height="16" rx="2.5"/><path d="M9 4.5V4A1.5 1.5 0 0 1 10.5 2.5h3A1.5 1.5 0 0 1 15 4v.5"/><path d="M9 10.5h6M9 14h6M9 17.5h4"/></svg>',
+    dev: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8.5 8-4 4 4 4M15.5 8l4 4-4 4M13 5l-2 14"/></svg>',
+    admin: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 20v-6.5M10 20V5.5M15 20v-9.5M20 20V9"/><path d="M3.5 20h17" stroke-width="1.8"/></svg>'
+  };
+  var CHECK = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 12.5 5 5L19.5 7"/></svg>';
+  var state = {
+    lang: (function () {
+      try { var s = localStorage.getItem("db-lang"); if (s === "zh" || s === "en") return s; } catch (e) {}
+      return (navigator.language || "en").toLowerCase().indexOf("zh") === 0 ? "zh" : "en";
+    })(),
+    role: (function () {
+      try {
+        var r = localStorage.getItem("db-role");
+        if (["designer", "pm", "dev", "admin"].indexOf(r) >= 0) return r;
+      } catch (e) {}
+      var m = /(?:^|;\s*)db-role=([^;]+)/.exec(document.cookie || "");
+      if (m && ["designer", "pm", "dev", "admin"].indexOf(m[1]) >= 0) return m[1];
+      return "designer";
+    })()
+  };
+  function t(k) { return I18N[state.lang][k]; }
+  function saveRole() {
+    try { localStorage.setItem("db-role", state.role); } catch (e) {}
+    document.cookie = "db-role=" + state.role + "; path=/; max-age=604800; SameSite=Lax";
+    document.cookie = "db-role=" + state.role + "; path=/; max-age=604800; SameSite=None; Secure; Partitioned";
+    // 同步到 daemon 数据库（同源 /api 经 Next 代理；跳转前尽力送达）
+    try {
+      fetch("/api/db/role", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: state.role }),
+        keepalive: true
+      }).catch(function () {});
+    } catch (e) {}
+  }
+  function render() {
+    document.documentElement.lang = state.lang === "zh" ? "zh-CN" : "en";
+    var nodes = document.querySelectorAll("[data-i18n]");
+    for (var i = 0; i < nodes.length; i++) nodes[i].textContent = t(nodes[i].getAttribute("data-i18n"));
+    $("lang-zh").classList.toggle("on", state.lang === "zh");
+    $("lang-en").classList.toggle("on", state.lang === "en");
+    var box = $("roles");
+    box.innerHTML = "";
+    t("roles").forEach(function (r) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "rcard" + (r.id === state.role ? " on" : "");
+      var g = r.grad.split(",");
+      b.innerHTML =
+        '<span class="ic" style="background:linear-gradient(140deg,' + g[0] + "," + g[1] + ')">' + ICONS[r.id] + "</span>" +
+        "<span><b>" + r.name + "</b><small>" + r.desc + "</small></span>" +
+        '<span class="ck">' + CHECK + "</span>";
+      b.addEventListener("click", function () { state.role = r.id; render(); });
+      box.appendChild(b);
+    });
+  }
+  function $(id) { return document.getElementById(id); }
+  $("lang-zh").addEventListener("click", function () { state.lang = "zh"; render(); try { localStorage.setItem("db-lang", state.lang); } catch (e) {} });
+  $("lang-en").addEventListener("click", function () { state.lang = "en"; render(); try { localStorage.setItem("db-lang", state.lang); } catch (e) {} });
+  $("go").addEventListener("click", function () {
+    saveRole();
+    window.location.href = "/studio.html";
+  });
+  (function sparks() {
+    var box = $("sparks"), frag = document.createDocumentFragment();
+    for (var i = 0; i < 40; i++) {
+      var s = document.createElement("i");
+      s.className = "spark";
+      var sz = Math.random() < 0.8 ? 2 : 3;
+      s.style.cssText =
+        "left:" + (Math.random() * 100).toFixed(2) + "%;top:" + (Math.random() * 100).toFixed(2) + "%" +
+        ";width:" + sz + "px;height:" + sz + "px" +
+        ";--d:" + (3 + Math.random() * 4).toFixed(2) + "s;--delay:" + (-Math.random() * 7).toFixed(2) + "s";
+      frag.appendChild(s);
+    }
+    box.appendChild(frag);
+  })();
+  render();
+})();
+</script>
+</body>
+</html>

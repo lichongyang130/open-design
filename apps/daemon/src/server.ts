@@ -946,6 +946,7 @@ import { registerSocialShareRoutes } from './routes/social-share.js';
 import { registerOpenDesignPublicMetadataRoutes } from './routes/open-design-public-metadata.js';
 import { registerWhatsNewRoutes } from './routes/whats-new.js';
 import { registerMemoryRoutes } from './routes/memory.js';
+import { registerDesignBuddyRoutes } from './routes/designbuddy.js';
 import {
   createCollabPresenceCloudClient,
   registerCollabPresenceRoutes,
@@ -7827,6 +7828,10 @@ export async function startServer({
     paths: { RUNTIME_DATA_DIR, PROJECT_ROOT, PROJECTS_DIR },
     appConfig: { readAppConfig },
   });
+
+  // DesignBuddy demo layer (public/ login + role + studio pages): role
+  // preference, review queue, and real usage stats, all in app.sqlite.
+  registerDesignBuddyRoutes(app, { db });
 
   registerAutomationRoutes(app, {
     paths: { RUNTIME_DATA_DIR },
