@@ -1202,6 +1202,16 @@ export interface Dict {
   'entry.accountFeatureRequest': string;
   /** Account menu row that opens the workspace's billing console. */
   'entry.accountBilling': string;
+  'entry.accountCopyId': string;
+  'entry.accountCreditsBalance': string;
+  'entry.accountBuddyStation': string;
+  'entry.accountInvite': string;
+  'entry.accountGrowthPlan': string;
+  'entry.accountGrowthPlanHint': string;
+  'entry.accountMemoryEvolution': string;
+  'entry.accountAppearance': string;
+  'entry.accountAppearanceHint': string;
+  'entry.accountHelpFeedback': string;
   'entry.accountAddAccount': string;
   'entry.accountSignOut': string;
   // Sign-out confirmation dialog (recvqgMWpJZqhL) — shared by every logout

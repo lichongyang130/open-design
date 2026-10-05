@@ -6964,19 +6964,25 @@
 @media (prefers-reduced-motion: reduce) {
   .entry-nav-rail__account-menu > * { animation: none; }
 }
-/* Same width as the avatar trigger row: span the account container. */
+/* Keep the menu anchored to the account trigger but wider than the rail, like
+   the reference account panel; on narrow viewports its width is clamped to the
+   available screen. */
 .entry-nav-rail__account .entry-nav-rail__account-menu {
-  left: 0;
-  right: 0;
-  width: auto;
+  left: auto;
+  right: auto;
+  inset-inline-start: 0;
+  inset-inline-end: auto;
+  width: min(322px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
   min-width: 0;
   box-sizing: border-box;
-  /* EntryNavRail measures the room left inside the rail card and sets
-     `max-height` inline (a CSS length cannot name that height). Scroll the
-     overflow rather than letting the menu run past the card's top edge. */
+  /* EntryNavRail measures the room above the trigger and inside both the rail
+     panel and visible viewport. Keep the whole card in that space and scroll
+     its contents instead of letting the top edge be clipped. */
+  overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-gutter: stable;
+  scrollbar-gutter: auto;
 }
 /* Invisible hover bridge over the 4px float gap, so moving the pointer from
    the avatar row up into the menu never leaves the hover region.
@@ -7013,87 +7019,122 @@
   flex: 0 0 auto;
   background: var(--bg-elevated);
 }
-/* Avatar over the name (per product: 头像和名称上下结构) rather than beside it,
-   and the stack centred on the menu card it sits in (per product: 和外边的白色
-   的卡片居中对齐) rather than ragged left. A single column, so the name and the
-   email below it keep the full menu width instead of the ~34px-narrower track
-   the avatar used to reserve — the email is the long one and it stops
-   truncating as early. */
+/* The account ID is the first line in the reference menu, with a small copy
+   affordance at the far edge and a single hairline separating it from the
+   membership rows below. */
 .entry-nav-rail__account-head {
-  /* The identity block is its own tinted card inset in the menu (per product:
-     头像那个模块下边是一个灰色的底, Chrome's profile menu as the reference) —
-     the grey sits UNDER the avatar/name/email, and the rows below stay on the
-     menu's plain ground. Inset, so it reads as a card rather than a banner: it
-     sits inside the menu's 6px padding on every side, with a radius one step
-     down from the menu's 12 so the two corners nest.
-     #EDEDED per product (was #F7F7F7, which at 3 steps off the menu's own
-     #fafafa was too close to read as a separate surface). Through the token
-     rather than the literal: --bg-subtle IS #ededed in light and steps to
-     #494949 in dark, so the card stays a lighter block on the darker menu
-     there instead of shipping a near-white slab. */
-  background: var(--bg-subtle);
-  margin-bottom: 6px;
-  border-radius: var(--radius-md);
+  min-height: 44px;
+  margin: 0 4px 8px;
+  padding: 7px 6px 11px;
+  border-bottom: 1px solid var(--material-separator);
   display: flex;
-  flex-direction: column;
   align-items: center;
-  /* The rows BELOW this block stay left-aligned — they are icon + label lines,
-     and centring them would leave their glyphs on a ragged column. Only the
-     identity block centres. */
-  text-align: center;
-  gap: 2px;
-  /* Enough air around the stack that the fill reads as a card rather than a
-     highlight bar, no more: 16/18 was the tallest thing in the menu, and the
-     menu is bounded by the rail's height (OPEND-3153 — every row has to stay
-     on screen without scrolling in a regular window; OPEND-3141 owns the
-     larger redesign of this block). */
-  padding: 12px 12px 14px;
-  /* No dashed rule any more — the card's own fill is what separates the block
-     from the rows, and a hairline along the bottom edge of a filled card reads
-     as a seam in it. */
+  gap: 10px;
 }
-.entry-nav-rail__account-head-avatar {
-  /* Its own row now; the 6px separates it from the name under it (the flex
-     gap above carries the name→email 2px). */
-  margin-bottom: 6px;
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #87ea5c, #0d5400);
-  color: #fff;
+.entry-nav-rail__account-head-id {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-strong);
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.entry-nav-rail__account-copy {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  margin-inline-start: auto;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
   display: grid;
   place-items: center;
-  font-size: 14px;
-  font-weight: 700;
+  color: var(--text-soft);
+  background: transparent;
+  cursor: pointer;
 }
-.entry-nav-rail__account-head-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-strong);
-  max-width: 100%;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.entry-nav-rail__account-copy:hover { color: var(--text-strong); background: var(--vibrancy-fill-secondary); }
+.entry-nav-rail__account-plan {
+  min-height: 34px;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--text);
+  font-size: 13px;
 }
-.entry-nav-rail__account-head-email {
+.entry-nav-rail__account-plan > svg { color: var(--text-soft); flex: 0 0 19px; }
+.entry-nav-rail__account-plan-name { flex: 1 1 auto; min-width: 0; }
+.entry-nav-rail__account-plan-upgrade {
+  min-height: 24px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  color: var(--bg);
+  background: var(--text-strong);
+  font: inherit;
   font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.entry-nav-rail__account-plan-upgrade:hover { opacity: 0.88; }
+.entry-nav-rail__account-menu-row {
+  min-height: 35px;
+  height: 35px;
+  gap: 9px;
+  padding: 0 8px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+}
+.entry-nav-rail__account-shortcut {
+  margin-inline-start: auto;
+  padding: 0;
+  border: 0;
   color: var(--text-muted);
-  max-width: 100%;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+}
+.entry-nav-rail__account-menu .entry-nav-rail__menu-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-inline-start: auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.entry-nav-rail__account-menu .entry-nav-rail__account-credit-row .entry-nav-rail__menu-meta {
+  gap: 5px;
+  flex: 0 0 auto;
+}
+.entry-nav-rail__account-menu .entry-nav-rail__menu-meta {
+  max-width: min(140px, 45vw);
+  flex: 0 1 auto;
+}
+.entry-nav-rail__account-menu .entry-nav-rail__menu-meta svg {
+  color: var(--text-faint);
+  flex: 0 0 auto;
 }
 .entry-nav-rail__account-menu .entry-nav-rail__menu-item {
   height: 34px;
   gap: 9px;
   padding: 0 8px;
-  /* 13px + nowrap: the longest item (GitHub help) must hold one line at the
-     trigger-row width the menu now matches. */
   font-size: 13px;
   white-space: nowrap;
   border-radius: var(--radius-md);
+}
+.entry-nav-rail__account-menu .entry-nav-rail__menu-item.entry-nav-rail__account-menu-row {
+  height: 35px;
+  min-height: 35px;
+  gap: 9px;
+  padding: 0 8px;
 }
 .entry-nav-rail__menu-meta {
   margin-left: auto;

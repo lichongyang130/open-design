@@ -7,9 +7,8 @@ import planCardStyles from './PersonalPlanCard.module.css';
 // (`GET /api/workspace/context`, shared via `useWorkspaceContext`), never the
 // demo's hardcoded 琼羽 / Refly / 800 placeholders:
 //
-//   • Account section (top) — real `context.displayName` + an account menu
-//     (settings / GitHub help / feature request / socials / sign out — theme and
-//     language live in 设置·通用 only, matching #5517).
+//   • Account dock (bottom) — real `context.displayName` plus an upward-opening
+//     account menu for identity, plan, credits, invites, settings, help and sign-out.
 //     No header block when there is no cloud identity (context === null) —
 //     the rail starts at the search box; expand/collapse lives in the
 //     workspace tabs bar's pinned Home toggle.
@@ -87,6 +86,7 @@ import { MessageCenter } from './MessageCenter';
 import type { EntrySettingsSection } from './EntrySettingsMenu';
 import type { Project } from '../types';
 import { isRtlLocale, useI18n } from '../i18n';
+import { isMacPlatform } from '../utils/platform';
 import { useDismissOnOutsideInteraction } from '../hooks/useDismissOnOutsideInteraction';
 import {
   beginWorkspaceScopedRead,
@@ -132,17 +132,11 @@ import {
 import { WorkbenchCampaignBadge } from './WorkbenchCampaignBadge';
 import { workspaceChromeAccountActionsHost } from './workspaceChromeActions';
 
-/** Gap the account menu keeps from the rail card's top edge — the same inset
- *  its left/right edges already hold (10px card padding + the card's 1px
- *  stroke). */
+/** Clearance kept above the upward-opening account menu inside the rail
+ *  panel and the visible viewport. */
 const ACCOUNT_MENU_CARD_INSET = 11;
-/** Never squeeze the menu below this; a shorter rail scrolls the page chrome
- *  instead of collapsing the menu into a sliver. */
-const ACCOUNT_MENU_MIN_HEIGHT = 200;
-
 const REPO_URL = 'https://github.com/nexu-io/open-design';
 const GITHUB_HELP_URL = `${REPO_URL}/issues/new`;
-const GITHUB_FEATURE_URL = `${REPO_URL}/pulls`;
 const DISCORD_URL = 'https://discord.gg/mHAjSMV6gz';
 const X_URL = 'https://x.com/OpenDesignHQ';
 const CONTACT_EMAIL_URL = 'mailto:support@open-design.ai';
@@ -1047,6 +1041,7 @@ interface EntryTopRightClusterProps {
    */
   accountHost?: HTMLElement | null;
   onOpenSettings?: (section?: EntrySettingsSection) => void;
+  onInvite?: () => void;
   onSignedOut?: () => void | Promise<void>;
   priorityAnnouncementActive?: boolean;
   onPriorityAnnouncementPendingChange?: (pending: boolean) => void;
@@ -1080,6 +1075,7 @@ export function EntryTopRightCluster({
   updaterSlot,
   accountHost,
   onOpenSettings,
+  onInvite,
   onSignedOut,
   priorityAnnouncementActive,
   onPriorityAnnouncementPendingChange,
@@ -1141,6 +1137,14 @@ export function EntryTopRightCluster({
   // reader's locale — `formatVelaBalanceUsd`'s bare `$` is kept for every
   // other surface that already sits next to something naming the currency.
   const walletBalanceLabel = formatWalletBalance(balanceUsd);
+  // The billing summary is the actual account-level points count. The other
+  // balance field (`balanceUsd`) is money, not credits, so never display it
+  // beneath the menu's 积分 label.
+  const rawAccountCredits = billingResponse?.summary?.totalAvailableCredits;
+  const accountCreditsAmount =
+    typeof rawAccountCredits === 'number' && Number.isFinite(rawAccountCredits)
+      ? new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(rawAccountCredits)
+      : null;
   // #5517: wordmark badge inside the menu's billing card. It names the plan
   // FAMILY, so a TEAM workspace draws the one `team` wordmark at every tier —
   // free through max — while the personal ladder keeps its per-tier glyph
@@ -1223,25 +1227,32 @@ export function EntryTopRightCluster({
   // confirmation dialog; the real logout chain runs on explicit confirm.
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const githubStars = useGithubStars();
-  // Signed-in account email for the menu head (#5517 shows it under the
-  // display name). The workspace context carries no email, so lazily read the
-  // vela login-status projection the first time the menu opens — never on
-  // mount, so shells without an open menu spend zero requests on it.
+  // The workspace context carries neither the account ID nor email. Read the
+  // live identity only when the account menu opens, and refresh it on every
+  // open so switching Vela accounts cannot leave a stale identifier behind.
+  const [accountId, setAccountId] = useState<string | null>(null);
   const [accountEmail, setAccountEmail] = useState<string | null>(null);
+  const [accountIdCopied, setAccountIdCopied] = useState(false);
   useEffect(() => {
     if (!accountOpen) return;
-    // Refetch on EVERY open (the previous value stays visible while the read
-    // is in flight, so there is no flicker). A fetch-once cache here went
-    // stale the moment the user switched vela accounts mid-session — the menu
-    // kept showing the first account's email (#102).
+    // Do not briefly show a previous account if the user switched identities
+    // while the menu was closed and this refresh has not returned yet.
+    setAccountId(null);
+    setAccountEmail(null);
+    setAccountIdCopied(false);
     let cancelled = false;
     void fetchVelaLoginStatus().then((status) => {
-      if (!cancelled) setAccountEmail(status?.user?.email?.trim() || '');
+      if (cancelled) return;
+      setAccountId(status?.user?.id?.trim() || '');
+      setAccountEmail(status?.user?.email?.trim() || '');
+      setAccountIdCopied(false);
     });
     return () => {
       cancelled = true;
     };
   }, [accountOpen]);
+  const accountIdentifier = accountId?.trim() || accountEmail?.trim() || '';
+  const accountHeadLabel = accountIdentifier || accountName;
   // Hover-open for the account menu (#5517 interaction). The popover floats
   // above the trigger, so closing is delayed just long enough for the pointer
   // to cross the gap; re-entering the container (menu included — it's a DOM
@@ -1281,12 +1292,9 @@ export function EntryTopRightCluster({
     return () => document.removeEventListener('pointerover', onDocPointerOver, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accountOpen]);
-  // The menu grows with the account (identity card, rows), and it is anchored
-  // to the rail card's BOTTOM — so on a short window a tall menu ran flush
-  // past the card's top edge instead of keeping the 11px inset it holds on its
-  // left and right. Bound it to the card with that same inset and let the
-  // overflow scroll. Measured, not guessed: the card's height is the rail
-  // column's, which no CSS length here can name.
+  // The menu opens above the bottom-rail trigger. Cap it to the smaller of the
+  // rail panel and the visible viewport, then let the menu itself scroll; a
+  // minimum height here would force the card back off-screen on short windows.
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
   const [accountMenuMaxHeight, setAccountMenuMaxHeight] = useState<number | null>(null);
   useLayoutEffect(() => {
@@ -1298,15 +1306,37 @@ export function EntryTopRightCluster({
       const menu = accountMenuRef.current;
       const card = menu?.closest('.entry-nav-rail__panel');
       if (!menu || !card) return;
-      // The menu's bottom edge is pinned to the trigger, so it stays put while
-      // the height changes — measuring it once per layout is stable.
-      const available =
-        menu.getBoundingClientRect().bottom - card.getBoundingClientRect().top - ACCOUNT_MENU_CARD_INSET;
-      setAccountMenuMaxHeight(Math.max(ACCOUNT_MENU_MIN_HEIGHT, Math.round(available)));
+
+      const menuRect = menu.getBoundingClientRect();
+      const cardRect = card.getBoundingClientRect();
+      const viewport = window.visualViewport;
+      const viewportOffsetTop = viewport?.offsetTop ?? 0;
+      const viewportHeight =
+        viewport && Number.isFinite(viewport.height) && viewport.height > 0
+          ? viewport.height
+          : window.innerHeight;
+      const viewportTop = viewportOffsetTop + ACCOUNT_MENU_CARD_INSET;
+      const viewportBottom = viewportOffsetTop + viewportHeight;
+      const availableTop = Math.max(cardRect.top + ACCOUNT_MENU_CARD_INSET, viewportTop);
+      const availableBottom = Math.min(menuRect.bottom, viewportBottom);
+      const nextMaxHeight = Math.max(0, Math.floor(availableBottom - availableTop));
+      setAccountMenuMaxHeight((current) => current === nextMaxHeight ? current : nextMaxHeight);
     };
+
     measure();
+    const card = accountMenuRef.current?.closest('.entry-nav-rail__panel');
+    const resizeObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    if (card) resizeObserver?.observe(card);
+    const viewport = window.visualViewport;
     window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
+    viewport?.addEventListener('resize', measure);
+    viewport?.addEventListener('scroll', measure);
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener('resize', measure);
+      viewport?.removeEventListener('resize', measure);
+      viewport?.removeEventListener('scroll', measure);
+    };
   }, [accountOpen]);
   // Hover-out does not cover anyone who never hovers: a touch user, or a click
   // that lands somewhere else without the pointer crossing this container.
@@ -1415,6 +1445,16 @@ export function EntryTopRightCluster({
         : {}),
       ...workspaceDimensions,
     });
+  }
+
+  async function copyAccountIdentifier() {
+    if (!accountIdentifier || typeof navigator === 'undefined' || !navigator.clipboard?.writeText) return;
+    try {
+      await navigator.clipboard.writeText(accountIdentifier);
+      setAccountIdCopied(true);
+    } catch {
+      setAccountIdCopied(false);
+    }
   }
 
   if (typeof document === 'undefined' || !chromeActionsHost) return null;
@@ -1746,6 +1786,7 @@ export function EntryTopRightCluster({
                     <div
                       ref={accountMenuRef}
                       className="entry-nav-rail__account-menu"
+                      data-testid="entry-account-menu"
                       role="menu"
                       style={
                         accountMenuMaxHeight === null
@@ -1754,80 +1795,229 @@ export function EntryTopRightCluster({
                       }
                     >
                       <div className="entry-nav-rail__account-head">
-                        <span className="entry-nav-rail__account-head-avatar" aria-hidden>{accountInitial}</span>
-                        <span className="entry-nav-rail__account-head-name">{accountName}</span>
-                        {accountEmail ? (
-                          <span className="entry-nav-rail__account-head-email">{accountEmail}</span>
+                        <span
+                          className="entry-nav-rail__account-head-id"
+                          data-testid="entry-account-identifier"
+                        >
+                          {accountHeadLabel}
+                        </span>
+                        {accountIdentifier ? (
+                          <button
+                            type="button"
+                            className="entry-nav-rail__account-copy"
+                            role="menuitem"
+                            aria-label={accountIdCopied ? t('handoff.copied') : t('entry.accountCopyId')}
+                            title={accountIdCopied ? t('handoff.copied') : t('entry.accountCopyId')}
+                            data-testid="entry-account-copy-id"
+                            onClick={() => void copyAccountIdentifier()}
+                          >
+                            <Icon name={accountIdCopied ? 'check' : 'copy'} size={14} />
+                          </button>
                         ) : null}
                       </div>
-                      {/* 账单 leads the menu: it is the only account-level
-                          destination left here, and it opens the membership
-                          surface in B's console — the same place the 额度 row
-                          and the 升级 pill land, so plan, seats and balance
-                          are never split across two destinations. Gated on
-                          the URL: without a console to reach, the row would
-                          be a dead click. */}
+                      <div className="entry-nav-rail__account-plan" role="none">
+                        <Icon name="users" size={15} />
+                        <span className="entry-nav-rail__account-plan-name">{tierLabel}</span>
+                        {canUpgrade ? (
+                          <button
+                            type="button"
+                            className="entry-nav-rail__account-plan-upgrade"
+                            role="menuitem"
+                            data-testid="entry-account-plan-upgrade"
+                            onClick={() => {
+                              trackAccountAction('upgrade');
+                              closeAccountMenu();
+                              openBillingUpgrade();
+                            }}
+                          >
+                            {t('entry.creditsUpgrade')}
+                          </button>
+                        ) : canManageTopTierBilling ? (
+                          <button
+                            type="button"
+                            className="entry-nav-rail__account-plan-upgrade"
+                            role="menuitem"
+                            data-testid="entry-account-plan-manage"
+                            onClick={() => {
+                              trackAccountAction('credits');
+                              closeAccountMenu();
+                              if (billingManageUrl) {
+                                window.open(billingManageUrl, '_blank', 'noopener,noreferrer');
+                              }
+                            }}
+                          >
+                            {t('entry.creditsManage')}
+                          </button>
+                        ) : null}
+                      </div>
                       {accountBillingUrl ? (
                         <a
-                          className="entry-nav-rail__menu-item"
+                          className="entry-nav-rail__menu-item entry-nav-rail__account-credit-row"
                           role="menuitem"
                           href={accountBillingUrl}
                           {...externalLinkProps}
-                          data-testid="entry-account-billing"
+                          data-testid="entry-account-credits"
+                          onClick={() => {
+                            trackAccountAction('credits');
+                            closeAccountMenu();
+                          }}
+                        >
+                          <Icon name="sparkles" size={15} />
+                          <span>{t('entry.accountCreditsBalance')}</span>
+                          <span className="entry-nav-rail__menu-meta">
+                            <Icon name="refresh" size={13} />
+                            <bdi>{accountCreditsAmount ?? '—'}</bdi>
+                            <Icon name="chevron-right" size={14} />
+                          </span>
+                        </a>
+                      ) : null}
+                      {walletRechargeUrl ? (
+                        <a
+                          className="entry-nav-rail__menu-item entry-nav-rail__account-menu-row"
+                          role="menuitem"
+                          href={walletRechargeUrl}
+                          {...externalLinkProps}
+                          data-testid="entry-account-buddy-station"
+                          onClick={() => {
+                            trackAccountAction('credits');
+                            closeAccountMenu();
+                          }}
+                        >
+                          <Icon name="magic" size={15} />
+                          <span>{t('entry.accountBuddyStation')}</span>
+                          <Icon className="entry-nav-rail__account-row-chevron" name="chevron-right" size={14} />
+                        </a>
+                      ) : null}
+                      {onInvite ? (
+                        <button
+                          type="button"
+                          className="entry-nav-rail__menu-item entry-nav-rail__account-menu-row"
+                          role="menuitem"
+                          data-testid="entry-account-invite"
+                          onClick={() => {
+                            trackEntryNavigationClick(analytics.track, {
+                              page_name: page,
+                              area: 'entry_nav',
+                              element: 'invite_teammates',
+                              target: 'account_menu',
+                              entry_from: 'sidebar',
+                              ...workspaceDimensions,
+                            });
+                            closeAccountMenu();
+                            onInvite();
+                          }}
+                        >
+                          <Icon name="users" size={15} />
+                          <span>{t('entry.accountInvite')}</span>
+                          <Icon className="entry-nav-rail__account-row-chevron" name="chevron-right" size={14} />
+                        </button>
+                      ) : null}
+                      {accountBillingUrl ? (
+                        <a
+                          className="entry-nav-rail__menu-item entry-nav-rail__account-menu-row"
+                          role="menuitem"
+                          href={accountBillingUrl}
+                          {...externalLinkProps}
+                          data-testid="entry-account-growth-plan"
                           onClick={() => {
                             trackAccountAction('billing');
                             closeAccountMenu();
                           }}
                         >
-                          <RemixIcon name="wallet-line" size={15} /> {t('entry.accountBilling')}
+                          <Icon name="star" size={15} />
+                          <span>{t('entry.accountGrowthPlan')}</span>
+                          <span className="entry-nav-rail__menu-meta">{t('entry.accountGrowthPlanHint')}</span>
+                          <Icon className="entry-nav-rail__account-row-chevron" name="chevron-right" size={14} />
                         </a>
                       ) : null}
-                      {/* #5517's account menu went 设置 → GitHub 帮助 → 功能建议 →
-                          社交行, with no theme row, no language submenu, and no
-                          divider in between. Both of those controls still have
-                          a home in 设置·通用 (theme segmented control + language
-                          picker), so dropping the duplicates here costs no
-                          capability. 设置 itself left too: it is a rail item
-                          under 插件 on this branch, and repeating it here would
-                          be the same dialog twice in one column. */}
+                      <div className="entry-nav-rail__menu-divider" />
+                      <button
+                        type="button"
+                        className="entry-nav-rail__menu-item entry-nav-rail__account-menu-row"
+                        role="menuitem"
+                        data-testid="entry-account-settings"
+                        onClick={() => {
+                          trackAccountAction('settings');
+                          closeAccountMenu();
+                          onOpenSettings?.();
+                        }}
+                      >
+                        <Icon name="settings" size={15} />
+                        <span>{t('entry.accountSettings')}</span>
+                        <kbd className="entry-nav-rail__account-shortcut">{isMacPlatform() ? '⌘,' : 'Ctrl+,'}</kbd>
+                      </button>
+                      <button
+                        type="button"
+                        className="entry-nav-rail__menu-item entry-nav-rail__account-menu-row"
+                        role="menuitem"
+                        data-testid="entry-account-memory"
+                        onClick={() => {
+                          trackAccountAction('settings');
+                          closeAccountMenu();
+                          onOpenSettings?.('memory');
+                        }}
+                      >
+                        <Icon name="lightbulb" size={15} />
+                        <span>{t('entry.accountMemoryEvolution')}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="entry-nav-rail__menu-item entry-nav-rail__account-menu-row"
+                        role="menuitem"
+                        data-testid="entry-account-appearance"
+                        onClick={() => {
+                          trackAccountAction('settings');
+                          closeAccountMenu();
+                          onOpenSettings?.('appearance');
+                        }}
+                      >
+                        <Icon name="palette" size={15} />
+                        <span>{t('entry.accountAppearance')}</span>
+                        <span className="entry-nav-rail__menu-meta">{t('entry.accountAppearanceHint')}</span>
+                        <Icon className="entry-nav-rail__account-row-chevron" name="chevron-right" size={14} />
+                      </button>
                       <a
-                        className="entry-nav-rail__menu-item"
+                        className="entry-nav-rail__menu-item entry-nav-rail__account-menu-row"
                         role="menuitem"
                         href={GITHUB_HELP_URL}
                         {...externalLinkProps}
+                        data-testid="entry-account-help-feedback"
                         onClick={() => {
                           trackAccountAction('github_help');
                           closeAccountMenu();
                         }}
                       >
-                        <Icon name="comment" size={15} /> {t('entry.accountGithubHelp')}
+                        <Icon name="help-circle" size={15} />
+                        <span>{t('entry.accountHelpFeedback')}</span>
                       </a>
-                      <a
-                        className="entry-nav-rail__menu-item"
+                      <button
+                        type="button"
+                        className="entry-nav-rail__menu-item entry-nav-rail__account-menu-row"
                         role="menuitem"
-                        href={GITHUB_FEATURE_URL}
-                        {...externalLinkProps}
+                        data-testid="entry-account-check-updates"
                         onClick={() => {
-                          trackAccountAction('feature_request');
+                          trackAccountAction('settings');
                           closeAccountMenu();
+                          onOpenSettings?.('about');
                         }}
                       >
-                        <Icon name="sparkles" size={15} /> {t('entry.accountFeatureRequest')}
-                      </a>
+                        <Icon name="upload" size={15} />
+                        <span>{t('settings.updateCheck')}</span>
+                      </button>
                       <div className="entry-nav-rail__menu-divider" />
                       <button
                         type="button"
-                        className="entry-nav-rail__menu-item"
+                        className="entry-nav-rail__menu-item entry-nav-rail__account-menu-row"
                         role="menuitem"
                         onClick={() => {
                           trackAccountAction('logout');
                           closeAccountMenu();
-                          // recvqgMWpJZqhL: never sign out on this click alone —
-                          // arm the confirmation dialog and let it run the logout.
+                          // Never sign out on this click alone; ask for confirmation.
                           setConfirmSignOut(true);
                         }}
                       >
-                        <Icon name="log-out" size={15} /> {t('entry.accountSignOut')}
+                        <Icon name="log-out" size={15} />
+                        <span>{t('entry.accountSignOut')}</span>
                       </button>
                     </div>
                   </>
@@ -2099,6 +2289,7 @@ export function EntryNavRail({
   billingResponse,
   balanceUsd,
   onOpenSettings,
+  onInvite,
   onSignedOut,
   updaterSlot,
   footerNotice,
@@ -2867,6 +3058,7 @@ export function EntryNavRail({
         updaterSlot={updaterSlot}
         accountHost={accountHost}
         onOpenSettings={onOpenSettings}
+        onInvite={onInvite}
         onSignedOut={onSignedOut}
         priorityAnnouncementActive={priorityAnnouncementActive}
         onPriorityAnnouncementPendingChange={onPriorityAnnouncementPendingChange}

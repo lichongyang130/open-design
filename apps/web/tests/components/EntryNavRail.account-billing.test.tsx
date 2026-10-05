@@ -1,14 +1,13 @@
 // @vitest-environment jsdom
 //
-// The account menu's 账单 row: the one entry point from the identity menu to the
-// membership surface (plan, seats, balance) in B's console.
+// The account menu's real credits-balance row, linked to the same workspace
+// dashboard used for billing management.
 //
-// It resolves its destination in two steps, and both matter. A context that
-// carries `workspaceSettingsUrl` wins, because that URL already holds the
-// deep-link param pinning the console to THIS workspace. A context without one
-// — a local runtime hands out exactly that — falls back to the workspace-scoped
-// dashboard built from the workspace id alone, so the row can never silently
-// disappear from the menu because of a field the backend did not fill in.
+// A context that carries `workspaceSettingsUrl` wins, because that URL already
+// holds the deep-link param pinning the console to THIS workspace. A context
+// without one — a local runtime hands out exactly that — falls back to the
+// workspace-scoped dashboard built from the workspace id alone, so the row can
+// never silently disappear because of a field the backend did not fill in.
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { WorkspaceCollabContext } from '@open-design/contracts';
@@ -53,7 +52,7 @@ function renderRail(ctx: WorkspaceCollabContext) {
     </I18nProvider>,
   );
   fireEvent.click(screen.getByTestId('entry-nav-account'));
-  return screen.getByTestId('entry-account-billing') as HTMLAnchorElement;
+  return screen.getByTestId('entry-account-credits') as HTMLAnchorElement;
 }
 
 beforeEach(() => {
@@ -69,13 +68,13 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
 });
 
-describe('account menu 账单 row', () => {
+describe('account menu credits row', () => {
   it("targets the context's own console when it carries a settings URL", () => {
     const row = renderRail(context({
       workspaceSettingsUrl: 'https://web.example.com/console/settings?workspaceId=ws-team',
     }));
 
-    expect(row.textContent).toContain('账单');
+    expect(row.textContent).toContain('积分余额');
     // `settings` is swapped for `dashboard` in place, so the workspace deep-link
     // param the context supplied survives.
     expect(row.href).toBe('https://web.example.com/console/dashboard?workspaceId=ws-team');
@@ -93,12 +92,12 @@ describe('account menu 账单 row', () => {
     expect(url.searchParams.get('workspaceId')).toBe('ws-team');
   });
 
-  it('reports its own analytics element rather than reusing the 额度 row', () => {
+  it('tracks the credits row with its own account-menu analytics element', () => {
     fireEvent.click(renderRail(context()));
 
     expect(analytics.track).toHaveBeenCalledWith(
       'ui_click',
-      expect.objectContaining({ area: 'account_menu', element: 'billing' }),
+      expect.objectContaining({ area: 'account_menu', element: 'credits' }),
       undefined,
     );
   });

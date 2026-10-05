@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
-import type { WorkspaceCollabContext } from '@open-design/contracts';
+import type { WorkspaceBillingResponse, WorkspaceCollabContext } from '@open-design/contracts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { EntryNavRail, resetWorkspaceDirectoryCache } from '../../src/components/EntryNavRail';
+import type { EntrySettingsSection } from '../../src/components/EntrySettingsMenu';
 import { I18nProvider } from '../../src/i18n';
 import { WORKSPACE_CHROME_ACCOUNT_ACTIONS_ID } from '../../src/components/workspaceChromeActions';
 
@@ -24,7 +25,32 @@ function teamContext(): WorkspaceCollabContext {
   } as unknown as WorkspaceCollabContext;
 }
 
-function renderRail() {
+const accountBillingResponse: WorkspaceBillingResponse = {
+  summary: {
+    workspaceId: null,
+    membershipTier: 'team_plus',
+    totalAvailableCredits: 3892,
+    subscriptionCredits: 3000,
+    rechargeCredits: 892,
+    balanceUsd: '12.34',
+    subscriptionStatus: 'active',
+    availableActions: [],
+    workspaceBalance: null,
+  },
+  workspaceBalance: {
+    workspaceId: 'ws-team',
+    workspaceMemberId: 'wm-1',
+    balanceUsd: '12.34',
+    billingScopeVersion: 2,
+    expiresAt: null,
+    updatedAt: null,
+  },
+};
+
+function renderRail(options: {
+  onInvite?: () => void;
+  onOpenSettings?: (section?: EntrySettingsSection) => void;
+} = {}) {
   return render(
     <I18nProvider initial="zh-CN">
       <EntryNavRail
@@ -34,6 +60,8 @@ function renderRail() {
         open
         context={teamContext()}
         billing={null}
+        billingResponse={accountBillingResponse}
+        {...options}
       />
     </I18nProvider>,
   );
@@ -47,7 +75,12 @@ function stubFetch() {
       if (url.includes('/messages?')) {
         return Response.json({ messages: [], nextCursor: null, unreadCount: 0 });
       }
-      if (url.includes('/status')) return Response.json({ loggedIn: false });
+      if (url.includes('/status')) {
+        return Response.json({
+          loggedIn: true,
+          user: { id: '19932101651', email: 'leaf@example.com' },
+        });
+      }
       return Response.json({ items: [] });
     }),
   );
@@ -161,30 +194,103 @@ describe('EntryNavRail account menu interaction state', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('keeps selecting a menu item as an explicit close action', () => {
-    const onOpenSettings = vi.fn();
-    render(
-      <I18nProvider initial="zh-CN">
-        <EntryNavRail
-          view="home"
-          onViewChange={() => {}}
-          onNewProject={() => {}}
-          onOpenSettings={onOpenSettings}
-          open
-          context={teamContext()}
-          billing={null}
-        />
-      </I18nProvider>,
-    );
+  it('renders the account menu rows shown in the reference design', async () => {
+    renderRail({ onInvite: vi.fn(), onOpenSettings: vi.fn() });
     const trigger = screen.getByTestId('entry-nav-account');
     fireEvent.mouseEnter(trigger);
-    fireEvent.click(trigger);
 
-    // 设置 left the menu for the rail (it sits under 插件); 账单 is the menu's
-    // first row now, and it is a plain outbound link.
-    fireEvent.click(screen.getByRole('menuitem', { name: /账单/ }));
+    await act(async () => {});
 
-    expect(onOpenSettings).not.toHaveBeenCalled();
+    expect(screen.getByText('19932101651')).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: '复制账号 ID' })).toBeInTheDocument();
+    expect(screen.getByTestId('entry-account-credits')).toHaveTextContent('3,892');
+    expect(screen.getByTestId('entry-account-credits')).not.toHaveTextContent('$12.34');
+    expect(screen.getByTestId('entry-account-menu')).not.toHaveTextContent('650');
+    expect(screen.getByTestId('entry-account-growth-plan')).toHaveAttribute(
+      'href',
+      expect.stringContaining('/cloud/dashboard'),
+    );
+    for (const label of [
+      '积分余额',
+      'Buddy加油站',
+      '邀请成员',
+      '成长计划',
+      '连登抽取 Buddy 周边',
+      '设置',
+      '记忆与进化',
+      '外观',
+      '外观上新',
+      '帮助与反馈',
+      '检查更新',
+      '退出登录',
+    ]) {
+      expect(screen.getAllByText(label).length).toBeGreaterThan(0);
+    }
+  });
+
+  it('uses the invite callback and a settings deep link from the account menu', () => {
+    const onInvite = vi.fn();
+    const onOpenSettings = vi.fn();
+    renderRail({ onInvite, onOpenSettings });
+    const trigger = screen.getByTestId('entry-nav-account');
+    fireEvent.mouseEnter(trigger);
+
+    fireEvent.click(screen.getByRole('menuitem', { name: /记忆与进化/ }));
+    expect(onOpenSettings).toHaveBeenCalledWith('memory');
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.mouseEnter(trigger);
+    fireEvent.click(screen.getByRole('menuitem', { name: /邀请成员/ }));
+    expect(onInvite).toHaveBeenCalledOnce();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('limits the menu to the space available above the account trigger', () => {
+    const originalInnerHeight = window.innerHeight;
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 480 });
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.classList.contains('entry-nav-rail__account-menu')) {
+        return {
+          x: 12, y: 280, width: 322, height: 200,
+          top: 280, right: 334, bottom: 472, left: 12,
+          toJSON: () => ({}),
+        } as DOMRect;
+      }
+      if (this.classList.contains('entry-nav-rail__panel')) {
+        return {
+          x: 12, y: 400, width: 236, height: 80,
+          top: 400, right: 248, bottom: 480, left: 12,
+          toJSON: () => ({}),
+        } as DOMRect;
+      }
+      return {
+        x: 0, y: 0, width: 0, height: 0,
+        top: 0, right: 0, bottom: 0, left: 0,
+        toJSON: () => ({}),
+      } as DOMRect;
+    });
+
+    try {
+      renderRail({ onInvite: vi.fn() });
+      fireEvent.mouseEnter(screen.getByTestId('entry-nav-account'));
+      expect(screen.getByTestId('entry-account-menu')).toHaveStyle({ maxHeight: '61px' });
+    } finally {
+      Object.defineProperty(window, 'innerHeight', { configurable: true, value: originalInnerHeight });
+    }
+  });
+
+  it('copies the live account identifier from the menu header', async () => {
+    const writeText = vi.fn(async () => {});
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+    renderRail({ onInvite: vi.fn() });
+    fireEvent.mouseEnter(screen.getByTestId('entry-nav-account'));
+    await act(async () => {});
+
+    fireEvent.click(screen.getByRole('menuitem', { name: '复制账号 ID' }));
+    await act(async () => {});
+    expect(writeText).toHaveBeenCalledWith('19932101651');
   });
 });
