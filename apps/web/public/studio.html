@@ -160,6 +160,17 @@
   .composer .row { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; position: relative; }
   .chip.sel { color: var(--lime-deep); border-color: rgba(135,234,92,0.55); background: rgba(135,234,92,0.12); }
   /* 资源选择器（技能 / 插件 / 设计系统） */
+  /* ── 创作器：@引用标签 + 工具行（参照真实产品输入框）── */
+  .cp-refs { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 10px; }
+  .cp-refs:empty { display: none; }
+  .cp-ref { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 4px 0 10px; border-radius: 8px; background: rgba(32,38,30,0.055); border: 1px solid rgba(32,38,30,0.12); font: 600 12px/1 inherit; color: var(--ink); }
+  .cp-ref .at { color: var(--lime-deep); font-weight: 800; }
+  .cp-ref b { max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 650; }
+  .cp-ref .rm { width: 18px; height: 18px; border-radius: 6px; border: 0; background: transparent; color: var(--faint); cursor: pointer; display: grid; place-items: center; }
+  .cp-ref .rm:hover { background: rgba(32,38,30,0.1); color: var(--ink); }
+  .plus-btn { flex: none; width: 34px; height: 34px; border-radius: 11px; border: 1px solid rgba(32,38,30,0.16); background: rgba(255,255,255,0.6); color: var(--ink); cursor: pointer; display: grid; place-items: center; transition: 0.2s; }
+  .plus-btn:hover { background: var(--ink); color: var(--lime); border-color: var(--ink); }
+
   /* ── 「+」添加弹层（三列：菜单 / 列表 / 详情）── */
   .plus-panel { position: fixed; width: 660px; max-width: calc(100vw - 32px); background: #ffffff; border: 1px solid rgba(32,38,30,0.16); border-radius: 16px; box-shadow: 0 24px 64px rgba(20,26,18,0.24), 0 4px 16px rgba(20,26,18,0.10); display: none; z-index: 300; overflow: hidden; }
   .plus-panel.show { display: grid; grid-template-columns: 168px minmax(200px, 1fr) 250px; animation: popUp 0.16s ease both; }
@@ -672,11 +683,19 @@
         </div>
 
         <section class="composer" aria-label="composer">
+          <div class="cp-refs" id="cpRefs"></div>
           <textarea id="prompt" rows="3"></textarea>
           <div class="row">
-            <button type="button" class="chip hot" id="chipPlus">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-              <span data-i18n="chipPlus">添加</span>
+            <button type="button" class="plus-btn" id="chipPlus" aria-label="add">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+            <button type="button" class="chip hot" id="chipMode">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M3.5 9.5h17M8 9.5V5"/></svg>
+              <span>网页原型</span>
+            </button>
+            <button type="button" class="chip" id="chipDir">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6.5a1.5 1.5 0 0 1 1.5-1.5h4l2 2.5h8a1.5 1.5 0 0 1 1.5 1.5v8.5a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5z"/></svg>
+              <span data-i18n="chipDir">工作目录</span>
             </button>
             <button type="button" class="chip" id="chipSkill">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/><circle cx="12" cy="12" r="3.2"/></svg>
@@ -935,6 +954,8 @@
       phPrompt: "描述你想生成的内容…",
       chipTemplate: "从模板开始", chipSkill: "技能", chipPlugin: "添加插件", chipDs: "设计系统",
       chipPlus: "添加",
+      chipDir: "工作目录", pkMode: "输出类型",
+      moAuto: "自动识别", moLanding: "网页原型", moSignup: "注册流程", moPoster: "海报", moDeck: "幻灯片", moStoryboard: "视频分镜",
       pmAttach: "附加文件", pmRef: "引用其它项目", pmLink: "关联本地代码", pmPlugin: "插件", pmFigma: "从Figma导入", pmConn: "连接器", pmMcp: "MCP",
       pmSearch: "搜索插件…", pmUse: "使用此插件", pmOfficial: "官方", pmSelHint: "点选左侧插件查看详情",
       pmRefTitle: "引用项目", pmRefHint: "引用后 Buddy 会参考该项目的风格继续创作",
@@ -1141,6 +1162,8 @@
       phPrompt: "Describe what you want to make…",
       chipTemplate: "Start from template", chipSkill: "Skills", chipPlugin: "Add plugin", chipDs: "Design system",
       chipPlus: "Add",
+      chipDir: "Working folder", pkMode: "Output type",
+      moAuto: "Auto", moLanding: "Web page", moSignup: "Signup flow", moPoster: "Poster", moDeck: "Slides", moStoryboard: "Storyboard",
       pmAttach: "Attach files", pmRef: "Reference project", pmLink: "Link local code", pmPlugin: "Plugins", pmFigma: "Import from Figma", pmConn: "Connectors", pmMcp: "MCP",
       pmSearch: "Search plugins…", pmUse: "Use this plugin", pmOfficial: "Official", pmSelHint: "Pick a plugin to see details",
       pmRefTitle: "Reference project", pmRefHint: "Buddy will follow that project's style",
@@ -1571,6 +1594,7 @@
     gen: { pid: null, name: "", events: [], status: "idle", runId: 0, timers: [], mod: {}, offline: false, welcome: false },
     bnFilter: 0,
     realBrain: null,
+    genMode: "landing",
     sysShown: 24,
     selDS: null,
     selSkill: null,
@@ -1880,7 +1904,7 @@
     if (!genAlive(runId)) return;
     genPersist("ai", { text: t(hadArtifact ? "genAiIntro2" : "genAiIntro1").replace("{name}", state.gen.name) });
     renderGen();
-    var kind = genKindOf(prompt + " " + state.gen.name);
+    var kind = state.genMode && state.genMode !== "auto" ? state.genMode : genKindOf(prompt + " " + state.gen.name);
     var mods = genModsOf(prompt);
     var isRefine = hadArtifact;
     var steps;
@@ -2259,6 +2283,8 @@
   /* chips：模板 → 模板视图；技能/插件/设计系统 → 资源选择器 */
   (function wireChips() {
     $("chipPlus").addEventListener("click", function (e) { e.stopPropagation(); openPlus(); });
+    $("chipMode").addEventListener("click", function (e) { e.stopPropagation(); openPicker("mode"); });
+    $("chipDir").addEventListener("click", function (e) { e.stopPropagation(); toast(t("toastDemo")); });
     $("chipSkill").addEventListener("click", function (e) { e.stopPropagation(); openPicker("skill"); });
     $("chipPlugin").addEventListener("click", function (e) { e.stopPropagation(); openPicker("plugin"); });
     $("chipDs").addEventListener("click", function (e) { e.stopPropagation(); openPicker("ds"); });
@@ -2270,7 +2296,22 @@
     pkCfg = null;
     $("pkPanel").classList.remove("show");
   }
+  var MODE_OPTS = [
+    { id: "auto", key: "moAuto" },
+    { id: "landing", key: "moLanding" },
+    { id: "signup", key: "moSignup" },
+    { id: "poster", key: "moPoster" },
+    { id: "deck", key: "moDeck" },
+    { id: "storyboard", key: "moStoryboard" }
+  ];
+  function modeLabel(id) {
+    var o = MODE_OPTS.filter(function (m) { return m.id === (id || "auto"); })[0] || MODE_OPTS[0];
+    return t(o.key);
+  }
   function pickerItems(kind) {
+    if (kind === "mode") {
+      return MODE_OPTS.map(function (m) { return { id: m.id, name: t(m.key), desc: "", tag: "" }; });
+    }
     if (kind === "skill") {
       return (state.realSkills || []).map(function (s) {
         return { id: s.id, name: s.name || s.id, desc: (s.description || "").split("\n")[0], tag: (s.triggers || [])[0] || "" };
@@ -2286,6 +2327,7 @@
     });
   }
   function pickerSel(kind) {
+    if (kind === "mode") return { id: state.genMode || "auto", name: modeLabel(state.genMode) };
     return kind === "skill" ? state.selSkill : kind === "plugin" ? state.selPlugin : state.selDS;
   }
   function openPicker(kind) {
@@ -2298,7 +2340,7 @@
     /* Portal 到 body 最外层：脱离 composer 的层叠上下文，压过页面所有内容 */
     if (panel.parentElement !== document.body) document.body.appendChild(panel);
     panel.innerHTML =
-      '<div class="pk-head"><b>' + t(kind === "skill" ? "pkSkill" : kind === "plugin" ? "pkPlugin" : "pkDs") + '</b><input type="text" id="pkSearch" placeholder="' + t("pkSearch") + '" /></div>' +
+      '<div class="pk-head"><b>' + t(kind === "skill" ? "pkSkill" : kind === "plugin" ? "pkPlugin" : kind === "mode" ? "pkMode" : "pkDs") + '</b><input type="text" id="pkSearch" placeholder="' + t("pkSearch") + '" /></div>' +
       '<div class="pk-list" id="pkList"></div>' +
       (pickerSel(kind) ? '<button type="button" class="pk-clear" id="pkClear">' + t("pkClear") + "</button>" : "");
     panel.classList.add("show");
@@ -2310,6 +2352,7 @@
     if (clear) clear.addEventListener("click", function () {
       if (pkCfg.kind === "skill") state.selSkill = null;
       else if (pkCfg.kind === "plugin") state.selPlugin = null;
+      else if (pkCfg.kind === "mode") state.genMode = "landing";
       else state.selDS = null;
       updateChips();
       closePicker();
@@ -2338,6 +2381,7 @@
       b.addEventListener("click", function () {
         if (pkCfg.kind === "skill") state.selSkill = { id: it.id, name: it.name };
         else if (pkCfg.kind === "plugin") state.selPlugin = { id: it.id, name: it.name, source: it.source };
+        else if (pkCfg.kind === "mode") state.genMode = it.id;
         else state.selDS = { id: it.id, name: it.name };
         updateChips();
         closePicker();
@@ -2591,6 +2635,30 @@
     set("chipSkill", state.selSkill, "chipSkill");
     set("chipPlugin", state.selPlugin, "chipPlugin");
     set("chipDs", state.selDS, "chipDs");
+    set("chipMode", { name: modeLabel(state.genMode) }, "moLanding");
+    renderRefs();
+  }
+  /* @引用标签：已选资源以内嵌标签形式显示在输入框上方（参照真实产品输入框） */
+  function renderRefs() {
+    var box = $("cpRefs");
+    if (!box) return;
+    box.innerHTML = "";
+    var refs = [];
+    if (state.selPlugin) refs.push({ k: "plugin", name: state.selPlugin.name });
+    if (state.selSkill) refs.push({ k: "skill", name: state.selSkill.name });
+    if (state.selDS) refs.push({ k: "ds", name: state.selDS.name });
+    refs.forEach(function (r) {
+      var tag = document.createElement("span");
+      tag.className = "cp-ref";
+      tag.innerHTML = '<span class="at">@</span><b>' + esc(r.name) + '</b><button type="button" class="rm" aria-label="remove"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>';
+      tag.querySelector(".rm").addEventListener("click", function () {
+        if (r.k === "plugin") state.selPlugin = null;
+        else if (r.k === "skill") state.selSkill = null;
+        else state.selDS = null;
+        updateChips();
+      });
+      box.appendChild(tag);
+    });
   }
 
   /* ── 视图数据渲染 ── */
@@ -3328,6 +3396,7 @@
   loadSkills();
   loadPlugins();
   loadBrain();
+  updateChips();
 })();
 </script>
 </body>
