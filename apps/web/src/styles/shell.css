@@ -1807,18 +1807,10 @@ body:has(.artifact-version-panel) .ws-tabs-file-actions-before {
 .avatar-agent-trigger > svg:last-child {
   color: var(--text-muted);
 }
-/* Selected-model readout inside the trigger. Hidden by default (the tabs-bar
-   trigger keeps its two-column mark+chevron grid); the composer-row context
-   in viewer/routines.css opts it in next to the Send button. */
+/* Selected-model readout inside the trigger. Hidden by default; the composer
+   dropdown opts it in next to the Send button. */
 .avatar-agent-trigger__model {
   display: none;
-}
-/* The composer trigger swaps the model-name text for the provider brand mark. */
-.avatar-agent-trigger__model-logo {
-  display: block;
-  width: 18px;
-  height: 18px;
-  object-fit: contain;
 }
 .avatar-btn {
   width: 32px;

@@ -226,6 +226,7 @@ function renderMenu({
   onOpenSettings = vi.fn<OpenSettingsHandler>(),
   onRefreshAgents = vi.fn<VoidHandler>(),
   projectWorkspaceScope,
+  placement,
 }: {
   config?: AppConfig;
   agents?: AgentInfo[];
@@ -236,6 +237,7 @@ function renderMenu({
   onOpenSettings?: ReturnType<typeof vi.fn<OpenSettingsHandler>>;
   onRefreshAgents?: ReturnType<typeof vi.fn<VoidHandler>>;
   projectWorkspaceScope?: ProjectWorkspaceScopeState;
+  placement?: 'up' | 'down';
 } = {}) {
   render(
     <AvatarMenu
@@ -248,6 +250,7 @@ function renderMenu({
       onOpenSettings={onOpenSettings}
       onRefreshAgents={onRefreshAgents}
       projectWorkspaceScope={projectWorkspaceScope}
+      placement={placement}
     />,
   );
   return {
@@ -260,8 +263,8 @@ function renderMenu({
 }
 
 function openMenu() {
-  fireEvent.click(screen.getByRole('button', { name: 'avatar.title' }));
-  return screen.getByRole('dialog', { name: 'avatar.title' });
+  fireEvent.click(screen.getByTestId('avatar-agent-trigger'));
+  return screen.getByRole('dialog', { name: 'avatar.modelLabel' });
 }
 
 describe('AvatarMenu', () => {
@@ -271,6 +274,44 @@ describe('AvatarMenu', () => {
     window.localStorage.clear();
     vi.clearAllMocks();
     MockAvatarEventSource.instances = [];
+  });
+
+  it('shows the selected model and opens its dropdown below the trigger', () => {
+    renderMenu({
+      config: {
+        ...baseConfig,
+        agentId: 'claude',
+        agentModels: { claude: { model: 'sonnet' } },
+      },
+      agents: [claudeAgent],
+      placement: 'down',
+    });
+
+    const trigger = screen.getByTestId('avatar-agent-trigger');
+    expect(trigger).toHaveTextContent('Sonnet (alias)');
+    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(trigger).toHaveAccessibleName('avatar.modelLabel: Sonnet (alias)');
+    expect(trigger.querySelector('.avatar-agent-trigger__chevron')).not.toBeNull();
+
+    Object.defineProperty(trigger, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({
+        x: 320,
+        y: 100,
+        top: 100,
+        left: 320,
+        right: 388,
+        bottom: 128,
+        width: 68,
+        height: 28,
+        toJSON: () => ({}),
+      } as DOMRect),
+    });
+
+    fireEvent.click(trigger);
+    const popover = screen.getByRole('dialog', { name: 'avatar.modelLabel' });
+    expect(popover.style.top).toBe('136px');
+    expect(popover.style.bottom).toBe('auto');
   });
 
   // The composer popover is a one-decision surface: pick the model for the
@@ -398,7 +439,7 @@ describe('AvatarMenu', () => {
     fireEvent.click(options[1]!);
 
     expect(onAgentModelChange).toHaveBeenCalledWith('claude', { model: 'sonnet' });
-    expect(screen.queryByRole('dialog', { name: 'avatar.title' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: 'avatar.modelLabel' })).toBeNull();
   });
 
   it('keeps a custom saved model visible when it is not in the declared agent model list', () => {
@@ -608,7 +649,7 @@ describe('AvatarMenu', () => {
 
     fireEvent.click(within(menu).getByRole('radio', { name: 'gpt-5.5' }));
     expect(onApiModelChange).toHaveBeenCalledWith('gpt-5.5');
-    expect(screen.queryByRole('dialog', { name: 'avatar.title' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: 'avatar.modelLabel' })).toBeNull();
   });
 
   /*

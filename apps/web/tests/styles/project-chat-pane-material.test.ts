@@ -16,6 +16,7 @@ const homeHeroCss = read('../../src/styles/home/home-hero.css');
 const projectViewSource = read('../../src/components/ProjectView.tsx');
 const splitLayoutSource = read('../../src/components/project-split-layout.ts');
 const avatarMenuSource = read('../../src/components/AvatarMenu.tsx');
+const chatComposerSource = read('../../src/components/ChatComposer.tsx');
 
 function declarations(css: string, selector: string): string {
   const cssWithoutComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
@@ -167,6 +168,31 @@ describe('project composer design-system trigger (ProjectView.tsx)', () => {
     expect(
       declarations(homeHeroCss, '.composer-row .home-hero__ds-row-trigger[aria-expanded="true"]'),
     ).toMatch(/background:\s*var\(--bg-subtle\);/);
+  });
+});
+
+describe('composer model dropdown (AvatarMenu.tsx + ProjectView.tsx)', () => {
+  it('shows the selected model before Send and opens the model popover downward', () => {
+    expect(projectViewSource).toMatch(
+      /openSignal=\{modelPickerOpenSignal\}\s+placement="down"/,
+    );
+    const accessory = chatComposerSource.indexOf('{footerAccessory}');
+    expect(accessory).toBeGreaterThan(-1);
+    for (const sendControl of [
+      '{showAdmissionPendingButton ?',
+      '{showStopButton ?',
+      '{showSendButton ?',
+    ]) {
+      expect(accessory).toBeLessThan(chatComposerSource.indexOf(sendControl));
+    }
+
+    const trigger = declarations(
+      routinesCss,
+      '.app .composer-row .avatar-menu--down .avatar-agent-trigger',
+    );
+    expect(trigger).toMatch(/border:\s*1px solid var\(--border\);/);
+    expect(trigger).toMatch(/background:\s*var\(--bg-panel\);/);
+    expect(avatarMenuSource).toMatch(/const top = rect\.bottom \+ gap;/);
   });
 });
 

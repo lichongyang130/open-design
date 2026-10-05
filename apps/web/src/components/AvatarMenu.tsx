@@ -85,11 +85,11 @@ interface Props {
 }
 
 /**
- * Compact runtime control. Click opens a dropdown with the OpenDesign account
- * and the model picker for the active agent. Execution wiring that is not a
- * per-message choice (execution mode, which CLI agent, PATH rescan, BYOK
- * provider setup) lives in Settings → Execution; this popover keeps the
- * active agent's model and reasoning choices close to the composer.
+ * Compact model control beside the composer send button. Click opens the model
+ * picker for the active execution mode; the selected model is also shown in
+ * the trigger. Execution wiring that is not a per-message choice lives in
+ * Settings → Execution, while model and reasoning choices stay close to the
+ * composer.
  */
 export function AvatarMenu({
   config,
@@ -515,8 +515,9 @@ export function AvatarMenu({
       : SUGGESTED_MODELS_BY_PROTOCOL[apiProtocol] ?? [],
   );
 
-  // Selected-model readout shown inside the trigger (left of the Send button).
-  // Hidden by default in CSS; composer-row contexts opt it in.
+  // The trigger sits directly before Send in the composer footer. Keep the
+  // selected model name visible so this control reads as a model dropdown,
+  // rather than only showing the provider/agent mark.
   const triggerModelLabel =
     config.mode === 'api'
       ? apiModelLabel
@@ -525,15 +526,9 @@ export function AvatarMenu({
           ? modelVersionLabel(currentModelId, currentModelLabel ?? currentModelId)
           : currentModelLabel ?? null
         : null;
-  // Model id backing the readout — used to resolve the provider brand mark that
-  // replaces the model-name text in the composer trigger.
-  const triggerModelId =
-    config.mode === 'api'
-      ? config.model?.trim() || null
-      : config.mode === 'daemon'
-        ? currentModelId
-        : null;
-  const triggerModelIconSrc = modelProviderIconSrc(triggerModelId);
+  const triggerAccessibleLabel = triggerModelLabel
+    ? `${t('avatar.modelLabel')}: ${triggerModelLabel}`
+    : t('avatar.modelLabel');
   // Whether the daemon-mode popover can offer a real model radio list. When it
   // can't (agent unavailable, or its model catalog is empty — e.g. the AMR
   // member account before the vela catalog resolves), the popover falls back
@@ -553,40 +548,36 @@ export function AvatarMenu({
         className="avatar-agent-trigger"
         data-testid="avatar-agent-trigger"
         onClick={toggleOpen}
-        aria-haspopup="menu"
+        aria-haspopup="dialog"
         aria-expanded={open}
-        data-tooltip={t('avatar.title')}
-        title={t('avatar.title')}
-        aria-label={t('avatar.title')}
+        data-tooltip={triggerAccessibleLabel}
+        title={triggerAccessibleLabel}
+        aria-label={triggerAccessibleLabel}
       >
-        {config.mode === 'daemon' && currentAgent ? (
-          <AgentIcon id={currentAgent.id} size={20} />
-        ) : (
-          <RemixIcon name="link" size={20} />
-        )}
+        {!triggerModelLabel ? (
+          config.mode === 'daemon' && currentAgent ? (
+            <AgentIcon id={currentAgent.id} size={20} />
+          ) : (
+            <RemixIcon name="link" size={20} />
+          )
+        ) : null}
         {triggerModelLabel ? (
           <span className="avatar-agent-trigger__model">
-            {triggerModelIconSrc ? (
-              <img
-                className="avatar-agent-trigger__model-logo"
-                src={triggerModelIconSrc}
-                alt={triggerModelLabel}
-                width={18}
-                height={18}
-              />
-            ) : (
-              triggerModelLabel
-            )}
+            {triggerModelLabel}
           </span>
         ) : null}
-        <RemixIcon name="arrow-down-s-line" size={14} />
+        <RemixIcon
+          name="arrow-down-s-line"
+          size={14}
+          className="avatar-agent-trigger__chevron"
+        />
       </button>
       {open && popoverStyle ? createPortal(
         <div
           ref={popoverRef}
           className="avatar-popover"
           role="dialog"
-          aria-label={t('avatar.title')}
+          aria-label={t('avatar.modelLabel')}
           style={popoverStyle}
         >
           {config.mode === 'daemon' ? (

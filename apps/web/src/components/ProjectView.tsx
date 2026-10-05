@@ -13549,8 +13549,8 @@ export function ProjectView({
   // resulting SSE stream.
   const critiqueTheaterEnabled = useCritiqueTheaterEnabled();
 
-  // CLI / agent selector lives below the chat conversation (composer footer),
-  // not in the top-right header.
+  // Model selector lives directly before Send in the composer footer and opens
+  // below the control; the send button remains the rightmost footer action.
   const executionControls = (
     <>
       <AvatarMenu
@@ -13607,7 +13607,7 @@ export function ProjectView({
         onOpenSettings={onOpenSettings}
         onRefreshAgents={onRefreshAgents}
         openSignal={modelPickerOpenSignal}
-        placement="up"
+        placement="down"
         projectWorkspaceScope={projectWorkspaceScopeState}
       />
     </>
