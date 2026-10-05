@@ -69,6 +69,26 @@ describe('Home account menu popup — opens above the bottom-left trigger', () =
   });
 });
 
+describe('Bottom workspace switcher — follows the account dock at the rail foot', () => {
+  it('anchors the workspace row at the bottom and opens its menu upward', () => {
+    const switcher = cssDeclarations(entryLayoutCss, '.entry-nav-rail__team-wrap--bottom');
+    expect(ruleValue(switcher, 'order')).toBe('100');
+
+    const menu = cssDeclarations(
+      entryLayoutCss,
+      '.entry-nav-rail__team-wrap--bottom .entry-nav-rail__team-menu',
+    );
+    expect(ruleValue(menu, 'top')).toBe('auto');
+    expect(ruleValue(menu, 'bottom')).toBe('calc(100% + 4px)');
+
+    const raisedRail = cssDeclarations(
+      entryLayoutCss,
+      '.entry-nav-rail:has(.entry-nav-rail__team-menu)',
+    );
+    expect(ruleValue(raisedRail, 'z-index')).toBe('50');
+  });
+});
+
 describe('OPEND-3153 — account menu shows no scrollbar in a regular window', () => {
   it('keeps the hover bridge outside the menu scroll box', () => {
     // The 8px bridge over the float gap used to be `.entry-nav-rail__account-menu::before`

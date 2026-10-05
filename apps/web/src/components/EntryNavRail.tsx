@@ -7,8 +7,9 @@ import planCardStyles from './PersonalPlanCard.module.css';
 // (`GET /api/workspace/context`, shared via `useWorkspaceContext`), never the
 // demo's hardcoded 琼羽 / Refly / 800 placeholders:
 //
-//   • Account dock (bottom) — real `context.displayName` plus an upward-opening
-//     account menu for identity, plan, credits, invites, settings, help and sign-out.
+//   • Account dock (near the bottom) — real `context.displayName` plus an
+//     upward-opening account menu for identity, plan, credits, invites, settings,
+//     help and sign-out. The workspace switcher now anchors the very bottom.
 //     No header block when there is no cloud identity (context === null) —
 //     the rail starts at the search box; expand/collapse lives in the
 //     workspace tabs bar's pinned Home toggle.
@@ -1815,41 +1816,43 @@ export function EntryTopRightCluster({
                           </button>
                         ) : null}
                       </div>
-                      <div className="entry-nav-rail__account-plan" role="none">
-                        <Icon name="users" size={15} />
-                        <span className="entry-nav-rail__account-plan-name">{tierLabel}</span>
-                        {canUpgrade ? (
-                          <button
-                            type="button"
-                            className="entry-nav-rail__account-plan-upgrade"
-                            role="menuitem"
-                            data-testid="entry-account-plan-upgrade"
-                            onClick={() => {
-                              trackAccountAction('upgrade');
-                              closeAccountMenu();
-                              openBillingUpgrade();
-                            }}
-                          >
-                            {t('entry.creditsUpgrade')}
-                          </button>
-                        ) : canManageTopTierBilling ? (
-                          <button
-                            type="button"
-                            className="entry-nav-rail__account-plan-upgrade"
-                            role="menuitem"
-                            data-testid="entry-account-plan-manage"
-                            onClick={() => {
-                              trackAccountAction('credits');
-                              closeAccountMenu();
-                              if (billingManageUrl) {
-                                window.open(billingManageUrl, '_blank', 'noopener,noreferrer');
-                              }
-                            }}
-                          >
-                            {t('entry.creditsManage')}
-                          </button>
-                        ) : null}
-                      </div>
+                      {planTier !== 'free' ? (
+                        <div className="entry-nav-rail__account-plan" role="none">
+                          <Icon name="users" size={15} />
+                          <span className="entry-nav-rail__account-plan-name">{tierLabel}</span>
+                          {canUpgrade ? (
+                            <button
+                              type="button"
+                              className="entry-nav-rail__account-plan-upgrade"
+                              role="menuitem"
+                              data-testid="entry-account-plan-upgrade"
+                              onClick={() => {
+                                trackAccountAction('upgrade');
+                                closeAccountMenu();
+                                openBillingUpgrade();
+                              }}
+                            >
+                              {t('entry.creditsUpgrade')}
+                            </button>
+                          ) : canManageTopTierBilling ? (
+                            <button
+                              type="button"
+                              className="entry-nav-rail__account-plan-upgrade"
+                              role="menuitem"
+                              data-testid="entry-account-plan-manage"
+                              onClick={() => {
+                                trackAccountAction('credits');
+                                closeAccountMenu();
+                                if (billingManageUrl) {
+                                  window.open(billingManageUrl, '_blank', 'noopener,noreferrer');
+                                }
+                              }}
+                            >
+                              {t('entry.creditsManage')}
+                            </button>
+                          ) : null}
+                        </div>
+                      ) : null}
                       {accountBillingUrl ? (
                         <a
                           className="entry-nav-rail__menu-item entry-nav-rail__account-credit-row"
@@ -2593,156 +2596,12 @@ export function EntryNavRail({
       <div className="entry-nav-rail__panel">
       <div className="entry-nav-rail__group">
 
-        {context ? (
-          <div className="entry-nav-rail__team-wrap">
-            <button
-              type="button"
-              className="entry-nav-rail__team"
-              onClick={() => {
-                trackEntryNavigationClick(analytics.track, {
-                  page_name: analyticsPage,
-                  area: 'entry_nav',
-                  element: 'workspace_switcher_trigger',
-                  target: 'workspace_switcher',
-                  entry_from: 'sidebar',
-                  ...workspaceDimensions,
-                });
-                setTeamOpen((v) => !v);
-              }}
-              aria-expanded={teamOpen}
-              data-testid="workspace-switcher"
-            >
-              <span className="entry-nav-rail__team-avatar" aria-hidden>{workspaceInitial}</span>
-              {/* Long names slide their tail into view while the row is hovered
-                  (OPEND-3112) instead of staying behind the ellipsis; the slot
-                  keeps the layout class, the motion lives in `.od-marquee`. */}
-              <MarqueeLabel className="entry-nav-rail__team-name" text={workspaceName} />
-              {/* The 最近浏览过 head's disclosure, exactly (per product: 展开和
-                  收起和最近浏览过的一样): the glyph SWAPS rather than rotating —
-                  › closed, ⌄ open — at the same 14px, in a fixed 14px slot so a
-                  narrower caret cannot pull the workspace name along with it. */}
-              <span className="entry-nav-rail__team-chevron" aria-hidden>
-                <Icon name={teamOpen ? 'chevron-down' : 'chevron-right'} size={14} />
-              </span>
-            </button>
-            {teamOpen ? (
-              <>
-                <div className="entry-nav-rail__menu-backdrop" onClick={() => setTeamOpen(false)} />
-                <div
-                  className="entry-nav-rail__team-menu"
-                  role="menu"
-                  onKeyDown={handleWorkspaceMenuKeyDown}
-                >
-                  <div
-                    className="entry-nav-rail__workspace-list"
-                    data-testid="workspace-switcher-list"
-                  >
-                    {visibleWorkspaceItems.map((item) => {
-                      const active = item.workspaceId === context.workspaceId;
-                      // Older daemon directory payloads can omit workspaceName.
-                      // Keep those rows identifiable and actionable by falling
-                      // back to the stable workspace id instead of crashing.
-                      const itemName = item.workspaceName?.trim() || item.workspaceId;
-                      const initial = itemName.charAt(0).toUpperCase() || 'W';
-                      return (
-                        <button
-                          key={item.workspaceId}
-                          type="button"
-                          className={`entry-nav-rail__menu-item${active ? ' is-current' : ''}`}
-                          role="menuitem"
-                          aria-current={active ? 'true' : undefined}
-                          // Only the in-flight switch disables a row. Disabling the
-                          // CURRENT one made the UA grey it out, so the selected
-                          // workspace read as the inactive one and vice versa;
-                          // `.is-current` (bold + accent ✓) is the selected signal.
-                          disabled={workspaceSwitchingId === item.workspaceId}
-                          onClick={() => {
-                            void switchWorkspace(item.workspaceId);
-                          }}
-                        >
-                          <span className="entry-nav-rail__team-avatar" aria-hidden>{initial}</span>
-                          {/* #5517's switcher rows are avatar + full name + ✓ only.
-                              The raw role word ate the name's width and truncated
-                              it; the role is already on 设置·工作区. */}
-                          <MarqueeLabel
-                            className="entry-nav-rail__workspace-menu-name"
-                            text={itemName}
-                          />
-                          {active ? <Icon name="check" size={14} /> : null}
-                        </button>
-                      );
-                    })}
-                    {workspaceDirectoryLoading && visibleWorkspaceItems.length === 0 ? (
-                      <div className="entry-nav-rail__menu-item is-muted" role="status">
-                        {t('common.loading')}
-                      </div>
-                    ) : null}
-                  </div>
-                  <div
-                    className="entry-nav-rail__workspace-actions"
-                    data-testid="workspace-switcher-actions"
-                  >
-                    <div className="entry-nav-rail__menu-divider" />
-                    {canAccessInviteFlow && inviteTarget.kind !== 'unavailable' ? (
-                      <button
-                        type="button"
-                        className="entry-nav-rail__menu-item"
-                        role="menuitem"
-                        onClick={() => {
-                          trackWorkspaceSwitcherClick(analytics.track, {
-                            page_name: analyticsPage,
-                            area: 'workspace_switcher',
-                            element: 'invite_teammates',
-                            ...workspaceDimensions,
-                          });
-                          setTeamOpen(false);
-                          if (inviteTarget.kind === 'vela') {
-                            window.open(inviteTarget.url, '_blank', 'noopener,noreferrer');
-                          } else if (inviteTarget.kind === 'local') {
-                            setInviteOpen(true);
-                          }
-                        }}
-                      >
-                        <Icon name="share" size={15} /> {t('workspaceSwitcher.invite')}
-                      </button>
-                    ) : null}
-                    {/* Creating a workspace is a B console flow (its sidebar owns the
-                        create dialog; there is no route or query param that opens it
-                        directly), so this entry links OUT instead of doing local work.
-                        With no console URL there is nowhere to send the user — render
-                        nothing rather than a control that silently does nothing. */}
-                    {workspaceSettingsUrl ? (
-                      <a
-                        className="entry-nav-rail__menu-item"
-                        role="menuitem"
-                        href={teamConsoleUrl(workspaceSettingsUrl, 'create-team')}
-                        {...externalLinkProps}
-                        data-testid="entry-nav-create-team"
-                        onClick={() => {
-                          trackWorkspaceSwitcherClick(analytics.track, {
-                            page_name: analyticsPage,
-                            area: 'workspace_switcher',
-                            element: 'create_team',
-                            ...workspaceDimensions,
-                          });
-                          setTeamOpen(false);
-                        }}
-                      >
-                        <Icon name="plus" size={15} /> {t('workspaceSwitcher.createTeam')}
-                      </a>
-                    ) : null}
-                  </div>
-                </div>
-              </>
-            ) : null}
-          </div>
-        ) : null}
 
         {/* No search row here any more (per product: 搜索和收起跟 home icon 一起
             放在顶部): the search button and the rail toggle sit in the chrome
             row above (WorkspaceTabsBar's `.workspace-tabs-rail-actions`), and
-            reach EntryShell through window events (entryRailBridge). The rail
-            column starts at the workspace switcher. */}
+            reach EntryShell through window events (entryRailBridge). The
+            workspace switcher now sits below the account dock at the bottom. */}
         <NavButton
           active={isHome}
           ariaLabel={homeLabel}
@@ -2924,12 +2783,156 @@ export function EntryNavRail({
                 the same slot the signed-in dock gives it. */}
           </div>
         )}
-        {/* Bottom of the nav column: the host `EntryTopRightCluster` portals
-            the account module into. `display: contents` keeps the account
-            dock itself a flex child of this group, so its own `order: 99` +
-            `margin-top: auto` still push it below the nav items. */}
+        {/* Account portal host comes before the final workspace switcher in
+            DOM order. Its dock uses order 99; the switcher uses order 100,
+            so the account entry remains available just above the rail's
+            bottom-most workspace label. */}
         {context ? <div ref={setAccountHost} className="entry-nav-rail__account-host" /> : null}
-      </div>
+
+        {context ? (
+          <div className="entry-nav-rail__team-wrap entry-nav-rail__team-wrap--bottom">
+            <button
+              type="button"
+              className="entry-nav-rail__team"
+              onClick={() => {
+                trackEntryNavigationClick(analytics.track, {
+                  page_name: analyticsPage,
+                  area: 'entry_nav',
+                  element: 'workspace_switcher_trigger',
+                  target: 'workspace_switcher',
+                  entry_from: 'sidebar',
+                  ...workspaceDimensions,
+                });
+                setTeamOpen((v) => !v);
+              }}
+              aria-expanded={teamOpen}
+              data-testid="workspace-switcher"
+            >
+              <span className="entry-nav-rail__team-avatar" aria-hidden>{workspaceInitial}</span>
+              {/* Long names slide their tail into view while the row is hovered
+                  (OPEND-3112) instead of staying behind the ellipsis; the slot
+                  keeps the layout class, the motion lives in `.od-marquee`. */}
+              <MarqueeLabel className="entry-nav-rail__team-name" text={workspaceName} />
+              {/* The 最近浏览过 head's disclosure, exactly (per product: 展开和
+                  收起和最近浏览过的一样): the glyph SWAPS rather than rotating —
+                  › closed, ⌄ open — at the same 14px, in a fixed 14px slot so a
+                  narrower caret cannot pull the workspace name along with it. */}
+              <span className="entry-nav-rail__team-chevron" aria-hidden>
+                <Icon name={teamOpen ? 'chevron-down' : 'chevron-right'} size={14} />
+              </span>
+            </button>
+            {teamOpen ? (
+              <>
+                <div className="entry-nav-rail__menu-backdrop" onClick={() => setTeamOpen(false)} />
+                <div
+                  className="entry-nav-rail__team-menu"
+                  role="menu"
+                  onKeyDown={handleWorkspaceMenuKeyDown}
+                >
+                  <div
+                    className="entry-nav-rail__workspace-list"
+                    data-testid="workspace-switcher-list"
+                  >
+                    {visibleWorkspaceItems.map((item) => {
+                      const active = item.workspaceId === context.workspaceId;
+                      // Older daemon directory payloads can omit workspaceName.
+                      // Keep those rows identifiable and actionable by falling
+                      // back to the stable workspace id instead of crashing.
+                      const itemName = item.workspaceName?.trim() || item.workspaceId;
+                      const initial = itemName.charAt(0).toUpperCase() || 'W';
+                      return (
+                        <button
+                          key={item.workspaceId}
+                          type="button"
+                          className={`entry-nav-rail__menu-item${active ? ' is-current' : ''}`}
+                          role="menuitem"
+                          aria-current={active ? 'true' : undefined}
+                          // Only the in-flight switch disables a row. Disabling the
+                          // CURRENT one made the UA grey it out, so the selected
+                          // workspace read as the inactive one and vice versa;
+                          // `.is-current` (bold + accent ✓) is the selected signal.
+                          disabled={workspaceSwitchingId === item.workspaceId}
+                          onClick={() => {
+                            void switchWorkspace(item.workspaceId);
+                          }}
+                        >
+                          <span className="entry-nav-rail__team-avatar" aria-hidden>{initial}</span>
+                          {/* #5517's switcher rows are avatar + full name + ✓ only.
+                              The raw role word ate the name's width and truncated
+                              it; the role is already on 设置·工作区. */}
+                          <MarqueeLabel
+                            className="entry-nav-rail__workspace-menu-name"
+                            text={itemName}
+                          />
+                          {active ? <Icon name="check" size={14} /> : null}
+                        </button>
+                      );
+                    })}
+                    {workspaceDirectoryLoading && visibleWorkspaceItems.length === 0 ? (
+                      <div className="entry-nav-rail__menu-item is-muted" role="status">
+                        {t('common.loading')}
+                      </div>
+                    ) : null}
+                  </div>
+                  <div
+                    className="entry-nav-rail__workspace-actions"
+                    data-testid="workspace-switcher-actions"
+                  >
+                    <div className="entry-nav-rail__menu-divider" />
+                    {canAccessInviteFlow && inviteTarget.kind !== 'unavailable' ? (
+                      <button
+                        type="button"
+                        className="entry-nav-rail__menu-item"
+                        role="menuitem"
+                        onClick={() => {
+                          trackWorkspaceSwitcherClick(analytics.track, {
+                            page_name: analyticsPage,
+                            area: 'workspace_switcher',
+                            element: 'invite_teammates',
+                            ...workspaceDimensions,
+                          });
+                          setTeamOpen(false);
+                          if (inviteTarget.kind === 'vela') {
+                            window.open(inviteTarget.url, '_blank', 'noopener,noreferrer');
+                          } else if (inviteTarget.kind === 'local') {
+                            setInviteOpen(true);
+                          }
+                        }}
+                      >
+                        <Icon name="share" size={15} /> {t('workspaceSwitcher.invite')}
+                      </button>
+                    ) : null}
+                    {/* Creating a workspace is a B console flow (its sidebar owns the
+                        create dialog; there is no route or query param that opens it
+                        directly), so this entry links OUT instead of doing local work.
+                        With no console URL there is nowhere to send the user — render
+                        nothing rather than a control that silently does nothing. */}
+                    {workspaceSettingsUrl ? (
+                      <a
+                        className="entry-nav-rail__menu-item"
+                        role="menuitem"
+                        href={teamConsoleUrl(workspaceSettingsUrl, 'create-team')}
+                        {...externalLinkProps}
+                        data-testid="entry-nav-create-team"
+                        onClick={() => {
+                          trackWorkspaceSwitcherClick(analytics.track, {
+                            page_name: analyticsPage,
+                            area: 'workspace_switcher',
+                            element: 'create_team',
+                            ...workspaceDimensions,
+                          });
+                          setTeamOpen(false);
+                        }}
+                      >
+                        <Icon name="plus" size={15} /> {t('workspaceSwitcher.createTeam')}
+                      </a>
+                    ) : null}
+                  </div>
+                </div>
+              </>
+            ) : null}
+          </div>
+        ) : null}      </div>
       {/* Signed in, the social links ride the account dock above the identity
           row (see `EntryTopRightCluster`), so the footer only renders when it
           has a notice to show — an empty shell here read as a dead white

@@ -25,6 +25,21 @@ function teamContext(): WorkspaceCollabContext {
   } as unknown as WorkspaceCollabContext;
 }
 
+function freePersonalContext(): WorkspaceCollabContext {
+  return {
+    workspaceId: 'ws-free-personal',
+    workspaceType: 'personal',
+    workspaceMemberId: 'wm-free',
+    role: 'owner',
+    memberStatus: 'active',
+    lifecycleState: 'active',
+    billingState: 'free',
+    planId: null,
+    displayName: '设计师',
+    permissions: { canInviteMembers: true, canViewWorkspaceSettings: true },
+  } as unknown as WorkspaceCollabContext;
+}
+
 const accountBillingResponse: WorkspaceBillingResponse = {
   summary: {
     workspaceId: null,
@@ -122,8 +137,8 @@ describe('EntryNavRail account menu interaction state', () => {
 
     await act(async () => {});
     // The chrome's no-drag host carries the cluster (GitHub chip, credits
-    // pill); the identity row itself lives at the foot of the rail's nav
-    // column (per product: 账户移到左栏底部).
+    // pill); the identity row sits just above the workspace switcher at the
+    // rail's bottom.
     expect(screen.getByTestId('entry-top-right-github').closest('#workspace-chrome-account-actions'))
       .toBe(chromeActionsHost);
     const trigger = screen.getByTestId('entry-nav-account');
@@ -140,6 +155,81 @@ describe('EntryNavRail account menu interaction state', () => {
 
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByTestId('entry-account-menu')).toBeInTheDocument();
+  });
+
+  it('places the dynamic workspace switcher after the account dock at the rail bottom', () => {
+    const workspaceName = '动态工作区名称';
+    render(
+      <I18nProvider initial="zh-CN">
+        <EntryNavRail
+          view="home"
+          onViewChange={() => {}}
+          onNewProject={() => {}}
+          open
+          context={{ ...teamContext(), workspaceName } as WorkspaceCollabContext}
+          billing={null}
+        />
+      </I18nProvider>,
+    );
+    const accountDock = screen.getByTestId('entry-nav-account').closest('.entry-nav-rail__account-dock');
+    const switcher = screen.getByTestId('workspace-switcher');
+    const switcherWrap = switcher.closest('.entry-nav-rail__team-wrap');
+
+    expect(screen.getByText(workspaceName)).toBeInTheDocument();
+    expect(accountDock).not.toBeNull();
+    expect(switcherWrap).toHaveClass('entry-nav-rail__team-wrap--bottom');
+    expect(accountDock!.compareDocumentPosition(switcherWrap!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('removes the workspace switcher from the collapsed rail tab order and restores it when expanded', () => {
+    const renderWithOpenState = (open: boolean) => (
+      <I18nProvider initial="zh-CN">
+        <EntryNavRail
+          view="home"
+          onViewChange={() => {}}
+          onNewProject={() => {}}
+          open={open}
+          context={teamContext()}
+          billing={null}
+        />
+      </I18nProvider>
+    );
+    const { container, rerender } = render(renderWithOpenState(false));
+    const rail = container.querySelector('.entry-nav-rail')!;
+    const switcher = screen.getByTestId('workspace-switcher');
+
+    expect(rail).toHaveAttribute('aria-hidden', 'true');
+    expect(rail).toHaveAttribute('inert', '');
+    expect(switcher).toBeInTheDocument();
+
+    rerender(renderWithOpenState(true));
+
+    expect(rail).not.toHaveAttribute('aria-hidden');
+    expect(rail).not.toHaveAttribute('inert');
+    expect(switcher).toBeInTheDocument();
+  });
+
+  it('keeps the account menu but removes the free-plan row', () => {
+    render(
+      <I18nProvider initial="zh-CN">
+        <EntryNavRail
+          view="home"
+          onViewChange={() => {}}
+          onNewProject={() => {}}
+          open
+          context={freePersonalContext()}
+          billing={null}
+        />
+      </I18nProvider>,
+    );
+    const trigger = screen.getByTestId('entry-nav-account');
+
+    fireEvent.click(trigger);
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByTestId('entry-account-menu')).toBeInTheDocument();
+    expect(screen.queryByText('免费版')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('entry-account-plan-upgrade')).not.toBeInTheDocument();
   });
 
   it('pins a hover-open menu when the avatar is clicked', async () => {

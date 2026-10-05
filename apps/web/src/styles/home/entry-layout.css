@@ -101,11 +101,11 @@
      the topbar toggle's fade-out and caused a flash on expand. */
   pointer-events: none;
 }
-/* The account menu opens above the bottom-left rail and overhangs into the
-   Home content column. Composer popovers can raise their own card above the
-   normal rail layer, so lift the rail only while the account menu is mounted;
-   dialogs and the high-priority topbar still retain their higher layers. */
-.entry-nav-rail:has(.entry-nav-rail__account-menu) {
+/* The account menu and relocated workspace menu can overhang into Home.
+   Raise the rail only while either menu is mounted so it clears the composer;
+   dialogs and the high-priority topbar retain their higher layers. */
+.entry-nav-rail:has(.entry-nav-rail__account-menu),
+.entry-nav-rail:has(.entry-nav-rail__team-menu) {
   z-index: 50;
 }
 /* Dark mode keeps a derived alpha: over the dark panel a mix off --text
@@ -139,21 +139,14 @@
   gap: 8px;
   /* 12px side gutters (per product): to the window's left edge and — through
      the right margin — to the content card beside it. The bottom gutter is 8
-     (OPEND-3116, design spec): the OpenDesign / account row at the foot of
-     the column sits 8px off the window's bottom edge. Top margin 0: the tab
-     bar already contributes a 10px gap below the tabs (its bottom padding),
-     so the single visible gap between the tabs and this column stays 10px
-     instead of adding the rail's own inset on top of it. */
+     (OPEND-3116): the workspace switcher at the foot of the column sits 8px
+     off the window's bottom edge. Top margin 0: the tab bar already contributes
+     a 10px gap below the tabs (its bottom padding), so the single visible gap
+     between the tabs and this column stays 10px instead of adding the rail's
+     own inset on top of it. */
   margin: 0 12px 8px;
-  /* No padding at all. Bottom: the account row's bottom edge is set by the
-     margin above alone — nothing pads it further up. (It used to sit flush
-     with the content card's bottom edge, both boxes carrying 12px; the rail's
-     8px gutter per OPEND-3116 now lands the row 4px below the card's edge —
-     the card's own margin is the design's call, not this rule's.) Top: the
-     workspace switcher leads the column flush with the
-     panel's top edge (per product) — the 10px that used to sit here was the
-     tab bar's own 10px bottom gap added a second time, exactly what the margin
-     note above says this box does not do. */
+  /* No padding: the bottom workspace row follows the panel's 8px gutter, and
+     the tab bar already supplies the 10px top gap. */
   padding: 0;
   position: relative;
   /* No card of its own (per product): the rail sits flat on the entry ground,
@@ -195,21 +188,14 @@
 }
 
 /* ── Collapse cascade ──────────────────────────────────────────────────────
-   Clicking collapse plays a top-to-bottom sequence: each rail row fades and
-   lifts a few px, staggered by its VISUAL order (workspace switcher → search
-   row → nav items → team items → footer), so the sidebar empties from the
-   top down before the track squeezes shut. Expanding is instant (no per-row
-   delay) to stay snappy.
+   Clicking collapse plays a top-to-bottom sequence: destinations fade first,
+   then the account dock, with the workspace switcher last at the bottom.
+   Expanding is instant (no per-row delay) to stay snappy.
 
-   Two structural facts drive the selectors, and both have drifted before —
-   revisit them when the rail's tree changes again:
-   • both trees nest 项目…设置 (and 最近项目) inside .entry-nav-rail__team-section
-     — signed in it follows .entry-nav-rail__team-wrap, signed out it follows
-     社区 directly (OPEND-3140) — so those rows fade INDIVIDUALLY (the wrapper
-     itself must not also fade, or the block would double-fade and pop out of
-     order);
-   • the search box sits inside .entry-nav-rail__search-row (search +
-     collapse control), so the ROW is the faded unit, not the box. */
+   Signed-in and local trees both nest 项目…设置 (and 最近项目) inside
+   .entry-nav-rail__team-section, so those rows fade individually. The account
+   portal host and bottom switcher sit after that section; keep their DOM/focus
+   order aligned with the new visual order. */
 .entry-nav-rail__group > *,
 .entry-nav-rail__team-section > *,
 .entry-nav-rail__footer {
@@ -224,8 +210,8 @@
   transform: translateY(-4px);
 }
 /* Per-row stagger — applied only while collapsing so the cascade runs
-   top→bottom. Direct group rows first (signed-in: switcher, 首页, 社区;
-   signed-out: 首页, 社区), then the section's rows… */
+   top→bottom. Direct group rows begin with 首页 / 社区, then the project
+   section; the account and bottom switcher remain at the end. */
 .entry:not(.entry--rail-open) .entry-nav-rail__group > *:nth-child(1) { transition-delay: 0ms; }
 .entry:not(.entry--rail-open) .entry-nav-rail__group > *:nth-child(2) { transition-delay: 15ms; }
 .entry:not(.entry--rail-open) .entry-nav-rail__group > *:nth-child(3) { transition-delay: 30ms; }
@@ -6238,9 +6224,9 @@
   display: contents;
 }
 
-/* Bottom dock: the social links stack directly above the identity row, and the
-   pair sinks to the foot of the nav column together. The auto margin lives
-   here, so `.entry-nav-rail__account` inside it gives up its own. */
+/* Account dock sits just above the bottom-most workspace switcher. The auto
+   margin pushes the account/social pair below the navigation rows, while the
+   switcher's higher flex order keeps it at the very foot of the rail. */
 .entry-nav-rail__account-dock {
   order: 99;
   margin-top: auto;
@@ -7357,6 +7343,14 @@ button.entry-nav-rail__menu-credits-row:active:not(:disabled) {
 
 /* ---- Team switcher button + menu ---- */
 .entry-nav-rail__team-wrap { position: relative; }
+.entry-nav-rail__team-wrap--bottom {
+  order: 100;
+  flex: 0 0 auto;
+}
+.entry-nav-rail__team-wrap--bottom .entry-nav-rail__team-menu {
+  top: auto;
+  bottom: calc(100% + 4px);
+}
 .entry-nav-rail__team {
   appearance: none;
   border: 0;
@@ -7367,8 +7361,8 @@ button.entry-nav-rail__menu-credits-row:active:not(:disabled) {
 }
 /* Same fill 首页 wears as the selected destination (OPEND-3113): the ink at
    10%, not --bg-subtle — see `.entry-nav-rail__btn.is-active`. The switcher
-   sits directly above that row, and a flat grey next to the ink veil read as
-   two different controls in one column. */
+   now sits at the rail's bottom, where matching fills keep it in the same
+   visual family as the destination rows above. */
 .entry-nav-rail__team:hover {
   background: color-mix(in srgb, var(--text-strong) 10%, transparent);
   border-radius: var(--radius);
