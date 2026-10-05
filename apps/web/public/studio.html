@@ -157,7 +157,7 @@
     font: 400 15.5px/1.65 inherit; color: var(--ink);
   }
   .composer textarea::placeholder { color: var(--faint); }
-  .composer .row { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; position: relative; }
+  .composer .row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; position: relative; }
   .chip.sel { color: var(--lime-deep); border-color: rgba(135,234,92,0.55); background: rgba(135,234,92,0.12); }
   /* 资源选择器（技能 / 插件 / 设计系统） */
   /* ── 创作器：@引用标签 + 工具行（参照真实产品输入框）── */
@@ -690,7 +690,6 @@
         <div class="cp-shell">
         <section class="composer" aria-label="composer">
           <div class="cp-refs" id="cpRefs"></div>
-          <textarea id="prompt" rows="3"></textarea>
           <div class="row">
             <button type="button" class="plus-btn" id="chipPlus" aria-label="add">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
@@ -711,6 +710,7 @@
             <div class="pk-panel" id="pkPanel"></div>
             <div class="plus-panel" id="plusPanel"></div>
           </div>
+          <textarea id="prompt" rows="3"></textarea>
         </section>
         <div class="cp-dir">
           <button type="button" class="chip" id="chipDir">
