@@ -211,6 +211,14 @@
   .pm-detail .use:hover { opacity: 0.88; }
   .pm-detail .hint { margin-top: auto; font-size: 11.5px; color: var(--faint); line-height: 1.6; }
   .pm-empty { padding: 22px 14px; text-align: center; font-size: 12px; color: var(--faint); }
+  .plus-panel.show.refmode { grid-template-columns: 168px minmax(0, 1fr); }
+  .plus-panel.refmode .pm-mid { border-right: 0; }
+  .pm-foot { display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding: 10px 12px; border-top: 1px solid #f0f2f1; }
+  .pm-foot .ghost { font: 700 12px/1 inherit; padding: 8px 14px; border-radius: 9px; border: 1px solid var(--hairline); background: #ffffff; color: var(--muted); cursor: pointer; }
+  .pm-foot .ghost:hover { color: var(--ink); }
+  .pm-foot .go { font: 700 12px/1 inherit; padding: 8px 16px; border-radius: 9px; border: 0; background: var(--lime-deep); color: #ffffff; cursor: pointer; }
+  .pm-foot .go:hover { opacity: 0.9; }
+  .pm-row .sel { flex: none; font: 800 10px/1 inherit; color: #2c6e49; background: rgba(135,234,92,0.22); padding: 3px 8px; border-radius: 999px; }
   @media (max-width: 640px) { .plus-panel.show { grid-template-columns: 140px 1fr; } .pm-detail { display: none; } }
 
   /* ── 第二大脑视图 ── */
@@ -972,6 +980,7 @@
       pmLinkItems: "选择本地目录,输入仓库地址",
       pmAttachDesc: "把图片、文档等作为上下文附加，Buddy 生成时会参考它们。",
       pmRefDesc: "引用已有项目，让新创作延续它的风格与内容。",
+      pmRefSearch: "搜索项目..", pmRefSel: "已选", pmRefConfirm: "引用项目", pmCancel: "取消",
       pmLinkDesc: "关联本地代码目录，Buddy 可以读写其中的设计资产。",
       pmPluginDesc: "为这次生成安装能力插件：视频、3D、信息图等。",
       pmFigmaDesc: "导入 Figma 文件或框架，直接变成可编辑的设计。",
@@ -1180,6 +1189,7 @@
       pmLinkItems: "Pick a local folder,Paste a repo URL",
       pmAttachDesc: "Attach images and docs as context for generation.",
       pmRefDesc: "Reference an existing project to continue its style.",
+      pmRefSearch: "Search projects…", pmRefSel: "Selected", pmRefConfirm: "Reference", pmCancel: "Cancel",
       pmLinkDesc: "Link a local code folder so Buddy can read design assets.",
       pmPluginDesc: "Install capability plugins for this run: video, 3D, infographics…",
       pmFigmaDesc: "Import Figma files or frames as editable designs.",
@@ -2288,6 +2298,11 @@
   /* chips：模板 → 模板视图；技能/插件/设计系统 → 资源选择器 */
   (function wireChips() {
     $("chipPlus").addEventListener("click", function (e) { e.stopPropagation(); openPlus(); });
+    /* 面板内点击一律不冒泡到 document 的 outside-dismiss 判定
+       （行点击会同步重建列表，旧 target 脱离文档树后 contains 会误判） */
+    [$("plusPanel"), $("pkPanel")].forEach(function (pn) {
+      if (pn) pn.addEventListener("click", function (e) { e.stopPropagation(); });
+    });
     $("chipDir").addEventListener("click", function (e) { e.stopPropagation(); toast(t("toastDemo")); });
     $("chipDs").addEventListener("click", function (e) { e.stopPropagation(); openPicker("ds"); });
   })();
@@ -2434,10 +2449,20 @@
     { k: "conn", label: "pmConn" },
     { k: "mcp", label: "pmMcp" }
   ];
-  var plusCfg = { tab: "plugin", q: "", sel: null };
+  var plusCfg = { tab: "plugin", q: "", sel: null, selRef: null };
 
   function closePlus() {
     $("plusPanel").classList.remove("show");
+  }
+  /* 悬停栏目即展开对应内容；click 仅作触屏兜底 */
+  function switchPlusTab(k, focusSearch) {
+    if (plusCfg.tab === k) return;
+    plusCfg.tab = k;
+    plusCfg.q = "";
+    plusCfg.sel = null;
+    renderPlus();
+    positionPlusPanel();
+    if (focusSearch) { var inp = $("pmSearch"); if (inp) inp.focus(); }
   }
   function plusListData() {
     if (plusCfg.tab === "plugin") {
@@ -2457,17 +2482,33 @@
       });
     }
     if (plusCfg.tab === "ref") {
-      return (state.realProjects || []).map(function (pj) { return { id: pj.id, name: pj.t, desc: pj.time || "" }; });
+      return (state.realProjects || []).map(function (pj) { return { id: pj.id, name: pj.t, desc: pj.kind || pj.time || "" }; });
     }
     var itemsKey = { attach: "pmAttachItems", figma: "pmFigmaItems", conn: "pmConnItems", mcp: "pmMcpItems", link: "pmLinkItems" }[plusCfg.tab];
     return (t(itemsKey) || "").split(",").filter(Boolean).map(function (x, i) { return { id: "demo-" + i, name: x, desc: "" }; });
+  }
+  function plusRowsHtml(rows) {
+    return rows.length
+      ? rows.map(function (it) {
+          if (plusCfg.tab === "ref") {
+            var onR = plusCfg.selRef === it.id;
+            return '<button type="button" class="pm-row' + (onR ? " on" : "") + '" data-id="' + esc(it.id) + '">' +
+              '<span class="tx"><b>' + esc(it.name) + "</b>" + (it.desc ? "<small>" + esc(it.desc) + "</small>" : "") + "</span>" +
+              (onR ? '<span class="sel">' + t("pmRefSel") + "</span>" : "") + "</button>";
+          }
+          var on = plusCfg.tab === "plugin" && state.selPlugin && state.selPlugin.id === it.id;
+          return '<button type="button" class="pm-row' + (on ? " on" : "") + '" data-id="' + esc(it.id) + '">' +
+            '<span class="tx"><b>' + esc(it.name) + "</b>" + (it.desc ? "<small>" + esc(it.desc) + "</small>" : "") + "</span>" +
+            '<span class="ck">' + CHECK_SVG + "</span></button>";
+        }).join("")
+      : '<div class="pm-empty">' + t("pkEmpty") + "</div>";
   }
   function openPlus() {
     var panel = $("plusPanel");
     if (panel.classList.contains("show")) { closePlus(); return; }
     closePicker();
     if (panel.parentElement !== document.body) document.body.appendChild(panel);
-    plusCfg = { tab: plusCfg.tab || "plugin", q: "", sel: null };
+    plusCfg = { tab: plusCfg.tab || "plugin", q: "", sel: null, selRef: plusCfg.selRef || null };
     renderPlus();
     panel.classList.add("show");
     positionPlusPanel();
@@ -2493,28 +2534,29 @@
   }
   function renderPlus() {
     var panel = $("plusPanel");
+    if (plusCfg.tab === "ref" && !plusCfg.selRef) {
+      var f0 = plusListData()[0];
+      if (f0) plusCfg.selRef = f0.id;
+    }
     var menuHtml = '<div class="pm-menu">' + PLUS_MENU.map(function (m) {
       return '<button type="button" class="pm-item' + (plusCfg.tab === m.k ? " on" : "") + '" data-tab="' + m.k + '">' + PLUS_ICONS[m.k] + "<span>" + t(m.label) + "</span></button>";
     }).join("") + "</div>";
     var rows = plusListData().filter(function (it) {
-      if (!plusCfg.q || !(plusCfg.tab === "plugin" || plusCfg.tab === "skill")) return true;
+      if (!plusCfg.q || !(plusCfg.tab === "plugin" || plusCfg.tab === "skill" || plusCfg.tab === "ref")) return true;
       return (it.name + " " + it.desc + " " + it.id).toLowerCase().indexOf(plusCfg.q.toLowerCase()) >= 0;
     });
     var tabLabelKey = (PLUS_MENU.filter(function (m) { return m.k === plusCfg.tab; })[0] || {}).label || "pmPlugin";
-    var searchable = plusCfg.tab === "plugin" || plusCfg.tab === "skill";
+    var searchable = plusCfg.tab === "plugin" || plusCfg.tab === "skill" || plusCfg.tab === "ref";
     var midHtml =
       '<div class="pm-mid">' +
       '<div class="pm-h"><b>' + t(tabLabelKey) + "</b>" + (searchable
-        ? '<input type="text" id="pmSearch" placeholder="' + t("pmSearch") + '" value="' + esc(plusCfg.q).replace(/"/g, "&quot;") + '" />'
+        ? '<input type="text" id="pmSearch" placeholder="' + t(plusCfg.tab === "ref" ? "pmRefSearch" : "pmSearch") + '" value="' + esc(plusCfg.q).replace(/"/g, "&quot;") + '" />'
         : "") + "</div>" +
-      '<div class="pm-rows" id="pmRows">' + (rows.length
-        ? rows.map(function (it) {
-            var on = plusCfg.tab === "plugin" && state.selPlugin && state.selPlugin.id === it.id;
-            return '<button type="button" class="pm-row' + (on ? " on" : "") + '" data-id="' + esc(it.id) + '">' +
-              '<span class="tx"><b>' + esc(it.name) + "</b>" + (it.desc ? "<small>" + esc(it.desc) + "</small>" : "") + "</span>" +
-              '<span class="ck">' + CHECK_SVG + "</span></button>";
-          }).join("")
-        : '<div class="pm-empty">' + t("pkEmpty") + "</div>") + "</div></div>";
+      '<div class="pm-rows" id="pmRows">' + plusRowsHtml(rows) + "</div>" +
+      (plusCfg.tab === "ref"
+        ? '<div class="pm-foot"><button type="button" class="ghost" id="pmCancel">' + t("pmCancel") + '</button><button type="button" class="go" id="pmRefGo">' + t("pmRefConfirm") + "</button></div>"
+        : "") +
+      "</div>";
     var detail;
     if (plusCfg.tab === "plugin" || plusCfg.tab === "skill") {
       if (plusCfg.sel) {
@@ -2530,47 +2572,32 @@
         detail = '<div class="pm-detail"><h4>' + t(titleKey) + "</h4><p>" + t(descKey) + '</p><div class="hint">' + t("pmSelHint") + "</div></div>";
       }
     } else if (plusCfg.tab === "ref") {
-      detail = '<div class="pm-detail"><h4>' + t("pmRefTitle") + '</h4><p>' + t("pmRefDesc") + '</p><div class="hint">' + t("pmRefHint") + "</div></div>";
+      detail = "";
     } else {
       var meta = { attach: "pmAttachDesc", link: "pmLinkDesc", figma: "pmFigmaDesc", conn: "pmConnDesc", mcp: "pmMcpDesc" }[plusCfg.tab];
       var label = { attach: "pmAttach", link: "pmLink", figma: "pmFigma", conn: "pmConn", mcp: "pmMcp" }[plusCfg.tab];
       detail = '<div class="pm-detail"><h4>' + t(label) + "</h4><p>" + t(meta) + '</p><div class="hint">' + t("pmSelHint") + "</div></div>";
     }
+    panel.classList.toggle("refmode", plusCfg.tab === "ref");
     panel.innerHTML = menuHtml + midHtml + detail;
 
     panel.querySelectorAll(".pm-item").forEach(function (b) {
-      b.addEventListener("click", function () {
-        plusCfg.tab = b.getAttribute("data-tab");
-        plusCfg.q = "";
-        plusCfg.sel = null;
-        renderPlus();
-        positionPlusPanel();
-        var inp = $("pmSearch");
-        if (inp) inp.focus();
-      });
+      var k = b.getAttribute("data-tab");
+      b.addEventListener("mouseenter", function () { switchPlusTab(k, false); });
+      b.addEventListener("click", function () { switchPlusTab(k, true); });
     });
     var search = $("pmSearch");
     if (search) search.addEventListener("input", function () { plusCfg.q = this.value; renderPlusListOnly(); });
-    panel.querySelectorAll(".pm-row").forEach(function (b) {
-      b.addEventListener("click", function () {
-        var id = b.getAttribute("data-id");
-        if (plusCfg.tab === "plugin" || plusCfg.tab === "skill") {
-          var it = plusListData().filter(function (x) { return x.id === id; })[0];
-          if (!it) return;
-          plusCfg.sel = it;
-          renderPlus();
-          positionPlusPanel();
-        } else if (plusCfg.tab === "ref") {
-          var pj = plusListData().filter(function (x) { return x.id === id; })[0];
-          if (pj) {
-            $("prompt").value = t("pmRefFill").replace("{name}", pj.name);
-            closePlus();
-            $("prompt").focus();
-          }
-        } else {
-          toast(t("toastDemo"));
-        }
-      });
+    bindPlusRows();
+    var pmCancelBtn = $("pmCancel");
+    if (pmCancelBtn) pmCancelBtn.addEventListener("click", function () { closePlus(); });
+    var pmRefGo = $("pmRefGo");
+    if (pmRefGo) pmRefGo.addEventListener("click", function () {
+      var pj = plusListData().filter(function (x) { return x.id === plusCfg.selRef; })[0];
+      if (!pj) { toast(t("pkEmpty")); return; }
+      $("prompt").value = t("pmRefFill").replace("{name}", pj.name);
+      closePlus();
+      $("prompt").focus();
     });
     var use = $("pmUse");
     if (use) use.addEventListener("click", function () {
@@ -2586,19 +2613,12 @@
     /* 搜索时只刷新中列，保持输入框焦点 */
     var panel = $("plusPanel");
     var rows = plusListData().filter(function (it) {
-      if (!plusCfg.q || !(plusCfg.tab === "plugin" || plusCfg.tab === "skill")) return true;
+      if (!plusCfg.q || !(plusCfg.tab === "plugin" || plusCfg.tab === "skill" || plusCfg.tab === "ref")) return true;
       return (it.name + " " + it.desc + " " + it.id).toLowerCase().indexOf(plusCfg.q.toLowerCase()) >= 0;
     });
     var box = $("pmRows");
     if (!box) return;
-    box.innerHTML = rows.length
-      ? rows.map(function (it) {
-          var on = state.selPlugin && state.selPlugin.id === it.id;
-          return '<button type="button" class="pm-row' + (on ? " on" : "") + '" data-id="' + esc(it.id) + '">' +
-            '<span class="tx"><b>' + esc(it.name) + "</b>" + (it.desc ? "<small>" + esc(it.desc) + "</small>" : "") + "</span>" +
-            '<span class="ck">' + CHECK_SVG + "</span></button>";
-        }).join("")
-      : '<div class="pm-empty">' + t("pkEmpty") + "</div>";
+    box.innerHTML = plusRowsHtml(rows);
     bindPlusRows();
   }
   function bindPlusRows() {
@@ -2612,12 +2632,8 @@
           renderPlus();
           positionPlusPanel();
         } else if (plusCfg.tab === "ref") {
-          var pj = plusListData().filter(function (x) { return x.id === id; })[0];
-          if (pj) {
-            $("prompt").value = t("pmRefFill").replace("{name}", pj.name);
-            closePlus();
-            $("prompt").focus();
-          }
+          plusCfg.selRef = id;
+          renderPlusListOnly();
         } else {
           toast(t("toastDemo"));
         }
@@ -2969,6 +2985,7 @@
       k: state.lang === "zh" ? "项目" : "Project",
       ic: hashPick(p.name || p.id, PJ_ICONS),
       time: relTime(p.updatedAt || p.createdAt),
+      kind: p.kind || "",
       st: st.c,
       stT: st[state.lang],
       prog: 55,
