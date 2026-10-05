@@ -155,7 +155,31 @@
     font: 400 15.5px/1.65 inherit; color: var(--ink);
   }
   .composer textarea::placeholder { color: var(--faint); }
-  .composer .row { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .composer .row { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; position: relative; }
+  .chip.sel { color: var(--lime-deep); border-color: rgba(135,234,92,0.55); background: rgba(135,234,92,0.12); }
+  /* 资源选择器（技能 / 插件 / 设计系统） */
+  .pk-panel { position: absolute; top: calc(100% + 8px); left: 0; width: 420px; max-width: calc(100vw - 40px); background: var(--glass-strong); border: 1px solid var(--glass-border); border-radius: 16px; box-shadow: var(--card-shadow); backdrop-filter: blur(24px); display: none; z-index: 40; overflow: hidden; }
+  .pk-panel.show { display: flex; flex-direction: column; animation: pop 0.16s ease both; }
+  .pk-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px 8px; border-bottom: 1px solid var(--hairline); }
+  .pk-head b { font-size: 13px; flex: none; }
+  .pk-head input { flex: 1; min-width: 0; height: 30px; border-radius: 9px; border: 1px solid var(--hairline); background: rgba(255,255,255,0.7); padding: 0 10px; font: 600 12.5px/1 inherit; color: var(--ink); outline: none; }
+  .pk-head input:focus { border-color: rgba(135,234,92,0.6); }
+  .pk-list { max-height: 300px; overflow-y: auto; padding: 6px; }
+  .pk-item { display: flex; align-items: center; gap: 9px; width: 100%; padding: 8px 9px; border: 0; border-radius: 10px; background: transparent; cursor: pointer; text-align: left; }
+  .pk-item:hover { background: rgba(32,38,30,0.06); }
+  .pk-item.on { background: rgba(135,234,92,0.16); }
+  .pk-item .ic { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; flex: none; background: rgba(32,38,30,0.06); color: var(--muted); font: 700 10.5px/1 inherit; overflow: hidden; }
+  .pk-item .ic i { display: block; width: 100%; height: 100%; }
+  .pk-item .tx { min-width: 0; flex: 1; }
+  .pk-item b { font-size: 12.5px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pk-item small { font-size: 10.5px; color: var(--faint); display: block; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pk-item .ck { margin-left: auto; opacity: 0; color: var(--lime-deep); flex: none; }
+  .pk-item.on .ck { opacity: 1; }
+  .pk-clear { width: 100%; padding: 9px; border: 0; border-top: 1px solid var(--hairline); background: transparent; color: var(--faint); font: 600 12px/1 inherit; cursor: pointer; }
+  .pk-clear:hover { color: var(--ink); background: rgba(32,38,30,0.04); }
+  .pk-empty { padding: 18px; text-align: center; font-size: 12px; color: var(--faint); }
+  .more-btn { grid-column: 1 / -1; height: 40px; border-radius: 12px; border: 1px dashed rgba(32,38,30,0.25); background: transparent; color: var(--muted); font: 600 13px/1 inherit; cursor: pointer; }
+  .more-btn:hover { border-color: var(--lime-deep); color: var(--lime-deep); }
   .chip {
     display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 13px;
     border-radius: 999px; border: 1px solid var(--hairline); background: rgba(255,255,255,0.55);
@@ -524,15 +548,15 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><path d="M17 13.8v6.4M13.8 17h6.4"/></svg>
               <span data-i18n="chipTemplate">从模板开始</span>
             </button>
-            <button type="button" class="chip">
+            <button type="button" class="chip" id="chipSkill">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/><circle cx="12" cy="12" r="3.2"/></svg>
               <span data-i18n="chipSkill">技能</span>
             </button>
-            <button type="button" class="chip">
+            <button type="button" class="chip" id="chipPlugin">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7.5 4.5 12 9 16.5M15 7.5l4.5 4.5L15 16.5"/></svg>
               <span data-i18n="chipPlugin">添加插件</span>
             </button>
-            <button type="button" class="chip">
+            <button type="button" class="chip" id="chipDs">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.4 11.1-9.2-8a1 1 0 0 0-1.5.2L4.6 12M8 4v4.5M16.5 13.5v6h-9v-6"/></svg>
               <span data-i18n="chipDs">设计系统</span>
             </button>
@@ -541,6 +565,7 @@
               <span data-i18n="send">发送</span>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12h14M13 6.5l5.5 5.5L13 17.5"/></svg>
             </button>
+            <div class="pk-panel" id="pkPanel"></div>
           </div>
         </section>
 
@@ -618,7 +643,7 @@
           <div class="page-head">
             <div>
               <h1 data-i18n="tpTitle">模板</h1>
-              <p data-i18n="tpSub">从模板开始，事半功倍。</p>
+              <p data-i18n="tpSub" id="tpSub">从模板开始，事半功倍。</p>
             </div>
           </div>
           <div class="pills" id="tpTabs"></div>
@@ -630,7 +655,7 @@
           <div class="page-head">
             <div>
               <h1 data-i18n="syTitle">设计系统</h1>
-              <p data-i18n="sySub">为你的作品选择一种视觉语言。</p>
+              <p data-i18n="sySub" id="sySub">为你的作品选择一种视觉语言。</p>
             </div>
           </div>
           <div class="sys-grid" id="syGrid"></div>
@@ -731,6 +756,11 @@
       rsGen: "本月生成", rsGenSub: "今日 +{n}",
       rsQuota: "剩余额度", rsQuotaSub: "共 {total} 次 · 已用 {used}",
       rsPending: "待评审", rsPendingSub: "来自团队评审队列",
+      pkSkill: "选择技能", pkPlugin: "添加插件", pkDs: "选择设计系统",
+      pkSearch: "搜索…", pkClear: "清除选择", pkEmpty: "没有匹配项",
+      toastPicked: "✦ 已选择：{name}",
+      sysMore: "显示更多（{n}）",
+      sfWeb: "网页", sfImage: "图像", sfVideo: "视频", sfAudio: "音频",
       navReview: "评审", navArtifacts: "交付物", navMembers: "成员", navApprovals: "审批",
       rvHome: "待你评审", rvTitle: "评审中心", rvSub: "集中处理团队提交的设计稿，一键通过或退回。",
       rvWait: "待评审", rvPass: "已通过", rvApprove: "通过", rvReject: "退回", toastRvPass: "✦ 已通过「{name}」并通知提交人",
@@ -862,6 +892,11 @@
       rsGen: "Generations this month", rsGenSub: "+{n} today",
       rsQuota: "Quota left", rsQuotaSub: "{total} total · {used} used",
       rsPending: "Pending reviews", rsPendingSub: "From the team review queue",
+      pkSkill: "Pick a skill", pkPlugin: "Add a plugin", pkDs: "Pick a design system",
+      pkSearch: "Search…", pkClear: "Clear selection", pkEmpty: "No matches",
+      toastPicked: "✦ Selected: {name}",
+      sysMore: "Show more ({n})",
+      sfWeb: "Web", sfImage: "Image", sfVideo: "Video", sfAudio: "Audio",
       navReview: "Review", navArtifacts: "Artifacts", navMembers: "Members", navApprovals: "Approvals",
       rvHome: "Awaiting your review", rvTitle: "Review center", rvSub: "Review everything your team submits — approve or send back in one click.",
       rvWait: "Pending", rvPass: "Approved", rvApprove: "Approve", rvReject: "Send back", toastRvPass: "✦ Approved “{name}” — requester notified",
@@ -1171,7 +1206,15 @@
     tpTab: 0,
     realProjects: null,
     realReviews: null,
-    realStats: null
+    realStats: null,
+    realSystems: null,
+    realDTpl: null,
+    realSkills: null,
+    realPlugins: null,
+    sysShown: 24,
+    selDS: null,
+    selSkill: null,
+    selPlugin: null
   };
   var $ = function (id) { return document.getElementById(id); };
   function t(k) { return I18N[state.lang][k]; }
@@ -1258,16 +1301,28 @@
   function createRealProject(prompt) {
     var name = prompt.slice(0, 18) + (prompt.length > 18 ? "…" : "");
     var id = "db-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 6);
-    var body = { id: id, name: name };
-    if (!/https?:\/\//i.test(prompt)) body.pendingPrompt = prompt;
-    apiSend("/api/projects", "POST", body).then(function () {
-      toast(t("toastCreated").replace("{name}", name));
-      loadProjects();
-      showBubble(0);
-    }).catch(function () {
-      toast(t("toastSent"));
-      showBubble(0);
-    });
+    var base = { id: id, name: name };
+    if (!/https?:\/\//i.test(prompt)) base.pendingPrompt = prompt;
+    var extras = {};
+    if (state.selDS) extras.designSystemId = state.selDS.id;
+    if (state.selSkill) extras.skillId = state.selSkill.id;
+    if (state.selPlugin) { extras.pluginId = state.selPlugin.id; extras.pluginSource = state.selPlugin.source; }
+    var attempt = function (body) { return apiSend("/api/projects", "POST", body); };
+    var withExtras = Object.keys(extras).length > 0;
+    attempt(withExtras ? Object.assign({}, base, extras) : base)
+      .catch(function (err) {
+        // 参数被校验拒绝时，退回基础创建（不带资源绑定）
+        return withExtras ? attempt(base) : Promise.reject(err);
+      })
+      .then(function () {
+        toast(t("toastCreated").replace("{name}", name));
+        loadProjects();
+        showBubble(0);
+      })
+      .catch(function () {
+        toast(t("toastSent"));
+        showBubble(0);
+      });
   }
   $("send").addEventListener("click", submitPrompt);
   $("prompt").addEventListener("keydown", function (e) {
@@ -1300,19 +1355,108 @@
     }
   })();
 
-  /* chips：模板 chip 进模板视图，其余演示提示 */
+  /* chips：模板 → 模板视图；技能/插件/设计系统 → 资源选择器 */
   (function wireChips() {
-    var chips = document.querySelectorAll(".chip");
-    for (var i = 0; i < chips.length; i++) {
-      (function (chip) {
-        if (chip.id === "chipTemplate") {
-          chip.addEventListener("click", function () { go("templates"); });
-        } else {
-          chip.addEventListener("click", function () { toast(t("toastDemo")); });
-        }
-      })(chips[i]);
-    }
+    $("chipTemplate").addEventListener("click", function () { go("templates"); });
+    $("chipSkill").addEventListener("click", function (e) { e.stopPropagation(); openPicker("skill"); });
+    $("chipPlugin").addEventListener("click", function (e) { e.stopPropagation(); openPicker("plugin"); });
+    $("chipDs").addEventListener("click", function (e) { e.stopPropagation(); openPicker("ds"); });
   })();
+
+  /* ── 资源选择器（技能 / 插件 / 设计系统，数据来自 daemon）── */
+  var pkCfg = null;
+  function closePicker() {
+    pkCfg = null;
+    $("pkPanel").classList.remove("show");
+  }
+  function pickerItems(kind) {
+    if (kind === "skill") {
+      return (state.realSkills || []).map(function (s) {
+        return { id: s.id, name: s.name || s.id, desc: (s.description || "").split("\n")[0], tag: (s.triggers || [])[0] || "" };
+      });
+    }
+    if (kind === "plugin") {
+      return (state.realPlugins || []).map(function (p) {
+        return { id: p.id, source: p.source, name: p.title || p.id, desc: (p.manifest && p.manifest.metadata && p.manifest.metadata.description) || p.version || "", tag: p.sourceKind || "" };
+      });
+    }
+    return (state.realSystems || []).map(function (s) {
+      return { id: s.id, name: s.title || s.id, desc: s.category || "", tag: "", sw: s.swatches };
+    });
+  }
+  function pickerSel(kind) {
+    return kind === "skill" ? state.selSkill : kind === "plugin" ? state.selPlugin : state.selDS;
+  }
+  function openPicker(kind) {
+    if ($("pkPanel").classList.contains("show") && pkCfg && pkCfg.kind === kind) { closePicker(); return; }
+    var items = pickerItems(kind);
+    if (!items.length) { toast(t("toastDemo")); return; }
+    pkCfg = { kind: kind, items: items };
+    var panel = $("pkPanel");
+    panel.innerHTML =
+      '<div class="pk-head"><b>' + t(kind === "skill" ? "pkSkill" : kind === "plugin" ? "pkPlugin" : "pkDs") + '</b><input type="text" id="pkSearch" placeholder="' + t("pkSearch") + '" /></div>' +
+      '<div class="pk-list" id="pkList"></div>' +
+      (pickerSel(kind) ? '<button type="button" class="pk-clear" id="pkClear">' + t("pkClear") + "</button>" : "");
+    panel.classList.add("show");
+    renderPkList("");
+    var input = $("pkSearch");
+    input.addEventListener("input", function () { renderPkList(this.value); });
+    var clear = $("pkClear");
+    if (clear) clear.addEventListener("click", function () {
+      if (pkCfg.kind === "skill") state.selSkill = null;
+      else if (pkCfg.kind === "plugin") state.selPlugin = null;
+      else state.selDS = null;
+      updateChips();
+      closePicker();
+    });
+  }
+  function renderPkList(q) {
+    if (!pkCfg) return;
+    var box = $("pkList");
+    var sel = pickerSel(pkCfg.kind);
+    var query = (q || "").trim().toLowerCase();
+    var items = pkCfg.items.filter(function (it) {
+      if (!query) return true;
+      return (it.name + " " + it.desc + " " + it.tag + " " + it.id).toLowerCase().indexOf(query) >= 0;
+    });
+    if (!items.length) { box.innerHTML = '<div class="pk-empty">' + t("pkEmpty") + "</div>"; return; }
+    box.innerHTML = "";
+    items.slice(0, 80).forEach(function (it) {
+      var on = sel && sel.id === it.id;
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "pk-item" + (on ? " on" : "");
+      var ic = it.sw && it.sw.length
+        ? '<span class="ic"><i style="background:linear-gradient(135deg,' + it.sw.slice(0, 2).join(",") + ')"></i></span>'
+        : '<span class="ic">' + it.name.slice(0, 2).toUpperCase() + "</span>";
+      b.innerHTML = ic + '<span class="tx"><b>' + it.name + "</b><small>" + (it.desc || it.tag || it.id) + "</small></span>" + '<span class="ck">' + CHECK_SVG + "</span>";
+      b.addEventListener("click", function () {
+        if (pkCfg.kind === "skill") state.selSkill = { id: it.id, name: it.name };
+        else if (pkCfg.kind === "plugin") state.selPlugin = { id: it.id, name: it.name, source: it.source };
+        else state.selDS = { id: it.id, name: it.name };
+        updateChips();
+        closePicker();
+        toast(t("toastPicked").replace("{name}", it.name));
+      });
+      box.appendChild(b);
+    });
+  }
+  document.addEventListener("click", function (e) {
+    if ($("pkPanel").classList.contains("show") && !$("pkPanel").contains(e.target)) closePicker();
+  });
+  function updateChips() {
+    var set = function (id, sel, defKey) {
+      var chip = $(id);
+      if (!chip) return;
+      var span = chip.querySelector("span");
+      chip.classList.toggle("sel", !!sel);
+      var label = sel ? String(sel.name || sel.title || "") : "";
+      span.textContent = sel ? (label.length > 14 ? label.slice(0, 14) + "…" : label) : t(defKey);
+    };
+    set("chipSkill", state.selSkill, "chipSkill");
+    set("chipPlugin", state.selPlugin, "chipPlugin");
+    set("chipDs", state.selDS, "chipDs");
+  }
 
   /* ── 视图数据渲染 ── */
   var ICONS = {
@@ -1398,35 +1542,70 @@
     setTimeout(function () { $("prompt").focus(); }, 60);
   }
 
+  var SF_LABEL = { web: "sfWeb", image: "sfImage", video: "sfVideo", audio: "sfAudio" };
+  var SF_ICON = { web: "web", image: "poster", video: "anim", audio: "doc", mobile: "mobile", deck: "deck" };
+  function prettyName(id) {
+    return String(id).split(/[-_]/).map(function (w) { return w ? w.charAt(0).toUpperCase() + w.slice(1) : w; }).join(" ");
+  }
   function renderTemplates() {
     var d = I18N[state.lang];
     var tabs = $("tpTabs");
     tabs.innerHTML = "";
-    d.tplTabs.forEach(function (f, i) {
+    var real = state.realDTpl && state.realDTpl.length > 0;
+    var tabList;
+    if (real) {
+      var sfs = [];
+      state.realDTpl.forEach(function (x) { if (sfs.indexOf(x.surface) < 0) sfs.push(x.surface); });
+      tabList = [{ k: "all", label: d.pjFilters[0] }].concat(sfs.map(function (sf) { return { k: sf, label: t(SF_LABEL[sf] || "sfWeb") }; }));
+      if (state.tpTab >= tabList.length) state.tpTab = 0;
+    } else {
+      tabList = d.tplTabs.map(function (f) { return { k: f, label: f }; });
+    }
+    tabList.forEach(function (tb, i) {
       var b = document.createElement("button");
       b.type = "button";
       b.className = "pill" + (state.tpTab === i ? " on" : "");
-      b.textContent = f;
+      b.textContent = tb.label;
       b.addEventListener("click", function () { state.tpTab = i; renderTemplates(); });
       tabs.appendChild(b);
     });
-    var feat = d.featured;
+    var feat;
+    if (real) {
+      $("tpSub").textContent = d.tpSub + "  " + d.pjLive;
+      var pick = state.realDTpl.filter(function (x) { return /landing|pitch|portfolio/.test(x.id); })[0] || state.realDTpl[0];
+      feat = {
+        t: prettyName(pick.name || pick.id),
+        d: (pick.description || "").split("\n")[0],
+        uses: (pick.triggers && pick.triggers[0]) || ""
+      };
+    } else {
+      $("tpSub").textContent = d.tpSub;
+      feat = d.featured;
+    }
     $("tpFeatured").innerHTML =
       '<div class="art">' + ICONS.deck + "</div>" +
       '<div class="fx"><div class="k">' + t("tpFeaturedK") + "</div><h3>" + feat.t + "</h3><p>" + feat.d + '</p>' +
-      '<button type="button" class="btn-new" id="tpUse">' + t("tpUse") + '</button><span class="m">' + feat.uses + " " + t("tpUses") + "</span></div>";
+      '<button type="button" class="btn-new" id="tpUse">' + t("tpUse") + '</button><span class="m">' + feat.uses + (real ? "" : " " + t("tpUses")) + "</span></div>";
     $("tpUse").addEventListener("click", function () { useTemplate(feat.t); });
     var grid = $("tpGrid");
     grid.innerHTML = "";
-    d.templates.forEach(function (tp, i) {
-      if (state.tpTab > 0 && d.tplTabs[state.tpTab] !== tp.k) return;
+    var list;
+    if (real) {
+      var key = tabList[state.tpTab].k;
+      list = key === "all" ? state.realDTpl : state.realDTpl.filter(function (x) { return x.surface === key; });
+    } else {
+      list = d.templates.filter(function (tp) { return state.tpTab === 0 || d.tplTabs[state.tpTab] === tp.k; });
+    }
+    list.forEach(function (tp, i) {
       var g = GRADS[(i + 3) % GRADS.length].split(",");
+      var sub = real ? t(SF_LABEL[tp.surface] || "sfWeb") : tp.k;
+      var use = real ? ((tp.triggers && tp.triggers[0]) || sub) : (tp.n + " " + t("tpUses"));
       var c = document.createElement("div");
       c.className = "tcard";
       c.innerHTML =
-        '<div class="pv" style="background:linear-gradient(140deg,' + g[0] + "," + g[1] + ')">' + ICONS[tp.ic] + "</div>" +
-        '<div class="body"><span><b>' + tp.t + '</b><span class="sub">' + tp.k + '</span></span><span class="use">' + tp.n + " " + t("tpUses") + "</span></div>";
-      c.addEventListener("click", function () { useTemplate(tp.t); });
+        '<div class="pv" style="background:linear-gradient(140deg,' + g[0] + "," + g[1] + ')">' + ICONS[real ? (SF_ICON[tp.surface] || "web") : tp.ic] + "</div>" +
+        '<div class="body"><span><b>' + (real ? prettyName(tp.name || tp.id) : tp.t) + '</b><span class="sub">' + sub + '</span></span><span class="use">' + use + "</span></div>";
+      c.addEventListener("click", function () { useTemplate(real ? prettyName(tp.name || tp.id) : tp.t); });
       grid.appendChild(c);
     });
   }
@@ -1435,6 +1614,35 @@
     var d = I18N[state.lang];
     var grid = $("syGrid");
     grid.innerHTML = "";
+    if (state.realSystems && state.realSystems.length > 0) {
+      $("sySub").textContent = d.sySub + "  " + d.pjLive;
+      var shown = state.realSystems.slice(0, state.sysShown);
+      shown.forEach(function (s) {
+        var c = document.createElement("div");
+        c.className = "scard";
+        var colors = (s.swatches && s.swatches.length ? s.swatches : ["#e8e8e8", "#b8b8b8", "#7a7a7a", "#161616"]).slice(0, 5);
+        var sw = "";
+        for (var i = 0; i < colors.length; i++) sw += '<i style="background:' + colors[i] + '"></i>';
+        c.innerHTML = '<div class="sw">' + sw + "</div><h3>" + s.title + "</h3><p>" + (s.summary || s.category || "") + '</p><span class="apply">' + t("syApply") + "</span>";
+        c.addEventListener("click", function () {
+          state.selDS = { id: s.id, name: s.title };
+          updateChips();
+          toast(t("toastApplied").replace("{name}", s.title));
+        });
+        if (state.selDS && state.selDS.id === s.id) c.style.borderColor = "rgba(135,234,92,0.7)";
+        grid.appendChild(c);
+      });
+      if (state.realSystems.length > state.sysShown) {
+        var more = document.createElement("button");
+        more.type = "button";
+        more.className = "more-btn";
+        more.textContent = t("sysMore").replace("{n}", String(state.realSystems.length - state.sysShown));
+        more.addEventListener("click", function () { state.sysShown += 24; renderSystems(); });
+        grid.appendChild(more);
+      }
+      return;
+    }
+    $("sySub").textContent = d.sySub;
     d.systems.forEach(function (s) {
       var c = document.createElement("div");
       c.className = "scard";
@@ -1557,6 +1765,30 @@
       renderAdmin();
     }).catch(function () {});
   }
+  function loadSystems() {
+    apiGet("/api/design-systems").then(function (d) {
+      state.realSystems = (d && d.designSystems) || [];
+      state.sysShown = 24;
+      renderSystems();
+    }).catch(function () {});
+  }
+  function loadDTemplates() {
+    apiGet("/api/design-templates").then(function (d) {
+      state.realDTpl = ((d && d.designTemplates) || []).filter(function (x) { return x.id.indexOf(":") < 0; });
+      state.tpTab = 0;
+      renderTemplates();
+    }).catch(function () {});
+  }
+  function loadSkills() {
+    apiGet("/api/skills").then(function (d) {
+      state.realSkills = (d && d.skills) || [];
+    }).catch(function () {});
+  }
+  function loadPlugins() {
+    apiGet("/api/plugins").then(function (d) {
+      state.realPlugins = (d && d.plugins) || [];
+    }).catch(function () {});
+  }
 
   function renderNav() {
     var L = ROLES[state.role][state.lang];
@@ -1610,6 +1842,7 @@
     renderApprovals();
     renderAdmin();
     renderRoleMenu();
+    updateChips();
     if (L.nav.indexOf(currentView()) < 0) go(L.nav[0]);
     else applyView();
   }
@@ -1881,6 +2114,10 @@
   loadProjects();
   loadReviews();
   loadStats();
+  loadSystems();
+  loadDTemplates();
+  loadSkills();
+  loadPlugins();
 })();
 </script>
 </body>
