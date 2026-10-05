@@ -38,6 +38,34 @@ export interface DesignBuddyStats {
   trend: number[];
 }
 
+/* ── AI 生成过程事件流（studio.html 生成视图的持久化）──
+   Append-only log per project: user prompts, engine replies, progress steps,
+   generated artifacts (self-contained HTML) and finish/stop markers. The
+   static studio page replays this log into the chat pane + design-files pane
+   so a generation session survives reloads. */
+
+export const DESIGNBUDDY_GEN_EVENT_TYPES = [
+  'user',
+  'ai',
+  'step',
+  'artifact',
+  'done',
+  'stop',
+] as const;
+export type DesignBuddyGenEventType = (typeof DESIGNBUDDY_GEN_EVENT_TYPES)[number];
+
+/** JSON payload cap per event; generous enough for a full artifact HTML doc. */
+export const DESIGNBUDDY_GEN_PAYLOAD_LIMIT = 400_000;
+
+export interface DesignBuddyGenEvent {
+  id: string;
+  projectId: string;
+  seq: number;
+  type: DesignBuddyGenEventType;
+  payload: Record<string, any> | null;
+  createdAt: number;
+}
+
 const SEED_REVIEWS: Array<{ title: string; author: string; status: DesignBuddyReviewStatus; ageHours: number }> = [
   { title: '官网首页改版', author: '小鹿', status: 'wait', ageHours: 2 },
   { title: '注册流程 v2', author: '阿明', status: 'wait', ageHours: 5 },
@@ -68,6 +96,18 @@ export function migrateDesignBuddy(db: SqliteDb): void {
 
     CREATE INDEX IF NOT EXISTS idx_designbuddy_reviews_status
       ON designbuddy_reviews(status, updated_at DESC);
+
+    CREATE TABLE IF NOT EXISTS designbuddy_gen (
+      id         TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      seq        INTEGER NOT NULL,
+      type       TEXT NOT NULL,
+      payload    TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_designbuddy_gen_project
+      ON designbuddy_gen(project_id, seq);
   `);
   const count = (db.prepare('SELECT COUNT(*) AS c FROM designbuddy_reviews').get() as DbRow).c;
   if (count > 0) return;
@@ -158,6 +198,51 @@ export function setDesignBuddyReviewStatus(
   if (info.changes === 0) return null;
   const row = db.prepare(`SELECT * FROM designbuddy_reviews WHERE id = ?`).get(id) as DbRow;
   return reviewFromRow(row);
+}
+
+function genEventFromRow(row: DbRow): DesignBuddyGenEvent {
+  let payload: Record<string, any> | null = null;
+  try {
+    payload = row.payload == null ? null : (JSON.parse(String(row.payload)) as Record<string, any>);
+  } catch {
+    payload = null;
+  }
+  return {
+    id: String(row.id),
+    projectId: String(row.project_id),
+    seq: Number(row.seq),
+    type: row.type as DesignBuddyGenEventType,
+    payload,
+    createdAt: Number(row.created_at),
+  };
+}
+
+export function listDesignBuddyGenEvents(db: SqliteDb, projectId: string): DesignBuddyGenEvent[] {
+  const rows = db
+    .prepare(`SELECT * FROM designbuddy_gen WHERE project_id = ? ORDER BY seq ASC, created_at ASC`)
+    .all(projectId) as DbRow[];
+  return rows.map(genEventFromRow);
+}
+
+export function appendDesignBuddyGenEvent(
+  db: SqliteDb,
+  projectId: string,
+  type: DesignBuddyGenEventType,
+  payload: Record<string, any> | null,
+): DesignBuddyGenEvent {
+  const now = Date.now();
+  const id = randomUUID();
+  const lastSeq = (
+    db
+      .prepare(`SELECT COALESCE(MAX(seq), 0) AS s FROM designbuddy_gen WHERE project_id = ?`)
+      .get(projectId) as DbRow
+  ).s as number;
+  const seq = Number(lastSeq) + 1;
+  db.prepare(
+    `INSERT INTO designbuddy_gen (id, project_id, seq, type, payload, created_at)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+  ).run(id, projectId, seq, type, JSON.stringify(payload ?? null), now);
+  return { id, projectId, seq, type, payload, createdAt: now };
 }
 
 export function designBuddyStats(db: SqliteDb): DesignBuddyStats {

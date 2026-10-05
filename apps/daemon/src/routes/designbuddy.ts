@@ -5,18 +5,24 @@
 //   GET  /api/db/role              -> { role }
 //   PUT  /api/db/role              <- { role }  (designer | pm | dev | admin)
 //   GET  /api/db/reviews           -> { reviews: [...] }
-//   POST /api/db/reviews           <- { title, author?, note? }  -> 201 { review }
+//   POST /api/db/reviews           <- { title, author?, note? } -> 201 { review }
 //   POST /api/db/reviews/:id/status <- { status: 'pass' | 'reject' } -> { review }
 //   GET  /api/db/stats             -> { projects, promptsThisMonth, ... trend }
+//   GET  /api/db/projects/:id/gen  -> { events: [...] }   (AI 生成过程事件流)
+//   POST /api/db/projects/:id/gen  <- { type, payload } -> 201 { event }
 
 import type { Express } from 'express';
 import type { RouteDeps } from '../server-context.js';
 import { sendApiError } from '../http/api-errors.js';
 import {
+  DESIGNBUDDY_GEN_EVENT_TYPES,
+  DESIGNBUDDY_GEN_PAYLOAD_LIMIT,
   DESIGNBUDDY_REVIEW_STATUS_TRANSITIONS,
   DESIGNBUDDY_ROLES,
+  appendDesignBuddyGenEvent,
   createDesignBuddyReview,
   designBuddyStats,
+  listDesignBuddyGenEvents,
   listDesignBuddyReviews,
   readDesignBuddyRole,
   setDesignBuddyReviewStatus,
@@ -74,5 +80,49 @@ export function registerDesignBuddyRoutes(app: Express, ctx: RegisterDesignBuddy
 
   app.get('/api/db/stats', (_req, res) => {
     res.json(designBuddyStats(db));
+  });
+
+  // ── AI 生成过程事件流（studio 生成视图）──
+  //   GET  /api/db/projects/:id/gen  -> { events: [...] }
+  //   POST /api/db/projects/:id/gen  <- { type, payload } -> 201 { event }
+
+  app.get('/api/db/projects/:id/gen', (req, res) => {
+    res.json({ events: listDesignBuddyGenEvents(db, req.params.id) });
+  });
+
+  app.post('/api/db/projects/:id/gen', (req, res) => {
+    const type = req.body?.type;
+    if (
+      typeof type !== 'string' ||
+      !(DESIGNBUDDY_GEN_EVENT_TYPES as readonly string[]).includes(type)
+    ) {
+      return sendApiError(
+        res,
+        400,
+        'BAD_REQUEST',
+        `type must be one of ${DESIGNBUDDY_GEN_EVENT_TYPES.join('|')}`,
+      );
+    }
+    const payload = req.body?.payload ?? null;
+    if (payload !== null && (typeof payload !== 'object' || Array.isArray(payload))) {
+      return sendApiError(res, 400, 'BAD_REQUEST', 'payload must be an object or null');
+    }
+    if (JSON.stringify(payload).length > DESIGNBUDDY_GEN_PAYLOAD_LIMIT) {
+      return sendApiError(res, 400, 'BAD_REQUEST', 'payload too large');
+    }
+    // 只允许绑定到真实存在的项目行，避免生成日志脱离项目。
+    const project = db
+      .prepare(`SELECT 1 AS ok FROM projects WHERE id = ?`)
+      .get(req.params.id) as { ok: number } | undefined;
+    if (!project) {
+      return sendApiError(res, 404, 'NOT_FOUND', 'project not found');
+    }
+    const event = appendDesignBuddyGenEvent(
+      db,
+      req.params.id,
+      type as (typeof DESIGNBUDDY_GEN_EVENT_TYPES)[number],
+      payload as Record<string, any> | null,
+    );
+    res.status(201).json({ event });
   });
 }

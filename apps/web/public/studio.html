@@ -121,6 +121,8 @@
   /* 主区 */
   .main { display: flex; flex-direction: column; align-items: center; padding: 40px 40px 60px; }
   .main-inner { width: min(860px, 100%); }
+  .main-inner.wide { width: min(1360px, 100%); }
+  .main-inner.wide .topbar { margin-bottom: 16px; }
   .topbar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 42px; }
   .lang { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--glass); border: 1px solid var(--glass-border); backdrop-filter: blur(14px); }
   .lang button { appearance: none; border: 0; background: transparent; color: var(--muted); font: 600 12px/1 inherit; padding: 6px 12px; border-radius: 999px; cursor: pointer; transition: 0.2s; }
@@ -158,6 +160,91 @@
   .composer .row { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; position: relative; }
   .chip.sel { color: var(--lime-deep); border-color: rgba(135,234,92,0.55); background: rgba(135,234,92,0.12); }
   /* 资源选择器（技能 / 插件 / 设计系统） */
+  /* ── 生成过程视图（左：对话修改；右：设计文件）── */
+  .gen-wrap { display: grid; grid-template-columns: minmax(340px, 46%) 1fr; height: calc(100dvh - 148px); min-height: 560px; border-radius: 22px; overflow: hidden; border: 1px solid var(--glass-border); background: #fff; box-shadow: 0 18px 44px rgba(58,70,52,0.12); }
+  .gen-left { display: flex; flex-direction: column; background: #eceef0; border-right: 1px solid #e2e5e7; min-width: 0; }
+  .gen-head { display: flex; align-items: center; gap: 10px; padding: 13px 16px; border-bottom: 1px solid #e2e5e7; }
+  .gen-back { flex: none; width: 32px; height: 32px; border-radius: 10px; border: 0; background: transparent; color: var(--muted); cursor: pointer; display: grid; place-items: center; }
+  .gen-back:hover { background: rgba(255,255,255,0.75); color: var(--ink); }
+  .gen-title { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; }
+  .gen-title b { font-size: 15px; font-weight: 800; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gen-status { flex: none; font-size: 11.5px; font-weight: 700; padding: 3px 10px; border-radius: 999px; display: inline-flex; align-items: center; gap: 6px; }
+  .gen-status.run { color: #8a6d1f; background: #fff1c4; }
+  .gen-status.run i { width: 9px; height: 9px; border: 2px solid #d9b83e; border-top-color: transparent; border-radius: 50%; animation: spin 0.9s linear infinite; }
+  .gen-status.done { color: #1f7a3d; background: #dcf3e4; }
+  .gen-status.stop { color: #9a3412; background: #ffe3cd; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .gen-stop-btn { flex: none; display: inline-flex; align-items: center; gap: 6px; font: 700 12px/1 inherit; padding: 8px 13px; border-radius: 11px; border: 1px solid #e6d4c4; background: #fff; color: #b45309; cursor: pointer; }
+  .gen-stop-btn:hover { background: #fff7ed; }
+  .gen-chat { flex: 1; overflow-y: auto; padding: 16px 14px; display: flex; flex-direction: column; gap: 12px; }
+  .gm-user { align-self: flex-end; max-width: 88%; background: #22282e; color: #f5f7f8; border-radius: 14px 14px 4px 14px; padding: 10px 14px; font-size: 13.5px; font-weight: 500; line-height: 1.6; white-space: pre-wrap; word-break: break-word; box-shadow: 0 6px 16px rgba(32,38,30,0.18); }
+  .gm-ai { background: #fff; border: 1px solid #e4e7e9; border-radius: 14px; padding: 12px 14px; box-shadow: 0 6px 16px rgba(58,70,52,0.05); max-width: 96%; }
+  .gm-ai .who { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 11px; color: var(--faint); margin-bottom: 8px; }
+  .gm-ai .who b { color: var(--ink); font-size: 12px; font-weight: 800; }
+  .gm-ai .who .st { display: inline-flex; align-items: center; gap: 5px; }
+  .gm-ai .who .st.run { color: #8a6d1f; }
+  .gm-ai .who .st.done { color: #1f9d4d; }
+  .gm-ai .who .st.stop { color: #c2561b; }
+  .gm-ai .who .st i { width: 8px; height: 8px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.9s linear infinite; }
+  .gm-ai .bd { font-size: 13.5px; line-height: 1.65; color: var(--ink); }
+  .gm-steps { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+  .gm-step { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+  .gm-step .ck { flex: none; margin-top: 2px; color: #1f9d4d; display: inline-flex; }
+  .gm-step.pending { color: var(--faint); }
+  .gm-step.pending .ck { color: var(--faint); }
+  .gm-art-link { margin-top: 10px; display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 700; color: #2c6e49; background: #eef7f0; border: 1px solid #d5e9db; border-radius: 10px; padding: 7px 12px; cursor: pointer; }
+  .gm-art-link:hover { background: #e2f1e7; }
+  .gm-welcome { margin: auto; text-align: center; color: var(--muted); padding: 24px; }
+  .gm-welcome .big { width: 46px; height: 46px; margin: 0 auto 12px; border-radius: 14px; background: var(--ink); color: var(--lime); display: grid; place-items: center; }
+  .gm-welcome b { display: block; font-size: 14.5px; color: var(--ink); margin-bottom: 6px; }
+  .gm-welcome p { font-size: 12.5px; line-height: 1.6; max-width: 260px; }
+  .gen-sug { display: flex; gap: 8px; padding: 10px 14px 0; flex-wrap: wrap; }
+  .gen-sug:empty { display: none; }
+  .gen-sug button { font: 600 12px/1.4 inherit; padding: 7px 12px; border-radius: 999px; background: #fff; border: 1px solid #dde1e3; color: var(--muted); cursor: pointer; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gen-sug button:hover { border-color: #b9c2bd; color: var(--ink); }
+  .gen-input { display: flex; gap: 10px; align-items: flex-end; padding: 12px 14px 14px; }
+  .gen-input textarea { flex: 1; min-width: 0; resize: none; border: 1px solid #dde1e3; border-radius: 14px; padding: 11px 14px; font: 500 13.5px/1.5 inherit; background: #fff; outline: 0; color: var(--ink); }
+  .gen-input textarea:focus { border-color: #9db8a6; box-shadow: 0 0 0 3px rgba(124,203,184,0.18); }
+  .gen-send { flex: none; width: 40px; height: 40px; border-radius: 13px; background: var(--ink); color: #f4f8f0; border: 0; cursor: pointer; display: grid; place-items: center; transition: 0.2s; }
+  .gen-send:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(32,38,30,0.28); }
+  .gen-right { display: flex; flex-direction: column; min-width: 0; background: #fff; }
+  .gen-rhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 15px 20px 12px; border-bottom: 1px solid #eef0f1; }
+  .gen-rhead .rt { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .gen-rhead .rt b { font-size: 16px; font-weight: 800; letter-spacing: -0.01em; }
+  .gen-rhead .tab { font-size: 11.5px; font-weight: 700; padding: 4px 12px; border-radius: 999px; background: #f1f3f4; color: var(--muted); }
+  .gen-quota { flex: none; font-size: 12.5px; font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .gen-files { flex: 1; overflow-y: auto; padding: 18px 20px; }
+  .gf-empty { height: 100%; min-height: 260px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border: 1.5px dashed #dfe3e5; border-radius: 16px; color: var(--faint); text-align: center; padding: 20px; }
+  .gf-empty .mark { width: 44px; height: 44px; border-radius: 12px; background: #f4f6f5; display: grid; place-items: center; margin-bottom: 4px; color: #b7c0ba; }
+  .gf-empty b { font-size: 13.5px; color: var(--muted); font-weight: 700; }
+  .gf-empty span { font-size: 12px; }
+  .gf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(216px, 1fr)); gap: 14px; }
+  .gf-card { border: 1px solid #e8eaea; border-radius: 14px; overflow: hidden; cursor: pointer; background: #fff; transition: 0.2s; }
+  .gf-card:hover { box-shadow: 0 12px 26px rgba(58,70,52,0.13); transform: translateY(-2px); border-color: #d6ded9; }
+  .gf-card .pv { height: 152px; overflow: hidden; position: relative; background: #fbfbfa; }
+  .gf-card .pv iframe { width: 1280px; height: 940px; transform: scale(0.17); transform-origin: 0 0; border: 0; pointer-events: none; }
+  .gf-card .meta { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-top: 1px solid #f0f2f2; }
+  .gf-card .meta b { flex: 1; min-width: 0; font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gf-card .ver { flex: none; font-size: 10.5px; font-weight: 800; background: #eef7f0; color: #2c7a4b; padding: 2.5px 9px; border-radius: 999px; }
+  .gf-card .time { flex: none; font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
+  .gen-actions { display: flex; gap: 9px; padding: 12px 20px 16px; border-top: 1px solid #eef0f1; flex-wrap: wrap; }
+  .gen-actions button { display: inline-flex; gap: 6px; align-items: center; font: 600 12.5px/1 inherit; padding: 9px 13px; border-radius: 11px; background: #f5f7f5; border: 1px solid #e6eae7; color: var(--ink); cursor: pointer; }
+  .gen-actions button:hover { background: #edf1ee; }
+  .gen-actions button svg { color: var(--faint); }
+  .gen-modal { position: fixed; inset: 0; background: rgba(14,18,15,0.52); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 80; padding: 26px; }
+  .gen-modal[hidden] { display: none; }
+  .gm-box { background: #fff; border-radius: 18px; width: min(1120px, 94vw); height: min(780px, 88dvh); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 30px 80px rgba(10,18,11,0.35); }
+  .gm-bar { display: flex; gap: 10px; align-items: center; padding: 12px 16px; border-bottom: 1px solid #eef0f1; }
+  .gm-bar b { flex: 1; min-width: 0; font-size: 14px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gm-act { flex: none; font: 700 12.5px/1 inherit; padding: 9px 14px; border-radius: 10px; border: 0; background: var(--ink); color: #f4f8f0; cursor: pointer; }
+  .gm-act:hover { opacity: 0.88; }
+  .gm-act.ghost { background: #f1f3f2; color: var(--ink); }
+  .gm-frame { flex: 1; min-height: 0; }
+  .gm-frame iframe { width: 100%; height: 100%; border: 0; background: #fff; }
+  @media (max-width: 980px) {
+    .gen-wrap { grid-template-columns: 1fr; height: auto; }
+    .gen-left { height: 72dvh; border-right: 0; border-bottom: 1px solid #e2e5e7; }
+  }
   .pk-panel { position: absolute; top: calc(100% + 8px); left: 0; width: 420px; max-width: calc(100vw - 40px); background: var(--glass-strong); border: 1px solid var(--glass-border); border-radius: 16px; box-shadow: var(--card-shadow); backdrop-filter: blur(24px); display: none; z-index: 40; overflow: hidden; }
   .pk-panel.show { display: flex; flex-direction: column; animation: pop 0.16s ease both; }
   .pk-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px 8px; border-bottom: 1px solid var(--hairline); }
@@ -639,6 +726,58 @@
           <div class="proj-grid" id="pjGrid"></div>
         </section>
 
+        <section class="view" id="view-gen">
+          <div class="gen-wrap">
+            <!-- 左：对话式生成/修改 -->
+            <aside class="gen-left">
+              <div class="gen-head">
+                <button type="button" class="gen-back" id="genBack" aria-label="back">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m14.5 6-6 6 6 6"/></svg>
+                </button>
+                <div class="gen-title">
+                  <b id="genName">…</b>
+                  <span class="gen-status" id="genStatus" hidden></span>
+                </div>
+                <button type="button" class="gen-stop-btn" id="genStop" hidden>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+                  <span data-i18n="genStopBtn">停止</span>
+                </button>
+              </div>
+              <div class="gen-chat" id="genChat"></div>
+              <div class="gen-sug" id="genSug"></div>
+              <div class="gen-input">
+                <textarea id="genPrompt" rows="2" data-i18n-ph="genAskPh" placeholder="继续丰富这个设计…"></textarea>
+                <button type="button" class="gen-send" id="genSend" aria-label="send">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12h13M13 5.5l6.5 6.5-6.5 6.5"/></svg>
+                </button>
+              </div>
+            </aside>
+            <!-- 右：设计文件（成果展现）-->
+            <main class="gen-right">
+              <div class="gen-rhead">
+                <div class="rt">
+                  <b data-i18n="gfTitle">设计文件</b>
+                  <span class="tab" data-i18n="gfTab">项目</span>
+                </div>
+                <span class="gen-quota" id="genQuota">--</span>
+              </div>
+              <div class="gen-files" id="genFiles"></div>
+              <div class="gen-actions" id="genActions"></div>
+            </main>
+          </div>
+          <div class="gen-modal" id="genModal" hidden>
+            <div class="gm-box">
+              <div class="gm-bar">
+                <b id="gmName">…</b>
+                <button type="button" class="gm-act" id="gmNewTab" data-i18n="gNewTab">新窗口</button>
+                <button type="button" class="gm-act" id="gmCopy" data-i18n="gCopyHtml">复制 HTML</button>
+                <button type="button" class="gm-act ghost" id="gmClose" data-i18n="gClose">关闭</button>
+              </div>
+              <div class="gm-frame" id="gmFrame"></div>
+            </div>
+          </div>
+        </section>
+
         <section class="view" id="view-templates">
           <div class="page-head">
             <div>
@@ -760,6 +899,43 @@
       pkSearch: "搜索…", pkClear: "清除选择", pkEmpty: "没有匹配项",
       toastPicked: "✦ 已选择：{name}",
       sysMore: "显示更多（{n}）",
+      /* 生成过程视图 */
+      gsRun: "生成中…", gsDone: "已完成", gsStop: "已手动停止",
+      genEngine: "DesignBuddy 生成引擎", genVia: "内置引擎",
+      genStopBtn: "停止",
+      genAskPh: "继续丰富这个设计…",
+      genWelcomeTitle: "把需求发给我",
+      genWelcomeBody: "我会生成第一版设计，之后你可以随时修改、继续丰富。",
+      genSugPolish: "打磨到可交付：视觉层级、排版、间距、响应式、按钮状态、空/加载/错误状态",
+      genSugDark: "加一版深色模式",
+      genSugPalette: "换个更鲜活的配色",
+      genSugMobile: "补一版移动端适配",
+      gfTitle: "设计文件", gfTab: "项目",
+      gfEmpty: "生成的设计会出现在这里",
+      gfEmptySub: "先在左侧发出第一条需求",
+      gfNewSketch: "新建草图", gfNewDoc: "新建文档", gfUpload: "上传", gfNewBrowser: "新建浏览器", gfNewDs: "新建设计体系",
+      gNewTab: "新窗口", gCopyHtml: "复制 HTML", gCopied: "已复制 HTML", gClose: "关闭",
+      genStepAnalyze: "分析需求：{kind}",
+      genStepPlan: "制定方案：{plan}",
+      genStepDs: "套用设计系统：{ds}",
+      genStepGen: "生成界面 v{v}：「{name}」",
+      genStepCheck: "自检：对比度 · 间距 · 响应式断点",
+      genStepMod: "理解修改请求：{mods}",
+      genStepApply: "调整设计，生成 v{v}",
+      genAiIntro1: "收到！我来为「{name}」生成第一版设计。",
+      genAiIntro2: "收到，我在现有版本上继续调整。",
+      genAiOutro: "v{v} 已生成，在右侧「设计文件」可直接预览。想继续打磨，随时发我。",
+      genToastDone: "✦ v{v} 已生成",
+      genToastStop: "已停止生成",
+      gkSignup: "注册流程", gkLanding: "官网页面", gkPoster: "海报", gkDeck: "幻灯片", gkStoryboard: "视频分镜", gkPage: "通用页面",
+      gpSignup: "三屏流程：欢迎 → 表单 → 完成",
+      gpLanding: "首屏 + 特性 + 行动召唤",
+      gpPoster: "大字排版 + 主视觉色块",
+      gpDeck: "封面 / 要点 / 结尾 三页",
+      gpStoryboard: "开场 / 过程 / 收尾 三镜",
+      gpPage: "首屏 + 内容区 + 行动召唤",
+      gmPolish: "交付级打磨", gmDark: "深色模式", gmPalette: "新配色", gmMobile: "移动端适配",
+      genDefaultDs: "默认视觉规范",
       sfWeb: "网页", sfImage: "图像", sfVideo: "视频", sfAudio: "音频",
       navReview: "评审", navArtifacts: "交付物", navMembers: "成员", navApprovals: "审批",
       rvHome: "待你评审", rvTitle: "评审中心", rvSub: "集中处理团队提交的设计稿，一键通过或退回。",
@@ -896,6 +1072,43 @@
       pkSearch: "Search…", pkClear: "Clear selection", pkEmpty: "No matches",
       toastPicked: "✦ Selected: {name}",
       sysMore: "Show more ({n})",
+      /* Generation view */
+      gsRun: "Generating…", gsDone: "Done", gsStop: "Stopped manually",
+      genEngine: "DesignBuddy Engine", genVia: "built-in engine",
+      genStopBtn: "Stop",
+      genAskPh: "Keep enriching this design…",
+      genWelcomeTitle: "Describe what you need",
+      genWelcomeBody: "I'll generate the first version, then you can keep refining and enriching it.",
+      genSugPolish: "Polish to ship quality: hierarchy, type, spacing, responsive, button states, empty/loading/error states",
+      genSugDark: "Add a dark mode version",
+      genSugPalette: "Try a bolder palette",
+      genSugMobile: "Add a mobile adaptation",
+      gfTitle: "Design files", gfTab: "Project",
+      gfEmpty: "Generated designs will appear here",
+      gfEmptySub: "Send your first brief on the left",
+      gfNewSketch: "New sketch", gfNewDoc: "New doc", gfUpload: "Upload", gfNewBrowser: "New browser", gfNewDs: "New design system",
+      gNewTab: "New tab", gCopyHtml: "Copy HTML", gCopied: "HTML copied", gClose: "Close",
+      genStepAnalyze: "Analyzing: {kind}",
+      genStepPlan: "Plan: {plan}",
+      genStepDs: "Applying design system: {ds}",
+      genStepGen: "Generating v{v}: \"{name}\"",
+      genStepCheck: "Self-check: contrast · spacing · breakpoints",
+      genStepMod: "Understanding change: {mods}",
+      genStepApply: "Applying changes → v{v}",
+      genAiIntro1: "Got it! Generating the first version of \"{name}\".",
+      genAiIntro2: "Got it — refining the existing version.",
+      genAiOutro: "v{v} is ready — preview it in Design files. Keep refining anytime.",
+      genToastDone: "✦ v{v} generated",
+      genToastStop: "Generation stopped",
+      gkSignup: "signup flow", gkLanding: "landing page", gkPoster: "poster", gkDeck: "slides", gkStoryboard: "storyboard", gkPage: "general page",
+      gpSignup: "3 screens: welcome → form → done",
+      gpLanding: "hero + features + CTA",
+      gpPoster: "big type + key color blocks",
+      gpDeck: "cover / points / closing",
+      gpStoryboard: "opening / middle / ending",
+      gpPage: "hero + content + CTA",
+      gmPolish: "ship-quality polish", gmDark: "dark mode", gmPalette: "new palette", gmMobile: "mobile adaptation",
+      genDefaultDs: "default visual system",
       sfWeb: "Web", sfImage: "Image", sfVideo: "Video", sfAudio: "Audio",
       navReview: "Review", navArtifacts: "Artifacts", navMembers: "Members", navApprovals: "Approvals",
       rvHome: "Awaiting your review", rvTitle: "Review center", rvSub: "Review everything your team submits — approve or send back in one click.",
@@ -1211,6 +1424,7 @@
     realDTpl: null,
     realSkills: null,
     realPlugins: null,
+    gen: { pid: null, name: "", events: [], status: "idle", runId: 0, timers: [], mod: {}, offline: false, welcome: false },
     sysShown: 24,
     selDS: null,
     selSkill: null,
@@ -1298,6 +1512,540 @@
       }
     }, 900);
   }
+  /* ── AI 生成过程视图 ─────────────────────────────
+     左：对话（发需求 → 引擎分步生成 → 继续修改丰富）
+     右：设计文件（产物卡片 + 预览 + 新建入口）
+     事件流按项目持久化到 /api/db/projects/:id/gen，刷新后可完整回放。 */
+  var GEN_SPEED = +(window.__DB_GEN_SPEED || 1);
+  function esc(x) {
+    return String(x == null ? "" : x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  var GEN_KIND_KEY = { signup: "gkSignup", landing: "gkLanding", poster: "gkPoster", deck: "gkDeck", storyboard: "gkStoryboard", page: "gkPage" };
+  var GEN_PLAN_KEY = { signup: "gpSignup", landing: "gpLanding", poster: "gpPoster", deck: "gpDeck", storyboard: "gpStoryboard", page: "gpPage" };
+  var CHECK_SM_SVG = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 12.5 5 5L19.5 7"/></svg>';
+
+  function genClearTimers() {
+    (state.gen.timers || []).forEach(function (id) { clearTimeout(id); });
+    state.gen.timers = [];
+  }
+  function genDelay(ms) {
+    return new Promise(function (resolve) {
+      var id = setTimeout(function () {
+        var i = state.gen.timers.indexOf(id);
+        if (i >= 0) state.gen.timers.splice(i, 1);
+        resolve();
+      }, Math.max(16, ms * GEN_SPEED));
+      state.gen.timers.push(id);
+    });
+  }
+  function genAlive(runId) { return runId === state.gen.runId; }
+
+  function genPersist(type, payload) {
+    var ev = { type: type, payload: payload == null ? null : payload, at: Date.now() };
+    state.gen.events.push(ev);
+    if (!state.gen.offline && state.gen.pid) {
+      apiSend("/api/db/projects/" + encodeURIComponent(state.gen.pid) + "/gen", "POST", { type: type, payload: payload == null ? null : payload })
+        .catch(function () { state.gen.offline = true; });
+    }
+    return ev;
+  }
+
+  function genKindOf(text) {
+    var q = String(text || "").toLowerCase();
+    if (/注册|登陆|登录|signup|sign-up|log-?in|auth/.test(q)) return "signup";
+    if (/海报|poster/.test(q)) return "poster";
+    if (/演示|路演|幻灯|slide|deck|ppt/.test(q)) return "deck";
+    if (/视频|动画|分镜|video|animation|storyboard/.test(q)) return "storyboard";
+    if (/官网|首页|落地|landing|homepage/.test(q)) return "landing";
+    return "page";
+  }
+  function genModsOf(text) {
+    var m = Object.assign({}, state.gen.mod || {});
+    var q = String(text || "").toLowerCase();
+    if (/交付|打磨|polish|层级|状态/.test(q)) m.polish = true;
+    if (/深色|暗色|dark/.test(q)) m.dark = true;
+    if (/配色|颜色|色彩|鲜活|palette|color/.test(q)) m.palette = true;
+    if (/移动|手机|适配|mobile|响应/.test(q)) m.mobile = true;
+    return m;
+  }
+  function genModLabels(mods) {
+    var keys = [];
+    if (mods.polish) keys.push("gmPolish");
+    if (mods.dark) keys.push("gmDark");
+    if (mods.palette) keys.push("gmPalette");
+    if (mods.mobile) keys.push("gmMobile");
+    return keys.map(function (k) { return t(k); }).join(" · ");
+  }
+  function genNextVersion() {
+    var v = 0;
+    state.gen.events.forEach(function (e) {
+      if (e.type === "artifact" && e.payload && e.payload.version > v) v = e.payload.version;
+    });
+    return v + 1;
+  }
+  function genCtx() {
+    var sw = null;
+    if (state.selDS && state.selDS.sw && state.selDS.sw.length >= 4) sw = state.selDS.sw.slice(0, 4);
+    return {
+      title: state.gen.name || t("gkPage"),
+      sw: sw || ["#10161b", "#f5f5ef", "#7ccbb8", "#ff9d76"],
+      dsName: state.selDS ? state.selDS.name : t("genDefaultDs"),
+      skillName: state.selSkill ? state.selSkill.name : "",
+      pluginName: state.selPlugin ? state.selPlugin.name : ""
+    };
+  }
+
+  /* 产物 HTML 生成器：按类型输出自包含中文页面（可直接 iframe 预览） */
+  function genBuild(kind, ctx, mods) {
+    var v = ctx.version;
+    var sw = ctx.sw.slice();
+    if (mods.palette) { var tmp = sw[2]; sw[2] = sw[3]; sw[3] = tmp; }
+    var dark = !!mods.dark;
+    var ink = dark ? "#f1f4f2" : "#141a1f";
+    var bg = dark ? "#0d1216" : sw[1];
+    var card = dark ? "#161d23" : "#ffffff";
+    var line = dark ? "#232c34" : "#e6e9e6";
+    var mut = dark ? "#9aa8a1" : "#5f6b64";
+    var ac = sw[2], ac2 = sw[3];
+    var statesBlock = "";
+    if (mods.polish) {
+      statesBlock =
+        '<section class="sec"><h3>状态示例</h3><div class="states">' +
+        '<div class="st-c"><span class="tag">加载中</span><button class="btn" disabled>正在提交…</button></div>' +
+        '<div class="st-c"><span class="tag err">错误</span><input class="ipt err-ipt" value="design@" /><small>请输入有效的邮箱地址</small></div>' +
+        '<div class="st-c"><span class="tag">空状态</span><div class="empty">还没有内容，先创建一个吧</div></div>' +
+        "</div></section>";
+    }
+    var foot =
+      '<footer>DesignBuddy · ' + esc(ctx.title) + " · v" + v + " · " + esc(ctx.dsName) +
+      (mods.mobile ? " · 已适配 390px" : "") + "</footer>";
+    var css =
+      "*{box-sizing:border-box;margin:0;padding:0}body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background:" + bg + ";color:" + ink + ";line-height:1.6}" +
+      ".wrap{max-width:880px;margin:0 auto;padding:28px 24px}" +
+      ".nav{display:flex;align-items:center;gap:10px;padding:16px 24px;border-bottom:1px solid " + line + "}" +
+      ".nav .logo{width:26px;height:26px;border-radius:8px;background:" + ac + ";color:" + (dark ? "#0d1216" : "#fff") + ";display:grid;place-items:center;font-weight:800;font-size:13px}" +
+      ".nav b{font-size:15px}" +
+      ".hero{padding:56px 24px 40px;text-align:center}" +
+      ".hero h1{font-size:40px;letter-spacing:-.02em;line-height:1.2}" +
+      ".hero h1 i{color:" + ac + ";font-style:normal}" +
+      ".hero p{color:" + mut + ";margin-top:12px;font-size:15px}" +
+      ".btn{display:inline-block;background:" + ac + ";color:" + (dark ? "#0d1216" : "#fff") + ";border:0;border-radius:12px;padding:12px 26px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}" +
+      ".btn.ghost{background:transparent;border:1.5px solid " + line + ";color:" + ink + "}" +
+      ".btn[disabled]{opacity:.55;cursor:default}" +
+      ".grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:0 24px}" +
+      ".cell{background:" + card + ";border:1px solid " + line + ";border-radius:16px;padding:20px}" +
+      ".cell .ic{width:34px;height:34px;border-radius:10px;background:" + ac2 + "22;display:grid;place-items:center;color:" + ac2 + ";font-weight:800;margin-bottom:12px}" +
+      ".cell b{display:block;font-size:15px;margin-bottom:6px}" +
+      ".cell p{font-size:13px;color:" + mut + "}" +
+      ".sec{padding:36px 24px}.sec h3{font-size:19px;margin-bottom:16px}" +
+      ".states{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}" +
+      ".st-c{background:" + card + ";border:1px solid " + line + ";border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px;font-size:13px}" +
+      ".tag{font-size:11px;font-weight:800;color:" + ac + "}.tag.err{color:#d2503a}" +
+      ".err-ipt{border-color:#d2503a!important}.empty{border:1.5px dashed " + line + ";border-radius:10px;padding:18px;text-align:center;color:" + mut + "}" +
+      ".ipt{width:100%;border:1.5px solid " + line + ";background:" + (dark ? "#10171d" : "#fff") + ";color:" + ink + ";border-radius:11px;padding:11px 13px;font-size:14px;font-family:inherit}" +
+      ".ipt:focus{outline:none;border-color:" + ac + "}" +
+      "small{color:#d2503a;font-size:12px}" +
+      ".form{background:" + card + ";border:1px solid " + line + ";border-radius:18px;padding:26px;display:flex;flex-direction:column;gap:12px}" +
+      ".form h2{font-size:18px;margin-bottom:2px}" +
+      ".row2{display:grid;grid-template-columns:1.1fr .9fr;gap:26px;align-items:center}" +
+      ".feat{display:flex;gap:10px;align-items:flex-start;font-size:14px;color:" + mut + "}" +
+      ".feat .dot{flex:none;width:20px;height:20px;border-radius:7px;background:" + ac + "22;color:" + ac + ";display:grid;place-items:center;font-size:11px;font-weight:800;margin-top:2px}" +
+      ".poster{min-height:92vh;display:flex;flex-direction:column;justify-content:space-between;padding:7vh 6vw}" +
+      ".poster h1{font-size:clamp(40px,9vw,96px);line-height:1.05;letter-spacing:-.03em}" +
+      ".poster .bar{height:14px;width:120px;background:" + ac + ";border-radius:99px;margin-bottom:22px}" +
+      ".poster .meta{display:flex;justify-content:space-between;color:" + mut + ";font-size:14px}" +
+      ".deck{display:flex;flex-direction:column;gap:18px;padding:24px}" +
+      ".slide{aspect-ratio:16/9;background:" + card + ";border:1px solid " + line + ";border-radius:16px;padding:5% 6%;display:flex;flex-direction:column;justify-content:center;gap:10px}" +
+      ".slide .k{font-size:13px;font-weight:800;color:" + ac2 + "}" +
+      ".slide h2{font-size:clamp(20px,3.4vw,34px);letter-spacing:-.01em}" +
+      ".slide p{color:" + mut + ";font-size:clamp(12px,1.6vw,15px)}" +
+      ".sb{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:24px}" +
+      ".frame{aspect-ratio:16/10;background:linear-gradient(150deg," + ac + "30," + ac2 + "20);border:1px solid " + line + ";border-radius:12px;padding:14px;display:flex;flex-direction:column;justify-content:flex-end;gap:6px}" +
+      ".frame .no{font-size:11px;font-weight:800;color:" + ac2 + "}" +
+      ".frame p{font-size:13px;color:" + ink + "}" +
+      "footer{padding:22px;text-align:center;color:" + mut + ";font-size:12px;border-top:1px solid " + line + "}" +
+      "@media(max-width:640px){.grid,.states,.sb{grid-template-columns:1fr}.row2{grid-template-columns:1fr}.hero h1{font-size:30px}.wrap{padding:18px 14px}}";
+    var head = "<!doctype html><html lang=\"zh\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>" + esc(ctx.title) + " · v" + v + "</title><style>" + css + "</style></head>";
+
+    var body = "";
+    if (kind === "signup") {
+      body =
+        '<div class="nav"><span class="logo">D</span><b>' + esc(ctx.title) + '</b></div>' +
+        '<div class="wrap"><div class="row2">' +
+        '<div><h1 style="font-size:30px;letter-spacing:-.02em">加入我们，<i style="color:' + ac + ';font-style:normal">三步</i>完成注册</h1>' +
+        '<p style="color:' + mut + ';margin:10px 0 18px;font-size:14.5px">创建账号后即可开始设计协作，随时切换设备继续。</p>' +
+        '<div style="display:flex;flex-direction:column;gap:10px">' +
+        '<div class="feat"><span class="dot">1</span>填写邮箱与密码</div>' +
+        '<div class="feat"><span class="dot">2</span>验证邮箱</div>' +
+        '<div class="feat"><span class="dot">3</span>选择角色，进入工作台</div></div></div>' +
+        '<div class="form"><h2>创建账号</h2><input class="ipt" placeholder="邮箱地址" /><input class="ipt" placeholder="密码（至少 8 位）" type="password" />' +
+        '<button class="btn">注册</button><span style="font-size:12px;color:' + mut + '">已有账号？直接登录</span></div>' +
+        "</div>" + statesBlock + "</div>" + foot;
+    } else if (kind === "landing") {
+      body =
+        '<div class="nav"><span class="logo">D</span><b>' + esc(ctx.title) + '</b><span style="margin-left:auto;font-size:13px;color:' + mut + '">首页 · 功能 · 定价</span></div>' +
+        '<div class="hero"><h1>让好设计<br /><i>更快发生</i></h1><p>' + esc(ctx.title) + " · 由 DesignBuddy 引擎生成</p>" +
+        '<div style="margin-top:22px;display:flex;gap:12px;justify-content:center"><button class="btn">免费开始</button><button class="btn ghost">观看演示</button></div></div>' +
+        '<div class="grid">' +
+        '<div class="cell"><div class="ic">快</div><b>极速生成</b><p>一句需求，秒级产出第一版界面。</p></div>' +
+        '<div class="cell"><div class="ic">美</div><b>设计系统</b><p>自动套用品牌色彩与排版规范。</p></div>' +
+        '<div class="cell"><div class="ic">灵</div><b>持续丰富</b><p>对话式修改，越聊越接近成品。</p></div></div>' +
+        '<div class="sec" style="text-align:center"><button class="btn">立即体验</button></div>' + statesBlock + foot;
+    } else if (kind === "poster") {
+      body =
+        '<div class="poster"><div><div class="bar"></div><h1>' + esc(ctx.title) + '</h1><p style="color:' + mut + ';margin-top:14px;font-size:16px"> DESIGN · 2026 · 设计工作坊</p></div>' +
+        '<div class="meta"><span>DesignBuddy 出品</span><span>扫码报名</span></div></div>' + foot;
+    } else if (kind === "deck") {
+      body =
+        '<div class="deck">' +
+        '<div class="slide"><span class="k">01 / 封面</span><h2>' + esc(ctx.title) + '</h2><p>提案 · DesignBuddy 生成引擎</p></div>' +
+        '<div class="slide"><span class="k">02 / 要点</span><h2>三个核心主张</h2><p>更快的初稿 · 更稳的规范 · 更顺的协作</p></div>' +
+        '<div class="slide"><span class="k">03 / 结尾</span><h2>谢谢观看</h2><p>欢迎随时反馈，我们继续打磨。</p></div></div>' + foot;
+    } else if (kind === "storyboard") {
+      body =
+        '<div class="nav"><span class="logo">D</span><b>' + esc(ctx.title) + '</b></div>' +
+        '<div class="sb">' +
+        '<div class="frame"><span class="no">镜头 01 · 开场</span><p>品牌 logo 浮现，主色铺满画面。</p></div>' +
+        '<div class="frame"><span class="no">镜头 02 · 过程</span><p>产品界面逐层展开，文字与图形交错入场。</p></div>' +
+        '<div class="frame"><span class="no">镜头 03 · 收尾</span><p>行动号召定格，品牌口号收束全片。</p></div></div>' + foot;
+    } else {
+      body =
+        '<div class="nav"><span class="logo">D</span><b>' + esc(ctx.title) + '</b></div>' +
+        '<div class="hero"><h1>' + esc(ctx.title) + '</h1><p>由 DesignBuddy 引擎生成 · 一句需求开始</p><div style="margin-top:20px"><button class="btn">开始</button></div></div>' +
+        '<div class="grid">' +
+        '<div class="cell"><div class="ic">①</div><b>明确目标</b><p>说清你要什么，越具体越好。</p></div>' +
+        '<div class="cell"><div class="ic">②</div><b>快速迭代</b><p>在对话中不断修改与丰富。</p></div>' +
+        '<div class="cell"><div class="ic">③</div><b>交付成品</b><p>导出可用的设计文件。</p></div></div>' +
+        statesBlock + foot;
+    }
+    return head + "<body>" + body + "</body></html>";
+  }
+
+  /* ── 生成管线 ── */
+  async function startGenTurn(prompt) {
+    var runId = ++state.gen.runId;
+    genClearTimers();
+    state.gen.status = "run";
+    state.gen.welcome = false;
+    var hadArtifact = state.gen.events.some(function (e) { return e.type === "artifact"; });
+    genPersist("user", { text: prompt });
+    renderGen();
+    await genDelay(760);
+    if (!genAlive(runId)) return;
+    genPersist("ai", { text: t(hadArtifact ? "genAiIntro2" : "genAiIntro1").replace("{name}", state.gen.name) });
+    renderGen();
+    var kind = genKindOf(prompt + " " + state.gen.name);
+    var mods = genModsOf(prompt);
+    var isRefine = hadArtifact;
+    var steps;
+    if (!isRefine) {
+      steps = [
+        t("genStepAnalyze").replace("{kind}", t(GEN_KIND_KEY[kind])),
+        t("genStepPlan").replace("{plan}", t(GEN_PLAN_KEY[kind])),
+        t("genStepDs").replace("{ds}", state.selDS ? state.selDS.name : t("genDefaultDs")),
+        null, /* 生成界面（占位，版本号稍后填） */
+        t("genStepCheck")
+      ];
+    } else {
+      state.gen.mod = mods;
+      var modLabels = genModLabels(mods);
+      steps = [
+        t("genStepMod").replace("{mods}", modLabels || t("genStepApply").replace("{v}", String(genNextVersion()))),
+        null,
+        t("genStepCheck")
+      ];
+    }
+    for (var i = 0; i < steps.length; i++) {
+      await genDelay(isRefine ? 820 : 1080);
+      if (!genAlive(runId)) return;
+      if (steps[i] === null) {
+        var v0 = genNextVersion();
+        steps[i] = t("genStepGen").replace("{v}", String(v0)).replace("{name}", state.gen.name);
+      }
+      genPersist("step", { text: steps[i] });
+      renderGen();
+    }
+    await genDelay(isRefine ? 700 : 950);
+    if (!genAlive(runId)) return;
+    var version = genNextVersion();
+    var ctx = genCtx();
+    ctx.version = version;
+    var html = genBuild(kind, ctx, isRefine ? state.gen.mod : {});
+    genPersist("artifact", { name: state.gen.name, version: version, kind: kind, html: html });
+    renderGen();
+    await genDelay(420);
+    if (!genAlive(runId)) return;
+    genPersist("ai", { text: t("genAiOutro").replace("{v}", "v" + version) });
+    genPersist("done", { version: version, kind: kind });
+    state.gen.status = "done";
+    renderGen();
+    toast(t("genToastDone").replace("{v}", "v" + version));
+  }
+
+  function stopGen() {
+    if (state.gen.status !== "run") return;
+    state.gen.runId++;
+    genClearTimers();
+    state.gen.status = "stop";
+    genPersist("stop", {});
+    renderGen();
+    toast(t("genToastStop"));
+  }
+
+  /* ── 渲染 ── */
+  function genTurns() {
+    var turns = [], cur = null;
+    state.gen.events.forEach(function (e) {
+      if (e.type === "user") { cur = { user: e, items: [] }; turns.push(cur); }
+      else if (cur) cur.items.push(e);
+    });
+    return turns;
+  }
+  function genArtifacts() {
+    var out = [];
+    state.gen.events.forEach(function (e) {
+      if (e.type === "artifact" && e.payload) out.push(e.payload);
+    });
+    return out;
+  }
+  function genTimeOf(at) {
+    var d = new Date(at || Date.now());
+    return ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
+  }
+  function renderGen() {
+    if (!state.gen.pid && !state.gen.welcome) return;
+    var box = $("genChat");
+    if (!box) return;
+    var running = state.gen.status === "run";
+    var turns = genTurns();
+    var html = "";
+    if (!turns.length && state.gen.welcome && !running) {
+      html += '<div class="gm-welcome"><div class="big">' +
+        '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z"/></svg>' +
+        "</div><b>" + t("genWelcomeTitle") + "</b><p>" + t("genWelcomeBody") + "</p></div>";
+    }
+    turns.forEach(function (turn) {
+      html += '<div class="gm-user">' + esc(turn.user.payload && turn.user.payload.text || "") + "</div>";
+      var aiTexts = [], steps = [], arts = [], finish = null;
+      turn.items.forEach(function (e) {
+        if (e.type === "ai" && e.payload && e.payload.text) aiTexts.push(e.payload.text);
+        else if (e.type === "step" && e.payload && e.payload.text) steps.push(e.payload.text);
+        else if (e.type === "artifact" && e.payload) arts.push(e.payload);
+        else if (e.type === "done" || e.type === "stop") finish = { type: e.type, at: e.at };
+      });
+      if (!aiTexts.length && !steps.length && !arts.length && !finish) return;
+      var isLast = turns[turns.length - 1] === turn;
+      var stRun = isLast && running;
+      var stLabel = stRun ? t("gsRun") : finish && finish.type === "stop" ? t("gsStop") : t("gsDone");
+      var stCls = stRun ? "run" : finish && finish.type === "stop" ? "stop" : "done";
+      html += '<div class="gm-ai"><div class="who"><b>' + t("genEngine") + "</b><span>· " + t("genVia") + '</span><span class="st ' + stCls + '">' + (stRun ? "<i></i>" : "") + stLabel + (finish ? " · " + genTimeOf(finish.at) : "") + "</span></div>";
+      aiTexts.forEach(function (tx) { html += '<div class="bd">' + esc(tx) + "</div>"; });
+      if (steps.length || stRun) {
+        html += '<div class="gm-steps">';
+        steps.forEach(function (stx) { html += '<div class="gm-step"><span class="ck">' + CHECK_SM_SVG + "</span><span>" + esc(stx) + "</span></div>"; });
+        if (stRun) html += '<div class="gm-step pending"><span class="ck"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 7v5l3.5 2"/></svg></span><span>…</span></div>';
+        html += "</div>";
+      }
+      arts.forEach(function (a) {
+        html += '<button type="button" class="gm-art-link" data-art="' + a.version + '">' +
+          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16.5V6a2 2 0 0 1 2-2h10.5M9 20h9a2 2 0 0 0 2-2V7.5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2V18a2 2 0 0 0 2 2z"/></svg>' +
+          esc(a.name || "") + " · v" + a.version + "</button>";
+      });
+      html += "</div>";
+    });
+    box.innerHTML = html;
+    box.scrollTop = box.scrollHeight;
+    var arts = box.querySelectorAll(".gm-art-link");
+    for (var i = 0; i < arts.length; i++) {
+      (function (btn) {
+        btn.addEventListener("click", function () {
+          var v = +btn.getAttribute("data-art");
+          var a = genArtifacts().filter(function (x) { return x.version === v; })[0];
+          if (a) openGenPreview(a);
+        });
+      })(arts[i]);
+    }
+    /* 状态徽标 + 停止按钮 + 建议词 */
+    var badge = $("genStatus");
+    if (running || state.gen.status === "done" || state.gen.status === "stop") {
+      badge.hidden = false;
+      badge.className = "gen-status " + state.gen.status;
+      badge.innerHTML = (running ? "<i></i>" : "") + t(state.gen.status === "run" ? "gsRun" : state.gen.status === "done" ? "gsDone" : "gsStop");
+    } else badge.hidden = true;
+    $("genStop").hidden = !running;
+    renderGenSug();
+    renderGenFiles();
+    renderGenQuota();
+  }
+  function renderGenSug() {
+    var box = $("genSug");
+    if (!box) return;
+    var running = state.gen.status === "run";
+    var hasArt = genArtifacts().length > 0;
+    box.innerHTML = "";
+    if (running) return;
+    var keys = hasArt ? ["genSugPolish", "genSugDark", "genSugPalette", "genSugMobile"] : [];
+    keys.forEach(function (k) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.textContent = t(k);
+      b.title = t(k);
+      b.addEventListener("click", function () { startGenTurn(t(k)); });
+      box.appendChild(b);
+    });
+  }
+  function renderGenFiles() {
+    var box = $("genFiles");
+    if (!box) return;
+    var arts = genArtifacts();
+    if (!arts.length) {
+      box.innerHTML = '<div class="gf-empty"><div class="mark">' +
+        '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M3.5 9h17M8 4.5V9"/></svg>' +
+        '</div><b>' + t("gfEmpty") + "</b><span>" + t("gfEmptySub") + "</span></div>";
+      return;
+    }
+    var grid = document.createElement("div");
+    grid.className = "gf-grid";
+    arts.slice().reverse().forEach(function (a) {
+      var card = document.createElement("div");
+      card.className = "gf-card";
+      card.setAttribute("data-art", String(a.version));
+      card.innerHTML =
+        '<div class="pv"><iframe sandbox="" scrolling="no" title="' + esc(a.name || "") + '" srcdoc="' + esc(a.html || "").replace(/"/g, "&quot;") + '"></iframe></div>' +
+        '<div class="meta"><b>' + esc(a.name || "") + '</b><span class="ver">v' + a.version + '</span><span class="time">' + genTimeOf(a.at) + "</span></div>";
+      card.addEventListener("click", function () { openGenPreview(a); });
+      grid.appendChild(card);
+    });
+    box.innerHTML = "";
+    box.appendChild(grid);
+  }
+  function renderGenQuota() {
+    var el = $("genQuota");
+    if (!el) return;
+    var s = state.realStats;
+    if (s && typeof s.quotaTotal === "number") {
+      var left = Math.max(0, s.quotaTotal - (s.quotaUsed || 0));
+      el.textContent = (left >= 1000 ? (left / 1000).toFixed(1) + "K" : String(left));
+    } else el.textContent = "∞";
+  }
+
+  /* ── 预览弹层 ── */
+  var genPreviewArt = null;
+  function openGenPreview(a) {
+    genPreviewArt = a;
+    $("gmName").textContent = (a.name || "") + " · v" + a.version;
+    var fr = $("gmFrame");
+    fr.innerHTML = "";
+    var ifr = document.createElement("iframe");
+    ifr.setAttribute("title", a.name || "preview");
+    ifr.setAttribute("srcdoc", a.html || "");
+    fr.appendChild(ifr);
+    $("genModal").hidden = false;
+  }
+  function closeGenPreview() {
+    $("genModal").hidden = true;
+    $("gmFrame").innerHTML = "";
+    genPreviewArt = null;
+  }
+
+  function genActionDefs() {
+    return [
+      { k: "gfNewSketch", d: "M4 20l4-1L19.5 7.5a2.1 2.1 0 0 0-3-3L5 16l-1 4z" },
+      { k: "gfNewDoc", d: "M7 3.5h7l4.5 4.5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1zM13.5 3.5V9H19" },
+      { k: "gfUpload", d: "M12 16V5m0 0L7.5 9.5M12 5l4.5 4.5M5 19h14" },
+      { k: "gfNewBrowser", d: "M4 6.5A1.5 1.5 0 0 1 5.5 5h13A1.5 1.5 0 0 1 20 6.5v11a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-11zM4 9.5h16M6.5 7.3h.01M9 7.3h.01" },
+      { k: "gfNewDs", d: "M4 7.5h7v7H4zM13 7.5h7v4h-7zM13 13.5h7v3.5h-7zM4 16.5h7" }
+    ];
+  }
+  function renderGenActions() {
+    var box = $("genActions");
+    if (!box) return;
+    box.innerHTML = "";
+    genActionDefs().forEach(function (d) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' + d.d + '"/></svg><span>' + t(d.k) + "</span>";
+      b.addEventListener("click", function () { toast(t("toastDemo")); });
+      box.appendChild(b);
+    });
+  }
+
+  /* ── 进入生成视图 ── */
+  function openGen(project, seedPrompt) {
+    state.gen.pid = project.id || project.pid || null;
+    state.gen.name = project.t || project.name || "";
+    state.gen.events = [];
+    state.gen.status = "idle";
+    state.gen.mod = {};
+    state.gen.runId++;
+    state.gen.welcome = false;
+    genClearTimers();
+    $("genName").textContent = state.gen.name || "…";
+    go("gen");
+    renderGenShell();
+    apiGet("/api/db/projects/" + encodeURIComponent(state.gen.pid) + "/gen")
+      .then(function (d) {
+        state.gen.events = ((d && d.events) || []).map(function (e) {
+          return { type: e.type, payload: e.payload, at: e.createdAt };
+        });
+        state.gen.status = deriveGenStatus();
+        state.gen.welcome = !state.gen.events.length;
+        renderGen();
+        if (!state.gen.events.length && seedPrompt) startGenTurn(seedPrompt);
+      })
+      .catch(function () {
+        state.gen.offline = true;
+        state.gen.welcome = !seedPrompt;
+        renderGen();
+        if (seedPrompt) startGenTurn(seedPrompt);
+      });
+  }
+  function deriveGenStatus() {
+    var last = null;
+    state.gen.events.forEach(function (e) {
+      if (e.type === "user") last = { user: true };
+      else if (last && (e.type === "done" || e.type === "stop")) last.finish = e.type;
+    });
+    if (!last) return "idle";
+    if (last.finish === "stop") return "stop";
+    if (last.finish === "done") return "done";
+    return "idle"; /* 有对话但无终态：视为未开始新一轮 */
+  }
+  function renderGenShell() {
+    renderGenActions();
+    renderGenFiles();
+    renderGenQuota();
+  }
+
+  /* 生成视图事件绑定 */
+  $("genBack").addEventListener("click", function () { go("projects"); });
+  $("genStop").addEventListener("click", stopGen);
+  $("genSend").addEventListener("click", function () {
+    var v = $("genPrompt").value.trim();
+    if (!v) { $("genPrompt").focus(); return; }
+    if (state.gen.status === "run") return;
+    $("genPrompt").value = "";
+    startGenTurn(v);
+  });
+  $("genPrompt").addEventListener("keydown", function (e) {
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") $("genSend").click();
+  });
+  $("gmClose").addEventListener("click", closeGenPreview);
+  $("genModal").addEventListener("click", function (e) { if (e.target === this) closeGenPreview(); });
+  $("gmCopy").addEventListener("click", function () {
+    if (!genPreviewArt) return;
+    var done = function () { toast(t("gCopied")); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(genPreviewArt.html || "").then(done, done);
+    else done();
+  });
+  $("gmNewTab").addEventListener("click", function () {
+    if (!genPreviewArt) return;
+    try {
+      var blob = new Blob([genPreviewArt.html || ""], { type: "text/html" });
+      window.open(URL.createObjectURL(blob), "_blank");
+    } catch (e) { toast(t("toastDemo")); }
+  });
+
   function createRealProject(prompt) {
     var name = prompt.slice(0, 18) + (prompt.length > 18 ? "…" : "");
     var id = "db-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 6);
@@ -1314,14 +2062,18 @@
         // 参数被校验拒绝时，退回基础创建（不带资源绑定）
         return withExtras ? attempt(base) : Promise.reject(err);
       })
-      .then(function () {
+      .then(function (r) {
         toast(t("toastCreated").replace("{name}", name));
         loadProjects();
         showBubble(0);
+        var proj = r && r.project;
+        openGen({ id: (proj && proj.id) || id, t: (proj && proj.name) || name }, prompt);
       })
       .catch(function () {
         toast(t("toastSent"));
         showBubble(0);
+        /* 离线演示：照样进入生成视图（事件只在本地，不持久化） */
+        openGen({ id: id, t: name }, prompt);
       });
   }
   $("send").addEventListener("click", submitPrompt);
@@ -1330,7 +2082,7 @@
   });
 
   /* ── 视图路由 ── */
-  var VIEWS = ["home", "projects", "templates", "systems", "community", "review", "artifacts", "members", "approvals"];
+  var VIEWS = ["home", "projects", "gen", "templates", "systems", "community", "review", "artifacts", "members", "approvals"];
   function currentView() {
     var h = (location.hash || "").replace(/^#\/?/, "");
     return VIEWS.indexOf(h) >= 0 ? h : "home";
@@ -1343,8 +2095,11 @@
     var v = currentView();
     var views = document.querySelectorAll(".view");
     for (var i = 0; i < views.length; i++) views[i].classList.toggle("on", views[i].id === "view-" + v);
+    var inner = document.querySelector(".main-inner");
+    if (inner) inner.classList.toggle("wide", v === "gen");
+    var navV = v === "gen" ? "projects" : v;
     var items = document.querySelectorAll(".nav-item");
-    for (var j = 0; j < items.length; j++) items[j].classList.toggle("on", items[j].getAttribute("data-nav") === v);
+    for (var j = 0; j < items.length; j++) items[j].classList.toggle("on", items[j].getAttribute("data-nav") === navV);
     window.scrollTo(0, 0);
   }
   window.addEventListener("hashchange", applyView);
@@ -1506,7 +2261,10 @@
         '<div class="r2"><span class="time">' + p.time + '</span><span class="st ' + p.st + '">' + p.stT + "</span></div>" +
         (p.st === "run" ? '<div class="progress"><i style="width:' + p.prog + '%"></i></div>' : "") +
         "</div>";
-      card.addEventListener("click", function () { toast(t("toastDemo")); });
+      card.addEventListener("click", function () {
+        if (p.real) openGen({ id: p.id, t: p.t });
+        else toast(t("toastDemo"));
+      });
       grid.appendChild(card);
     });
     var draft = document.createElement("button");
@@ -1530,7 +2288,7 @@
       card.innerHTML =
         '<div class="thumb" style="background:linear-gradient(140deg,' + g[0] + "," + g[1] + ')">' + ICONS[p.ic] + "</div>" +
         '<div class="meta"><span><b>' + p.t + "</b><span>" + p.time + '</span></span><span class="st">' + p.stT + "</span></div>";
-      card.addEventListener("click", function () { go("projects"); });
+      card.addEventListener("click", function () { openGen({ id: p.id, t: p.t }); });
       box.appendChild(card);
     });
   }
