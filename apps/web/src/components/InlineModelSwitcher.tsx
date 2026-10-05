@@ -1,11 +1,9 @@
-// InlineModelSwitcher — top-bar chip exposing CLI/BYOK + model picker.
+// InlineModelSwitcher — Home composer model chip + execution picker.
 //
-// Lives in the entry view's sticky top-bar so users can swap between a
-// local CLI and BYOK (and the active model under either) without having
-// to open the full Settings dialog. The chip is intentionally narrow —
-// it shows the active mode + agent/provider + model in one line and
-// opens a compact popover for switching. All persistence is delegated
-// upward through the same callbacks `AvatarMenu` already uses, so the
+// The compact variant sits immediately before the Home composer send button,
+// showing the active model and opening a model/agent picker. The expanded
+// variant retains the mode + agent/provider + model status chip. Persistence
+// is delegated upward through the same callbacks `AvatarMenu` uses, so this
 // switcher inherits autosave + daemon sync without re-implementing it.
 
 import {
@@ -105,6 +103,8 @@ interface Props {
   agents: AgentInfo[];
   providerModelsCache?: ProviderModelsCache;
   compact?: boolean;
+  /** Controls popover direction. The Home composer can require a downward dropdown. */
+  openDirection?: 'auto' | 'down';
   daemonLive: boolean;
   onModeChange: (mode: ExecMode) => void;
   onAgentChange: (id: string) => void;
@@ -179,6 +179,7 @@ export function InlineModelSwitcher({
   agents,
   providerModelsCache,
   compact = false,
+  openDirection = 'auto',
   daemonLive,
   onModeChange,
   onAgentChange,
@@ -209,11 +210,10 @@ export function InlineModelSwitcher({
   const compactModelListRef = useRef<HTMLDivElement | null>(null);
   const compactSelectionAnchoredRef = useRef(false);
   const campaignBenefitTrackedForOpenRef = useRef(false);
-  // Viewport clamp for the popover (issue #99): the anchor chip can sit
-  // anywhere on screen (home hero mid-page, chat composer at the bottom), so
-  // a fixed downward placement runs past the screen edge once the model list
-  // is long. Measured on open: cap the height to the space on the chosen
-  // side and flip upward when below is tight.
+  // Viewport clamp for the popover (issue #99): by default, cap the height to
+  // the space on the chosen side and flip upward when below is tight. The Home
+  // composer explicitly asks for a downward dropdown; that direction wins
+  // there, while its list remains scrollable within the measured height.
   const [popoverPlacement, setPopoverPlacement] = useState<{
     up: boolean;
     maxHeight: number;
@@ -229,7 +229,7 @@ export function InlineModelSwitcher({
       const viewportHeight = window.innerHeight;
       const below = viewportHeight - anchor.bottom - 16;
       const above = anchor.top - 16;
-      const up = below < 280 && above > below;
+      const up = openDirection === 'auto' && below < 280 && above > below;
       setPopoverPlacement({
         up,
         maxHeight: Math.max(160, Math.min(560, up ? above : below)),
@@ -242,7 +242,7 @@ export function InlineModelSwitcher({
       window.removeEventListener('resize', update);
       window.removeEventListener('scroll', update, true);
     };
-  }, [open]);
+  }, [open, openDirection]);
   const chipRef = useRef<HTMLButtonElement | null>(null);
   const providerModelsFetchingRef = useRef<Set<string>>(new Set());
   const [amrStatus, setAmrStatus] = useState<VelaLoginStatus | null>(null);
@@ -1162,10 +1162,9 @@ export function InlineModelSwitcher({
         onClick={handleChipClick}
         aria-haspopup="menu"
         aria-expanded={open}
-        // No hover bubble: the chip already prints the model it would name,
-        // and the popover it opens spells out the agent — a tooltip repeating
-        // both only covered the composer text under it. The accessible name
-        // stays, so the icon-only treatment is still announced.
+        // No hover bubble: the chip already shows the selected model, and the
+        // popover spells out the agent. Keep the accessible name explicit for
+        // the compact trigger and screen-reader users.
         aria-label={
           compact
             ? `${chipAgentLabel} · ${chipModel}`
@@ -1206,6 +1205,11 @@ export function InlineModelSwitcher({
             <span className="inline-switcher__chip-model-name">
               {chipModelName}
             </span>
+            <Icon
+              name="chevron-down"
+              size={12}
+              className="inline-switcher__chip-chevron"
+            />
           </>
         ) : (
           <>

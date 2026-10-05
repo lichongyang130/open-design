@@ -1930,8 +1930,8 @@ body:has(.manual-edit-workspace) .chat-composer-fixed-layer {
 .app .composer-row .session-mode-toggle__trigger {
   box-shadow: none;
 }
-/* Chat composer model chip mirrors the home icon-only chip: just the agent
-   mark, no chevron or box (see .inline-switcher__chip--icon in the home hero). */
+/* Base compact geometry for AvatarMenu; viewer/routines.css opts the project
+   composer into the bordered model-name dropdown that sits before Send. */
 .app .composer-row .avatar-agent-trigger {
   width: 28px;
   grid-template-columns: 1fr;

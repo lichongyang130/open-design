@@ -1733,6 +1733,7 @@ export function EntryShell({
   const homeExecutionSwitcher = (
     <InlineModelSwitcher
       compact
+      openDirection="down"
       config={config}
       agents={agents}
       providerModelsCache={activeProviderModelsCache}

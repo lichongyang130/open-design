@@ -92,7 +92,7 @@ function renderSwitcher(
   config: Partial<AppConfig> = {},
   agents: AgentInfo[] = [amrAgent],
   providerModelsCache: Record<string, ProviderModelOption[]> = {},
-  options: { compact?: boolean } = {},
+  options: { compact?: boolean; openDirection?: 'auto' | 'down' } = {},
 ) {
   const onAgentModelChange = vi.fn();
   const view = render(
@@ -101,6 +101,7 @@ function renderSwitcher(
       agents={agents}
       providerModelsCache={providerModelsCache}
       compact={options.compact}
+      openDirection={options.openDirection}
       daemonLive={true}
       onModeChange={vi.fn()}
       onAgentChange={vi.fn()}
@@ -324,12 +325,46 @@ describe('InlineModelSwitcher AMR row', () => {
     expect(screen.queryByTestId('inline-model-switcher-amr-reminder')).toBeNull();
   });
 
-  it('can render the compact home-hero chip variant', () => {
-    renderSwitcher({}, [amrAgent, codexAgent], {}, { compact: true });
+  it('can render the compact home-hero model dropdown', () => {
+    renderSwitcher({ agentId: 'codex' }, [codexAgent], {}, {
+      compact: true,
+      openDirection: 'down',
+    });
 
     expect(screen.getByTestId('inline-model-switcher').className).toContain(
       'inline-switcher--compact',
     );
+    const chip = screen.getByTestId('inline-model-switcher-chip');
+    expect(chip.querySelector('.inline-switcher__chip-model-name')).not.toBeNull();
+    expect(chip.querySelector('.inline-switcher__chip-chevron')).not.toBeNull();
+  });
+
+  it('keeps the Home model dropdown opening down near the viewport bottom', () => {
+    renderSwitcher({ agentId: 'codex' }, [codexAgent], {}, {
+      compact: true,
+      openDirection: 'down',
+    });
+
+    const switcher = screen.getByTestId('inline-model-switcher');
+    Object.defineProperty(switcher, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({
+        x: 500,
+        y: 700,
+        top: 700,
+        left: 500,
+        right: 720,
+        bottom: 735,
+        width: 220,
+        height: 35,
+        toJSON: () => ({}),
+      } as DOMRect),
+    });
+
+    fireEvent.click(screen.getByTestId('inline-model-switcher-chip'));
+
+    expect(screen.getByTestId('inline-model-switcher-popover').className)
+      .not.toContain('inline-switcher__popover--up');
   });
 
   it('labels AMR without vela branding and keeps AMR models from AgentInfo.models', async () => {

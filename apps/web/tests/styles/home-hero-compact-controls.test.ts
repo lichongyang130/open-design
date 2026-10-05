@@ -5,6 +5,14 @@ const homeHeroCss = readFileSync(
   new URL('../../src/styles/home/home-hero.css', import.meta.url),
   'utf8',
 );
+const inlineModelSwitcherSource = readFileSync(
+  new URL('../../src/components/InlineModelSwitcher.tsx', import.meta.url),
+  'utf8',
+);
+const entryShellSource = readFileSync(
+  new URL('../../src/components/EntryShell.tsx', import.meta.url),
+  'utf8',
+);
 
 function cssDeclarations(selector: string): string {
   const blocks: string[] = [];
@@ -57,6 +65,30 @@ describe('HomeHero compact composer controls', () => {
     expect(ruleValue(switcherChip, 'height')).toBe('36px');
     expect(ruleValues(switcherChip, 'max-width')[0]).toBe('220px');
     expect(ruleValues(switcherChip, 'max-width').at(-1)).toBe('220px');
+  });
+
+  it('keeps the selected model name and down chevron visible in the Home composer', () => {
+    const modelName = cssDeclarations(
+      '.home-hero__execution-switcher .inline-switcher__chip-model-name',
+    );
+    const chip = cssDeclarations(
+      '.home-hero__execution-switcher .inline-switcher__chip',
+    );
+    const popover = cssDeclarations(
+      '.home-hero__execution-switcher .inline-switcher__popover',
+    );
+
+    expect(ruleValue(modelName, 'max-width')).toBe('160px');
+    expect(ruleValue(modelName, 'opacity')).toBe('1');
+    expect(ruleValue(chip, 'border-color')).toBe('var(--border)');
+    expect(ruleValue(popover, 'left')).toBe('auto');
+    expect(ruleValue(popover, 'right')).toBe('0');
+    expect(inlineModelSwitcherSource).toMatch(
+      /className="inline-switcher__chip-chevron"/,
+    );
+    expect(entryShellSource).toMatch(
+      /<InlineModelSwitcher\s+compact\s+openDirection="down"/,
+    );
   });
 
   it('keeps the switcher from expanding beyond its content on narrow screens', () => {
