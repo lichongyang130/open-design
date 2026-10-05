@@ -132,6 +132,16 @@ describe('EntryNavRail account menu interaction state', () => {
     expect(trigger.closest('.entry-nav-rail__group')).not.toBeNull();
   });
 
+  it('opens the account menu on a direct click from the closed state', () => {
+    renderRail();
+    const trigger = screen.getByTestId('entry-nav-account');
+
+    fireEvent.click(trigger);
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByTestId('entry-account-menu')).toBeInTheDocument();
+  });
+
   it('pins a hover-open menu when the avatar is clicked', async () => {
     renderRail();
     const trigger = screen.getByTestId('entry-nav-account');

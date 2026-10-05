@@ -101,6 +101,13 @@
      the topbar toggle's fade-out and caused a flash on expand. */
   pointer-events: none;
 }
+/* The account menu opens above the bottom-left rail and overhangs into the
+   Home content column. Composer popovers can raise their own card above the
+   normal rail layer, so lift the rail only while the account menu is mounted;
+   dialogs and the high-priority topbar still retain their higher layers. */
+.entry-nav-rail:has(.entry-nav-rail__account-menu) {
+  z-index: 50;
+}
 /* Dark mode keeps a derived alpha: over the dark panel a mix off --text
    (#ededed) lands where it should. Only the light theme pins a literal. */
 [data-theme="dark"] .entry-nav-rail {

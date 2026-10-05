@@ -53,6 +53,22 @@ describe('OPEND-3113 — workspace switcher hover fill matches the selected nav 
   });
 });
 
+describe('Home account menu popup — opens above the bottom-left trigger', () => {
+  it('anchors the menu upward and lifts the rail over nearby Home surfaces', () => {
+    const menu = cssDeclarations(entryLayoutCss, '.entry-nav-rail__account .entry-nav-rail__account-menu');
+    expect(ruleValue(menu, 'top')).toBe('auto');
+    expect(ruleValue(menu, 'bottom')).toBe('calc(100% + 4px)');
+
+    // Home composer popovers temporarily sit above the default rail layer.
+    // The menu hangs into that column, so the rail is raised only while it is open.
+    const raisedRail = cssDeclarations(
+      entryLayoutCss,
+      '.entry-nav-rail:has(.entry-nav-rail__account-menu)',
+    );
+    expect(ruleValue(raisedRail, 'z-index')).toBe('50');
+  });
+});
+
 describe('OPEND-3153 — account menu shows no scrollbar in a regular window', () => {
   it('keeps the hover bridge outside the menu scroll box', () => {
     // The 8px bridge over the float gap used to be `.entry-nav-rail__account-menu::before`
@@ -72,7 +88,7 @@ describe('OPEND-3153 — account menu shows no scrollbar in a regular window', (
 
   it('tightens the identity card so the rows below it fit without scrolling', () => {
     const head = cssDeclarations(entryLayoutCss, '.entry-nav-rail__account-head');
-    expect(ruleValue(head, 'padding')).toBe('12px 12px 14px');
+    expect(ruleValue(head, 'padding')).toBe('7px 6px 11px');
   });
 });
 
