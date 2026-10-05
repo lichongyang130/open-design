@@ -245,8 +245,9 @@
     .gen-wrap { grid-template-columns: 1fr; height: auto; }
     .gen-left { height: 72dvh; border-right: 0; border-bottom: 1px solid #e2e5e7; }
   }
-  .pk-panel { position: absolute; top: calc(100% + 8px); left: 0; width: 420px; max-width: calc(100vw - 40px); background: var(--glass-strong); border: 1px solid var(--glass-border); border-radius: 16px; box-shadow: var(--card-shadow); backdrop-filter: blur(24px); display: none; z-index: 40; overflow: hidden; }
-  .pk-panel.show { display: flex; flex-direction: column; animation: pop 0.16s ease both; }
+  .pk-panel { position: absolute; bottom: calc(100% + 8px); left: 0; width: 420px; max-width: calc(100vw - 40px); background: var(--glass-strong); border: 1px solid var(--glass-border); border-radius: 16px; box-shadow: var(--card-shadow); backdrop-filter: blur(24px); display: none; z-index: 40; overflow: hidden; }
+  .pk-panel.show { display: flex; flex-direction: column; animation: popUp 0.16s ease both; }
+  @keyframes popUp { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
   .pk-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px 8px; border-bottom: 1px solid var(--hairline); }
   .pk-head b { font-size: 13px; flex: none; }
   .pk-head input { flex: 1; min-width: 0; height: 30px; border-radius: 9px; border: 1px solid var(--hairline); background: rgba(255,255,255,0.7); padding: 0 10px; font: 600 12.5px/1 inherit; color: var(--ink); outline: none; }
