@@ -139,13 +139,14 @@
   gap: 8px;
   /* 12px side gutters (per product): to the window's left edge and — through
      the right margin — to the content card beside it. The bottom gutter is 8
-     (OPEND-3116): the workspace switcher at the foot of the column sits 8px
-     off the window's bottom edge. Top margin 0: the tab bar already contributes
+     (OPEND-3116): the last visible rail row sits 8px off the window's bottom
+     edge whether it is the account dock or an optional workspace switcher. Top
+     margin 0: the tab bar already contributes
      a 10px gap below the tabs (its bottom padding), so the single visible gap
      between the tabs and this column stays 10px instead of adding the rail's
      own inset on top of it. */
   margin: 0 12px 8px;
-  /* No padding: the bottom workspace row follows the panel's 8px gutter, and
+  /* No padding: the last visible rail row follows the panel's 8px gutter, and
      the tab bar already supplies the 10px top gap. */
   padding: 0;
   position: relative;
@@ -189,13 +190,13 @@
 
 /* ── Collapse cascade ──────────────────────────────────────────────────────
    Clicking collapse plays a top-to-bottom sequence: destinations fade first,
-   then the account dock, with the workspace switcher last at the bottom.
-   Expanding is instant (no per-row delay) to stay snappy.
+   then the account dock. An optional workspace switcher stays last when a rail
+   consumer enables it. Expanding is instant (no per-row delay) to stay snappy.
 
    Signed-in and local trees both nest 项目…设置 (and 最近项目) inside
    .entry-nav-rail__team-section, so those rows fade individually. The account
-   portal host and bottom switcher sit after that section; keep their DOM/focus
-   order aligned with the new visual order. */
+   portal host follows that section; keep its DOM/focus order aligned with the
+   visual order. */
 .entry-nav-rail__group > *,
 .entry-nav-rail__team-section > *,
 .entry-nav-rail__footer {
@@ -211,7 +212,7 @@
 }
 /* Per-row stagger — applied only while collapsing so the cascade runs
    top→bottom. Direct group rows begin with 首页 / 社区, then the project
-   section; the account and bottom switcher remain at the end. */
+   section; the account dock and optional workspace switcher remain at the end. */
 .entry:not(.entry--rail-open) .entry-nav-rail__group > *:nth-child(1) { transition-delay: 0ms; }
 .entry:not(.entry--rail-open) .entry-nav-rail__group > *:nth-child(2) { transition-delay: 15ms; }
 .entry:not(.entry--rail-open) .entry-nav-rail__group > *:nth-child(3) { transition-delay: 30ms; }
@@ -6224,9 +6225,9 @@
   display: contents;
 }
 
-/* Account dock sits just above the bottom-most workspace switcher. The auto
-   margin pushes the account/social pair below the navigation rows, while the
-   switcher's higher flex order keeps it at the very foot of the rail. */
+/* The account dock's auto margin pushes the account/social pair below the
+   navigation rows. Home hides the optional switcher, so this dock occupies the
+   rail foot; when enabled, the switcher's higher flex order follows it. */
 .entry-nav-rail__account-dock {
   order: 99;
   margin-top: auto;

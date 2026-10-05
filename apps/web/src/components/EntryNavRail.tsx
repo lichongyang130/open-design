@@ -7,9 +7,9 @@ import planCardStyles from './PersonalPlanCard.module.css';
 // (`GET /api/workspace/context`, shared via `useWorkspaceContext`), never the
 // demo's hardcoded 琼羽 / Refly / 800 placeholders:
 //
-//   • Account dock (near the bottom) — real `context.displayName` plus an
+//   • Account dock at the bottom — real `context.displayName` plus an
 //     upward-opening account menu for identity, plan, credits, invites, settings,
-//     help and sign-out. The workspace switcher now anchors the very bottom.
+//     help and sign-out. Home hides the optional workspace-switcher row.
 //     No header block when there is no cloud identity (context === null) —
 //     the rail starts at the search box; expand/collapse lives in the
 //     workspace tabs bar's pinned Home toggle.
@@ -20,9 +20,10 @@ import planCardStyles from './PersonalPlanCard.module.css';
 //     entryRailBridge events. `onOpenSearch` stays on the props as the
 //     shell-owned opener for callers that still hand it down.
 //   • 最近 (Recents) → home, Community → community.
-//   • Team block (only when `context.workspaceType === 'team'`): an inline team
-//     switcher + the team destinations. In-client views: drafts / all projects /
-//     design systems / 扩展 (plugins). Member management lives in B's vela/web
+//   • Team block (only when `context.workspaceType === 'team'`): team
+//     destinations. The optional workspace picker is hidden on Home. In-client
+//     views: drafts / all projects / design systems / 扩展 (plugins). Member
+//     management lives in B's vela/web
 //     console, so 成员 / 数据大盘 / Workspace 设置 link OUT to it (target=_blank),
 //     derived from `context.workspaceSettingsUrl`.
 //
@@ -247,6 +248,8 @@ interface Props {
   newProjectDisabled?: boolean;
   /** When false the rail is collapsed (hidden off-canvas) on the entry view. */
   open: boolean;
+  /** Show the workspace-name / switcher row at the rail foot. Home hides it. */
+  showWorkspaceSwitcher?: boolean;
   /** Extra content for the top-right chrome cluster, rendered LEFT of the
    *  account module (e.g. the DeepSeek campaign badge). */
   topRightSlot?: ReactNode;
@@ -2286,6 +2289,7 @@ export function EntryNavRail({
   onOpenSearch,
   newProjectDisabled,
   open,
+  showWorkspaceSwitcher = true,
   topRightSlot,
   context,
   billing,
@@ -2341,13 +2345,13 @@ export function EntryNavRail({
   const messageCenterRailRef = useRef<HTMLButtonElement | null>(null);
   const [teamOpen, setTeamOpen] = useState(false);
   useEffect(() => {
-    if (!teamOpen) return;
+    if (!showWorkspaceSwitcher || !teamOpen) return;
     trackWorkspaceSurfaceView(analytics.track, {
       page_name: analyticsPage,
       area: 'workspace_switcher',
       ...workspaceDimensions,
     });
-  }, [teamOpen, analytics.track, analyticsPage, workspaceDimensions.workspace_key]);
+  }, [showWorkspaceSwitcher, teamOpen, analytics.track, analyticsPage, workspaceDimensions.workspace_key]);
   // The LATEST context, for async work to compare against. `loadWorkspaceDirectory`
   // closes over the render's `context` prop, which is the identity its read was
   // issued for — so only a ref can answer "has the identity moved since?".
@@ -2542,9 +2546,9 @@ export function EntryNavRail({
   }, [open]);
 
   useEffect(() => {
-    if (!teamOpen) return;
+    if (!showWorkspaceSwitcher || !teamOpen) return;
     void loadWorkspaceDirectory();
-  }, [teamOpen, railIdentity]);
+  }, [showWorkspaceSwitcher, teamOpen, railIdentity]);
 
   // The account-directory event is delivered through the already-shared local
   // Workspace EventSource. It stays mounted while the switcher is closed, so a
@@ -2552,16 +2556,19 @@ export function EntryNavRail({
   // reconnect/foreground edge also re-reads once to close a missed-event gap;
   // this is event-driven catch-up, not a timer.
   useWorkspaceInvalidation(
-    {
-      'workspace-directory-changed': () => {
-        void loadWorkspaceDirectory({ force: true });
-      },
-    },
+    showWorkspaceSwitcher
+      ? {
+          'workspace-directory-changed': () => {
+            void loadWorkspaceDirectory({ force: true });
+          },
+        }
+      : {},
     {
       workspaceContext: context,
-      onActive: () => {
-        void loadWorkspaceDirectory({ force: true });
-      },
+      enabled: showWorkspaceSwitcher,
+      ...(showWorkspaceSwitcher
+        ? { onActive: () => void loadWorkspaceDirectory({ force: true }) }
+        : {}),
     },
   );
 
@@ -2600,8 +2607,8 @@ export function EntryNavRail({
         {/* No search row here any more (per product: 搜索和收起跟 home icon 一起
             放在顶部): the search button and the rail toggle sit in the chrome
             row above (WorkspaceTabsBar's `.workspace-tabs-rail-actions`), and
-            reach EntryShell through window events (entryRailBridge). The
-            workspace switcher now sits below the account dock at the bottom. */}
+            reach EntryShell through window events (entryRailBridge). Home hides
+            the optional workspace switcher, leaving the account dock last. */}
         <NavButton
           active={isHome}
           ariaLabel={homeLabel}
@@ -2783,13 +2790,11 @@ export function EntryNavRail({
                 the same slot the signed-in dock gives it. */}
           </div>
         )}
-        {/* Account portal host comes before the final workspace switcher in
-            DOM order. Its dock uses order 99; the switcher uses order 100,
-            so the account entry remains available just above the rail's
-            bottom-most workspace label. */}
+        {/* The signed-in account dock remains at the rail foot. The Home shell
+            suppresses the optional workspace switcher row beneath this host. */}
         {context ? <div ref={setAccountHost} className="entry-nav-rail__account-host" /> : null}
 
-        {context ? (
+        {showWorkspaceSwitcher && context ? (
           <div className="entry-nav-rail__team-wrap entry-nav-rail__team-wrap--bottom">
             <button
               type="button"
@@ -3030,21 +3035,23 @@ export function EntryNavRail({
         />
       )}
 
-      <InviteDialog
-        open={inviteOpen}
-        onClose={() => setInviteOpen(false)}
-        workspaceContext={context}
-        canAssignRoles={canInviteMembers}
-        availableSeats={workspaceInviteAvailableSeats(context)}
-        entryFrom="workspace_switcher"
-        onUpgrade={
-          upgradeUrl
-            ? () => {
-                window.open(upgradeUrl, '_blank', 'noopener,noreferrer');
-              }
-            : undefined
-        }
-      />
+      {showWorkspaceSwitcher ? (
+        <InviteDialog
+          open={inviteOpen}
+          onClose={() => setInviteOpen(false)}
+          workspaceContext={context}
+          canAssignRoles={canInviteMembers}
+          availableSeats={workspaceInviteAvailableSeats(context)}
+          entryFrom="workspace_switcher"
+          onUpgrade={
+            upgradeUrl
+              ? () => {
+                  window.open(upgradeUrl, '_blank', 'noopener,noreferrer');
+                }
+              : undefined
+          }
+        />
+      ) : null}
       {/* Top-right chrome cluster: campaign badge (slot) + credits pill,
           mounted into the tabs chrome's no-drag actions host so Electron
           includes it in the first native hit map; the account module it owns

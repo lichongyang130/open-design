@@ -1802,6 +1802,7 @@ export function EntryShell({
           }}
           onOpenSearch={() => setProjectSearchOpen(true)}
           open={railOpen}
+          showWorkspaceSwitcher={false}
           topRightSlot={topRightCampaignAudience || (homeCampaignHostsVisible && amrLoggedIn === true) ? (
             <>
               {topRightCampaignAudience ? (

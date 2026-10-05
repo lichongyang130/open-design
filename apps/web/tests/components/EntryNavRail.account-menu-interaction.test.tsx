@@ -65,6 +65,7 @@ const accountBillingResponse: WorkspaceBillingResponse = {
 function renderRail(options: {
   onInvite?: () => void;
   onOpenSettings?: (section?: EntrySettingsSection) => void;
+  showWorkspaceSwitcher?: boolean;
 } = {}) {
   return render(
     <I18nProvider initial="zh-CN">
@@ -179,6 +180,19 @@ describe('EntryNavRail account menu interaction state', () => {
     expect(accountDock).not.toBeNull();
     expect(switcherWrap).toHaveClass('entry-nav-rail__team-wrap--bottom');
     expect(accountDock!.compareDocumentPosition(switcherWrap!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('hides the workspace switcher without removing the account dock', () => {
+    renderRail({ showWorkspaceSwitcher: false });
+
+    expect(screen.queryByTestId('workspace-switcher')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('workspace-switcher-list')).not.toBeInTheDocument();
+    const accountTrigger = screen.getByTestId('entry-nav-account');
+    expect(accountTrigger.closest('.entry-nav-rail__account-dock')).toBeInTheDocument();
+
+    fireEvent.click(accountTrigger);
+
+    expect(screen.getByTestId('entry-account-menu')).toBeInTheDocument();
   });
 
   it('removes the workspace switcher from the collapsed rail tab order and restores it when expanded', () => {
