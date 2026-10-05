@@ -245,7 +245,7 @@
     .gen-wrap { grid-template-columns: 1fr; height: auto; }
     .gen-left { height: 72dvh; border-right: 0; border-bottom: 1px solid #e2e5e7; }
   }
-  .pk-panel { position: absolute; bottom: calc(100% + 8px); left: 0; width: 420px; max-width: calc(100vw - 40px); background: var(--glass-strong); border: 1px solid var(--glass-border); border-radius: 16px; box-shadow: var(--card-shadow); backdrop-filter: blur(24px); display: none; z-index: 40; overflow: hidden; }
+  .pk-panel { position: fixed; width: 420px; max-width: calc(100vw - 32px); background: #ffffff; border: 1px solid rgba(32,38,30,0.16); border-radius: 16px; box-shadow: 0 24px 64px rgba(20,26,18,0.24), 0 4px 16px rgba(20,26,18,0.10); display: none; z-index: 300; overflow: hidden; }
   .pk-panel.show { display: flex; flex-direction: column; animation: popUp 0.16s ease both; }
   @keyframes popUp { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
   .pk-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px 8px; border-bottom: 1px solid var(--hairline); }
@@ -2149,12 +2149,15 @@
     if (!items.length) { toast(t("toastDemo")); return; }
     pkCfg = { kind: kind, items: items };
     var panel = $("pkPanel");
+    /* Portal 到 body 最外层：脱离 composer 的层叠上下文，压过页面所有内容 */
+    if (panel.parentElement !== document.body) document.body.appendChild(panel);
     panel.innerHTML =
       '<div class="pk-head"><b>' + t(kind === "skill" ? "pkSkill" : kind === "plugin" ? "pkPlugin" : "pkDs") + '</b><input type="text" id="pkSearch" placeholder="' + t("pkSearch") + '" /></div>' +
       '<div class="pk-list" id="pkList"></div>' +
       (pickerSel(kind) ? '<button type="button" class="pk-clear" id="pkClear">' + t("pkClear") + "</button>" : "");
     panel.classList.add("show");
     renderPkList("");
+    positionPickerPanel(kind);
     var input = $("pkSearch");
     input.addEventListener("input", function () { renderPkList(this.value); });
     var clear = $("pkClear");
@@ -2200,6 +2203,33 @@
   document.addEventListener("click", function (e) {
     if ($("pkPanel").classList.contains("show") && !$("pkPanel").contains(e.target)) closePicker();
   });
+  /* fixed 面板按锚点 chip 定位：优先向上弹，放不下则向下；左右不出视口 */
+  function positionPickerPanel(kind) {
+    var panel = $("pkPanel");
+    var anchor = $(kind === "skill" ? "chipSkill" : kind === "plugin" ? "chipPlugin" : "chipDs");
+    if (!anchor) return;
+    var r = anchor.getBoundingClientRect();
+    var vw = window.innerWidth || document.documentElement.clientWidth;
+    var vh = window.innerHeight || document.documentElement.clientHeight;
+    var w = Math.min(420, vw - 32);
+    panel.style.width = w + "px";
+    var left = Math.max(12, Math.min(r.left, vw - w - 12));
+    var h = panel.offsetHeight || 320;
+    var top = r.top - 8 - h;
+    if (top < 12) top = Math.min(r.bottom + 8, vh - h - 12);
+    if (top < 12) top = 12;
+    panel.style.left = left + "px";
+    panel.style.top = top + "px";
+  }
+  /* 页面滚动/窗口变化时收起（面板内部滚动除外） */
+  function pkViewportDismiss(e) {
+    var panel = $("pkPanel");
+    if (!panel.classList.contains("show")) return;
+    if (e && e.target && panel.contains(e.target)) return;
+    closePicker();
+  }
+  window.addEventListener("scroll", pkViewportDismiss, true);
+  window.addEventListener("resize", pkViewportDismiss);
   function updateChips() {
     var set = function (id, sel, defKey) {
       var chip = $(id);
