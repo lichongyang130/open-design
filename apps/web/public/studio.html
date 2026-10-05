@@ -168,6 +168,7 @@
   .cp-ref b { max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 650; }
   .cp-ref .rm { width: 18px; height: 18px; border-radius: 6px; border: 0; background: transparent; color: var(--faint); cursor: pointer; display: grid; place-items: center; }
   .cp-ref .rm:hover { background: rgba(32,38,30,0.1); color: var(--ink); }
+  .cp-dir { display: flex; margin-top: 10px; }
   .plus-btn { flex: none; width: 34px; height: 34px; border-radius: 11px; border: 1px solid rgba(32,38,30,0.16); background: rgba(255,255,255,0.6); color: var(--ink); cursor: pointer; display: grid; place-items: center; transition: 0.2s; }
   .plus-btn:hover { background: var(--ink); color: var(--lime); border-color: var(--ink); }
 
@@ -693,18 +694,6 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M3.5 9.5h17M8 9.5V5"/></svg>
               <span>网页原型</span>
             </button>
-            <button type="button" class="chip" id="chipDir">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6.5a1.5 1.5 0 0 1 1.5-1.5h4l2 2.5h8a1.5 1.5 0 0 1 1.5 1.5v8.5a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5z"/></svg>
-              <span data-i18n="chipDir">工作目录</span>
-            </button>
-            <button type="button" class="chip" id="chipSkill">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/><circle cx="12" cy="12" r="3.2"/></svg>
-              <span data-i18n="chipSkill">技能</span>
-            </button>
-            <button type="button" class="chip" id="chipPlugin">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7.5 4.5 12 9 16.5M15 7.5l4.5 4.5L15 16.5"/></svg>
-              <span data-i18n="chipPlugin">添加插件</span>
-            </button>
             <button type="button" class="chip" id="chipDs">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.4 11.1-9.2-8a1 1 0 0 0-1.5.2L4.6 12M8 4v4.5M16.5 13.5v6h-9v-6"/></svg>
               <span data-i18n="chipDs">设计系统</span>
@@ -716,6 +705,12 @@
             </button>
             <div class="pk-panel" id="pkPanel"></div>
             <div class="plus-panel" id="plusPanel"></div>
+          </div>
+          <div class="cp-dir">
+            <button type="button" class="chip" id="chipDir">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6.5a1.5 1.5 0 0 1 1.5-1.5h4l2 2.5h8a1.5 1.5 0 0 1 1.5 1.5v8.5a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5z"/></svg>
+              <span data-i18n="chipDir">工作目录</span>
+            </button>
           </div>
         </section>
 
@@ -954,7 +949,7 @@
       phPrompt: "描述你想生成的内容…",
       chipTemplate: "从模板开始", chipSkill: "技能", chipPlugin: "添加插件", chipDs: "设计系统",
       chipPlus: "添加",
-      chipDir: "工作目录", pkMode: "输出类型",
+      chipDir: "工作目录", pkMode: "输出类型", pmSkill: "技能", pmUseSkill: "使用此技能", pmSkillDesc: "为这次生成装配技能：视频模板、品牌、8-bit 风格等，命中触发词即生效。",
       moAuto: "自动识别", moLanding: "网页原型", moSignup: "注册流程", moPoster: "海报", moDeck: "幻灯片", moStoryboard: "视频分镜",
       pmAttach: "附加文件", pmRef: "引用其它项目", pmLink: "关联本地代码", pmPlugin: "插件", pmFigma: "从Figma导入", pmConn: "连接器", pmMcp: "MCP",
       pmSearch: "搜索插件…", pmUse: "使用此插件", pmOfficial: "官方", pmSelHint: "点选左侧插件查看详情",
@@ -1162,7 +1157,7 @@
       phPrompt: "Describe what you want to make…",
       chipTemplate: "Start from template", chipSkill: "Skills", chipPlugin: "Add plugin", chipDs: "Design system",
       chipPlus: "Add",
-      chipDir: "Working folder", pkMode: "Output type",
+      chipDir: "Working folder", pkMode: "Output type", pmSkill: "Skills", pmUseSkill: "Use this skill", pmSkillDesc: "Attach a skill for this run: video templates, branding, 8-bit styles — fires on trigger words.",
       moAuto: "Auto", moLanding: "Web page", moSignup: "Signup flow", moPoster: "Poster", moDeck: "Slides", moStoryboard: "Storyboard",
       pmAttach: "Attach files", pmRef: "Reference project", pmLink: "Link local code", pmPlugin: "Plugins", pmFigma: "Import from Figma", pmConn: "Connectors", pmMcp: "MCP",
       pmSearch: "Search plugins…", pmUse: "Use this plugin", pmOfficial: "Official", pmSelHint: "Pick a plugin to see details",
@@ -2285,8 +2280,6 @@
     $("chipPlus").addEventListener("click", function (e) { e.stopPropagation(); openPlus(); });
     $("chipMode").addEventListener("click", function (e) { e.stopPropagation(); openPicker("mode"); });
     $("chipDir").addEventListener("click", function (e) { e.stopPropagation(); toast(t("toastDemo")); });
-    $("chipSkill").addEventListener("click", function (e) { e.stopPropagation(); openPicker("skill"); });
-    $("chipPlugin").addEventListener("click", function (e) { e.stopPropagation(); openPicker("plugin"); });
     $("chipDs").addEventListener("click", function (e) { e.stopPropagation(); openPicker("ds"); });
   })();
 
@@ -2417,6 +2410,7 @@
     attach: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m20 11.5-8.5 8.5a5 5 0 0 1-7-7l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7l-8.6 8.4a1.7 1.7 0 0 1-2.3-2.3l7.8-7.8"/></svg>',
     ref: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="6.5" width="12.5" height="12.5" rx="3"/><path d="M8 6.5V5a1.5 1.5 0 0 1 1.5-1.5H19A1.5 1.5 0 0 1 20.5 5v9.5A1.5 1.5 0 0 1 19 16h-1.5"/></svg>',
     link: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m9 7.5-4.5 4.5L9 16.5M15 7.5l4.5 4.5L15 16.5"/></svg>',
+    skill: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z"/><path d="M18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></svg>',
     plugin: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/><circle cx="12" cy="12" r="3.2"/></svg>',
     figma: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 3.5h7M8.5 3.5a3.5 3.5 0 0 0 0 7h7a3.5 3.5 0 0 0 0-7M8.5 10.5a3.5 3.5 0 0 0 0 7M12 10.5v7M15 10.5a3.5 3.5 0 1 1-3.5 3.5"/></svg>',
     conn: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7.5V4.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 4.5v3M9 16.5v3a1.5 1.5 0 0 0 1.5 1.5h3a1.5 1.5 0 0 0 1.5-1.5v-3M6.5 9a2.5 2.5 0 0 0-2.5 2.5V13h16v-1.5A2.5 2.5 0 0 0 17.5 9z"/></svg>',
@@ -2426,6 +2420,7 @@
     { k: "attach", label: "pmAttach" },
     { k: "ref", label: "pmRef" },
     { k: "link", label: "pmLink" },
+    { k: "skill", label: "pmSkill" },
     { k: "plugin", label: "pmPlugin" },
     { k: "figma", label: "pmFigma" },
     { k: "conn", label: "pmConn" },
@@ -2446,6 +2441,11 @@
           official: p.sourceKind === "bundled",
           source: p.source
         };
+      });
+    }
+    if (plusCfg.tab === "skill") {
+      return (state.realSkills || []).map(function (sk) {
+        return { id: sk.id, name: sk.name || sk.id, desc: (sk.description || "").split("\n")[0], tag: (sk.triggers || [])[0] || "" };
       });
     }
     if (plusCfg.tab === "ref") {
@@ -2489,12 +2489,14 @@
       return '<button type="button" class="pm-item' + (plusCfg.tab === m.k ? " on" : "") + '" data-tab="' + m.k + '">' + PLUS_ICONS[m.k] + "<span>" + t(m.label) + "</span></button>";
     }).join("") + "</div>";
     var rows = plusListData().filter(function (it) {
-      if (!plusCfg.q || plusCfg.tab !== "plugin") return true;
+      if (!plusCfg.q || !(plusCfg.tab === "plugin" || plusCfg.tab === "skill")) return true;
       return (it.name + " " + it.desc + " " + it.id).toLowerCase().indexOf(plusCfg.q.toLowerCase()) >= 0;
     });
+    var tabLabelKey = (PLUS_MENU.filter(function (m) { return m.k === plusCfg.tab; })[0] || {}).label || "pmPlugin";
+    var searchable = plusCfg.tab === "plugin" || plusCfg.tab === "skill";
     var midHtml =
       '<div class="pm-mid">' +
-      '<div class="pm-h"><b>' + t("pmPlugin") + "</b>" + (plusCfg.tab === "plugin"
+      '<div class="pm-h"><b>' + t(tabLabelKey) + "</b>" + (searchable
         ? '<input type="text" id="pmSearch" placeholder="' + t("pmSearch") + '" value="' + esc(plusCfg.q).replace(/"/g, "&quot;") + '" />'
         : "") + "</div>" +
       '<div class="pm-rows" id="pmRows">' + (rows.length
@@ -2506,15 +2508,18 @@
           }).join("")
         : '<div class="pm-empty">' + t("pkEmpty") + "</div>") + "</div></div>";
     var detail;
-    if (plusCfg.tab === "plugin") {
+    if (plusCfg.tab === "plugin" || plusCfg.tab === "skill") {
       if (plusCfg.sel) {
         var pl = plusCfg.sel;
+        var isSkill = plusCfg.tab === "skill";
         detail = '<div class="pm-detail">' +
-          (pl.official ? '<span class="tag">' + t("pmOfficial") + "</span>" : "") +
+          (!isSkill && pl.official ? '<span class="tag">' + t("pmOfficial") + "</span>" : "") +
           "<h4>" + esc(pl.name) + "</h4><p>" + esc(pl.desc || "") + "</p>" +
-          '<button type="button" class="use" id="pmUse">' + t("pmUse") + "</button></div>";
+          '<button type="button" class="use" id="pmUse">' + t(isSkill ? "pmUseSkill" : "pmUse") + "</button></div>";
       } else {
-        detail = '<div class="pm-detail"><h4>' + t("pmPlugin") + '</h4><p>' + t("pmPluginDesc") + '</p><div class="hint">' + t("pmSelHint") + "</div></div>";
+        var descKey = plusCfg.tab === "skill" ? "pmSkillDesc" : "pmPluginDesc";
+        var titleKey = plusCfg.tab === "skill" ? "pmSkill" : "pmPlugin";
+        detail = '<div class="pm-detail"><h4>' + t(titleKey) + "</h4><p>" + t(descKey) + '</p><div class="hint">' + t("pmSelHint") + "</div></div>";
       }
     } else if (plusCfg.tab === "ref") {
       detail = '<div class="pm-detail"><h4>' + t("pmRefTitle") + '</h4><p>' + t("pmRefDesc") + '</p><div class="hint">' + t("pmRefHint") + "</div></div>";
@@ -2541,7 +2546,7 @@
     panel.querySelectorAll(".pm-row").forEach(function (b) {
       b.addEventListener("click", function () {
         var id = b.getAttribute("data-id");
-        if (plusCfg.tab === "plugin") {
+        if (plusCfg.tab === "plugin" || plusCfg.tab === "skill") {
           var it = plusListData().filter(function (x) { return x.id === id; })[0];
           if (!it) return;
           plusCfg.sel = it;
@@ -2562,7 +2567,8 @@
     var use = $("pmUse");
     if (use) use.addEventListener("click", function () {
       if (!plusCfg.sel) return;
-      state.selPlugin = { id: plusCfg.sel.id, name: plusCfg.sel.name, source: plusCfg.sel.source };
+      if (plusCfg.tab === "skill") state.selSkill = { id: plusCfg.sel.id, name: plusCfg.sel.name };
+      else state.selPlugin = { id: plusCfg.sel.id, name: plusCfg.sel.name, source: plusCfg.sel.source };
       updateChips();
       toast(t("toastPicked").replace("{name}", plusCfg.sel.name));
       closePlus();
@@ -2572,7 +2578,7 @@
     /* 搜索时只刷新中列，保持输入框焦点 */
     var panel = $("plusPanel");
     var rows = plusListData().filter(function (it) {
-      if (!plusCfg.q || plusCfg.tab !== "plugin") return true;
+      if (!plusCfg.q || !(plusCfg.tab === "plugin" || plusCfg.tab === "skill")) return true;
       return (it.name + " " + it.desc + " " + it.id).toLowerCase().indexOf(plusCfg.q.toLowerCase()) >= 0;
     });
     var box = $("pmRows");
@@ -2591,7 +2597,7 @@
     $("plusPanel").querySelectorAll(".pm-row").forEach(function (b) {
       b.addEventListener("click", function () {
         var id = b.getAttribute("data-id");
-        if (plusCfg.tab === "plugin") {
+        if (plusCfg.tab === "plugin" || plusCfg.tab === "skill") {
           var it = plusListData().filter(function (x) { return x.id === id; })[0];
           if (!it) return;
           plusCfg.sel = it;
@@ -2632,8 +2638,6 @@
       var label = sel ? String(sel.name || sel.title || "") : "";
       span.textContent = sel ? (label.length > 14 ? label.slice(0, 14) + "…" : label) : t(defKey);
     };
-    set("chipSkill", state.selSkill, "chipSkill");
-    set("chipPlugin", state.selPlugin, "chipPlugin");
     set("chipDs", state.selDS, "chipDs");
     set("chipMode", { name: modeLabel(state.genMode) }, "moLanding");
     renderRefs();
