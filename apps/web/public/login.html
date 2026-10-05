@@ -727,10 +727,30 @@
     // Write both so either context keeps the session across refreshes.
     document.cookie = "db-auth=demo; path=/; max-age=604800; SameSite=None; Secure; Partitioned";
     document.cookie = "db-auth=demo; path=/; max-age=604800; SameSite=Lax";
-    // New signups land on the role picker (public/role.html);
-    // returning users go straight to the studio (public/studio.html).
-    window.location.href = state.mode === "signup" ? "/role.html" : "/studio.html";
+    // 注册：角色已在表单里选好，直接进入工作台。
+    if (state.mode === "signup") { goEnter("/studio.html"); return; }
+    // 登录：只有「第一次」（本地与服务端都没有角色记录）才先进选角页。
+    decideEntry();
   });
+  function goEnter(target) {
+    try { window.__dbEntry = target; } catch (err) {}
+    window.location.href = target;
+  }
+  function hasLocalRole() {
+    try {
+      var r = localStorage.getItem("db-role");
+      if (r === "designer" || r === "pm" || r === "dev" || r === "admin") return true;
+    } catch (e) {}
+    return /(?:^|;\s*)db-role=(designer|pm|dev|admin)(?:;|$)/.test(document.cookie || "");
+  }
+  function decideEntry() {
+    var fallback = function () { goEnter(hasLocalRole() ? "/studio.html" : "/role.html"); };
+    if (typeof fetch !== "function") { fallback(); return; }
+    fetch("/api/db/role").then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+      var serverHasRole = !!(d && d.hasRole);
+      goEnter(!serverHasRole && !hasLocalRole() ? "/role.html" : "/studio.html");
+    }).catch(fallback);
+  }
 
   $("back").addEventListener("click", function () {
     document.cookie = "db-auth=; path=/; max-age=0; SameSite=Lax";

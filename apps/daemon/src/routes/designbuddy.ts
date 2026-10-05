@@ -17,8 +17,8 @@ import {
   DESIGNBUDDY_ROLES,
   createDesignBuddyReview,
   designBuddyStats,
-  getDesignBuddyRole,
   listDesignBuddyReviews,
+  readDesignBuddyRole,
   setDesignBuddyReviewStatus,
   setDesignBuddyRole,
 } from '../designbuddy-store.js';
@@ -29,7 +29,8 @@ export function registerDesignBuddyRoutes(app: Express, ctx: RegisterDesignBuddy
   const { db } = ctx;
 
   app.get('/api/db/role', (_req, res) => {
-    res.json({ role: getDesignBuddyRole(db) });
+    // hasRole=false 表示从未选择过 —— 登录端据此决定是否先去选角页。
+    res.json(readDesignBuddyRole(db));
   });
 
   app.put('/api/db/role', (req, res) => {
@@ -38,7 +39,7 @@ export function registerDesignBuddyRoutes(app: Express, ctx: RegisterDesignBuddy
       return sendApiError(res, 400, 'BAD_REQUEST', 'role must be one of designer|pm|dev|admin');
     }
     setDesignBuddyRole(db, role as (typeof DESIGNBUDDY_ROLES)[number]);
-    res.json({ role });
+    res.json({ role, hasRole: true });
   });
 
   app.get('/api/db/reviews', (_req, res) => {

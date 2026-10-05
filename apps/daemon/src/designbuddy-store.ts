@@ -86,14 +86,15 @@ export function migrateDesignBuddy(db: SqliteDb): void {
   })();
 }
 
-export function getDesignBuddyRole(db: SqliteDb): DesignBuddyRole {
+export function readDesignBuddyRole(db: SqliteDb): { role: DesignBuddyRole | null; hasRole: boolean } {
   const row = db
     .prepare(`SELECT value FROM designbuddy_prefs WHERE key = 'role'`)
     .get() as DbRow | undefined;
   const value = row?.value;
-  return (DESIGNBUDDY_ROLES as readonly string[]).includes(value)
-    ? (value as DesignBuddyRole)
-    : 'designer';
+  if ((DESIGNBUDDY_ROLES as readonly string[]).includes(value)) {
+    return { role: value as DesignBuddyRole, hasRole: true };
+  }
+  return { role: null, hasRole: false };
 }
 
 export function setDesignBuddyRole(db: SqliteDb, role: DesignBuddyRole): DesignBuddyRole {

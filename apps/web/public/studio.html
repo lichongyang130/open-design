@@ -1523,10 +1523,15 @@
   function syncRoleFromServer() {
     apiGet("/api/db/role").then(function (d) {
       var r = d && d.role;
-      if (["designer", "pm", "dev", "admin"].indexOf(r) >= 0 && r !== state.role) {
+      var has = !!(d && d.hasRole);
+      var ok = ["designer", "pm", "dev", "admin"];
+      if (has && ok.indexOf(r) >= 0 && r !== state.role) {
         state.role = r;
         persistRole(r);
         applyRole();
+      } else if (!has && ok.indexOf(state.role) >= 0) {
+        // 服务端还没有角色记录（首次进入）：把当前选择同步上去
+        apiSend("/api/db/role", "PUT", { role: state.role }).catch(function () {});
       }
     }).catch(function () {});
   }

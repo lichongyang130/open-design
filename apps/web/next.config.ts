@@ -235,6 +235,24 @@ const nextConfig: NextConfig = {
       }
       : !isProd
       ? {
+        async redirects() {
+          // DesignBuddy preview entry: visitors without the demo sign-in
+          // cookie land on the DesignBuddy login page (public/login.html)
+          // before entering the workspace. The ?db-auth=1 query is accepted
+          // as a fallback for browsers that block cookies inside the
+          // third-party preview iframe.
+          return [
+            {
+              source: '/',
+              missing: [
+                { type: 'query', key: 'db-auth' },
+                { type: 'cookie', key: 'db-auth' },
+              ],
+              destination: '/login.html',
+              permanent: false,
+            },
+          ];
+        },
         async rewrites() {
           // In dev we run the daemon on a sibling port; proxy the app API
           // proxy so the SPA can hit /api, /artifacts, and /frames without
