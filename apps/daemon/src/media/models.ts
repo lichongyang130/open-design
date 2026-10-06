@@ -32,6 +32,7 @@ export type MediaModel = {
 
 export const MEDIA_PROVIDERS: MediaProvider[] = [
   { id: 'openai', label: 'OpenAI', hint: 'gpt-image-2 / dall-e-3', integrated: true, defaultBaseUrl: 'https://api.openai.com/v1' },
+  { id: 'agnes', label: 'Agnes AI', hint: 'Agnes Image 2.5 Flash / Video 2.5 Flash', integrated: true, defaultBaseUrl: 'https://apihub.agnes-ai.com/v1', settingsVisible: false },
   { id: 'vela', label: 'OpenDesign Cloud', hint: 'Managed image and video generation through Vela', integrated: true, credentialsRequired: false, settingsVisible: false },
   { id: 'volcengine', label: 'Volcengine Ark (Doubao)', hint: 'Seedance 2.0 / Seedream', integrated: true, defaultBaseUrl: 'https://ark.cn-beijing.volces.com/api/v3' },
   { id: 'grok', label: 'xAI Grok Imagine', hint: 'grok-imagine — image + video with native audio', integrated: true, defaultBaseUrl: 'https://api.x.ai/v1' },
@@ -85,6 +86,7 @@ export const MEDIA_PROVIDERS: MediaProvider[] = [
 ];
 
 export const IMAGE_MODELS: MediaModel[] = [
+  { id: 'agnes-image-2.5-flash', label: 'Agnes Image 2.5 Flash', hint: 'Agnes AI · fast image generation', provider: 'agnes', caps: ['t2i'] },
   { id: 'vela/gpt-image-2', label: 'gpt-image-2 (Cloud)', hint: 'OpenDesign Cloud · managed image generation and editing', provider: 'vela', caps: ['t2i', 'i2i'], default: true },
   { id: 'vela/nano-banana-2', label: 'nano-banana-2 (Cloud)', hint: 'OpenDesign Cloud · managed image generation and editing', provider: 'vela', caps: ['t2i', 'i2i'] },
   { id: 'vela/nano-banana-2-lite', label: 'nano-banana-2-lite (Cloud)', hint: 'OpenDesign Cloud · fast managed image generation and editing', provider: 'vela', caps: ['t2i', 'i2i'] },
@@ -155,6 +157,7 @@ export const IMAGE_MODELS: MediaModel[] = [
 ];
 
 export const VIDEO_MODELS: MediaModel[] = [
+  { id: 'agnes-video-2.5-flash', label: 'Agnes Video 2.5 Flash', hint: 'Agnes AI · fast 720p text-to-video', provider: 'agnes', caps: ['t2v'] },
   { id: 'vela/doubao-seedance-2-0-260128', label: 'seedance-2.0 (Cloud)', hint: 'OpenDesign Cloud · managed text/image-to-video · 720p default', provider: 'vela', caps: ['t2v', 'i2v'] },
   { id: 'doubao-seedance-2-0-260128', label: 'seedance-2.0', hint: 'ByteDance · t2v + i2v + audio', provider: 'volcengine', caps: ['t2v', 'i2v', 'audio'], default: true },
   { id: 'doubao-seedance-2-0-fast-260128', label: 'seedance-2.0-fast', hint: 'ByteDance · faster, cheaper', provider: 'volcengine', caps: ['t2v', 'i2v', 'audio'] },

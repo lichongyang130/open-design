@@ -153,8 +153,10 @@ const MEDIA_FAILURE_NEXT_STEP_BY_CODE: Readonly<Record<string, MediaFailureNextS
   // No renderer is wired for the selected model: a Settings problem, whether
   // the fix is a key or a different provider entry.
   STUB_PROVIDER_DISABLED: 'open-settings',
-  // Local plumbing. Nothing upstream is wrong and nothing is spent.
+  AGNES_NOT_CONFIGURED: 'open-settings',
+  // Local/provider plumbing. Nothing upstream is wrong and nothing is spent.
   MEDIA_DISPATCHER_UNREACHABLE: 'retry-later',
+  AGNES_NETWORK_ERROR: 'retry-later',
   DAEMON_RESTART: 'retry-later',
   RATE_LIMITED: 'retry-later',
   UPSTREAM_UNAVAILABLE: 'retry-later',

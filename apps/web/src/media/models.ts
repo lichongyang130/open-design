@@ -29,6 +29,7 @@ import type { AudioKind, MediaAspect } from '../types';
  */
 export type MediaProviderId =
   | 'openai'
+  | 'agnes'
   | 'vela'
   | 'volcengine'
   | 'grok'
@@ -91,6 +92,15 @@ export const MEDIA_PROVIDERS: MediaProvider[] = [
     integrated: true,
     defaultBaseUrl: 'https://api.openai.com/v1',
     docsUrl: 'https://platform.openai.com/api-keys',
+  },
+  {
+    id: 'agnes',
+    label: 'Agnes AI',
+    hint: 'Agnes Image 2.5 Flash / Video 2.5 Flash',
+    integrated: true,
+    defaultBaseUrl: 'https://apihub.agnes-ai.com/v1',
+    docsUrl: 'https://agnes-ai.com/en/docs',
+    settingsVisible: false,
   },
   {
     id: 'vela',
@@ -326,6 +336,7 @@ export interface MediaModel {
  * `packages/model-bank/src/aiModels/openai.ts` and friends in lobehub.
  */
 export const IMAGE_MODELS: MediaModel[] = [
+  { id: 'agnes-image-2.5-flash', label: 'Agnes Image 2.5 Flash', hint: 'Agnes AI · fast image generation', provider: 'agnes', caps: ['t2i'] },
   { id: 'vela/gpt-image-2', label: 'gpt-image-2 (Cloud)', hint: 'OpenDesign Cloud · managed image generation and editing', provider: 'vela', caps: ['t2i', 'i2i'], default: true },
   { id: 'vela/nano-banana-2', label: 'nano-banana-2 (Cloud)', hint: 'OpenDesign Cloud · managed image generation and editing', provider: 'vela', caps: ['t2i', 'i2i'] },
   { id: 'vela/nano-banana-2-lite', label: 'nano-banana-2-lite (Cloud)', hint: 'OpenDesign Cloud · fast managed image generation and editing', provider: 'vela', caps: ['t2i', 'i2i'] },
@@ -537,6 +548,7 @@ export const IMAGE_MODELS: MediaModel[] = [
  * Seedance Lite), kling.ts and friends.
  */
 export const VIDEO_MODELS: MediaModel[] = [
+  { id: 'agnes-video-2.5-flash', label: 'Agnes Video 2.5 Flash', hint: 'Agnes AI · fast 720p text-to-video', provider: 'agnes', caps: ['t2v'] },
   { id: 'vela/doubao-seedance-2-0-260128', label: 'seedance-2.0 (Cloud)', hint: 'OpenDesign Cloud · managed text/image-to-video · 720p default', provider: 'vela', caps: ['t2v', 'i2v'] },
   // Volcengine — Seedance 2.0 (integrated).
   {

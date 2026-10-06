@@ -595,6 +595,30 @@
 
   function t(key) { return I18N[state.lang][key]; }
 
+  function cleanUserName(value) {
+    return String(value == null ? "" : value).trim().replace(/\s+/g, " ").slice(0, 60);
+  }
+
+  function userNameForEmail(email) {
+    var normalizedEmail = String(email || "").trim().toLowerCase();
+    try {
+      var savedEmail = String(localStorage.getItem("db-user-email") || "").trim().toLowerCase();
+      var savedName = cleanUserName(localStorage.getItem("db-user-name"));
+      if (savedName && savedEmail === normalizedEmail) return savedName;
+    } catch (e) {}
+    return cleanUserName(normalizedEmail.split("@")[0]);
+  }
+
+  function persistIdentity(userName, email) {
+    var cleanName = cleanUserName(userName);
+    if (!cleanName) return;
+    try {
+      localStorage.setItem("db-user-name", cleanName);
+      if (email) localStorage.setItem("db-user-email", String(email).trim().toLowerCase());
+      else localStorage.removeItem("db-user-email");
+    } catch (e) {}
+  }
+
   function applyLang() {
     var d = I18N[state.lang];
     document.documentElement.lang = state.lang === "zh" ? "zh-CN" : "en";
@@ -667,6 +691,7 @@
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setBad("f-email", true); ok = false; } else setBad("f-email", false);
     if (pass.length < 6) { setBad("f-pass", true); ok = false; } else setBad("f-pass", false);
     if (!ok) return;
+    persistIdentity(state.mode === "signup" ? $("name").value : userNameForEmail(email), email);
     if (state.mode === "signup") persistRole();
     fakeAsync($("submit"), showDone);
   });
@@ -717,8 +742,14 @@
     if (e.target.classList.contains("linkish")) toast(t("toastDemo"));
   });
 
-  $("google").addEventListener("click", function () { fakeAsync($("google"), showDone); });
-  $("github").addEventListener("click", function () { fakeAsync($("github"), showDone); });
+  $("google").addEventListener("click", function () {
+    persistIdentity("Google", "");
+    fakeAsync($("google"), showDone);
+  });
+  $("github").addEventListener("click", function () {
+    persistIdentity("GitHub", "");
+    fakeAsync($("github"), showDone);
+  });
 
   $("enterBtn").addEventListener("click", function (e) {
     e.preventDefault();

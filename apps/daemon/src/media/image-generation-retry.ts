@@ -1,8 +1,12 @@
-// Paid image-generation POSTs are deliberately retried on a narrow response
-// allowlist only. A fetch rejection is ambiguous (the provider may already
-// have accepted and billed the request), so this helper reports it and lets it
-// fail without issuing a second POST.
-export type ImageGenerationRetryReason = 'rate_limit_429' | 'service_unavailable_503';
+// Paid image-generation POSTs are deliberately retried once on a narrow
+// transient-response allowlist (429/502/503/504). A fetch rejection is
+// ambiguous (the provider may already have accepted and billed the request),
+// so this helper reports it and fails without issuing a second POST.
+export type ImageGenerationRetryReason =
+  | 'rate_limit_429'
+  | 'bad_gateway_502'
+  | 'service_unavailable_503'
+  | 'gateway_timeout_504';
 
 export type ImageGenerationRequestSummary = {
   attemptCount: number;
@@ -100,7 +104,9 @@ export async function fetchImageGenerationWithResponseRetry(
 
 function retryReasonForStatus(status: number): ImageGenerationRetryReason | undefined {
   if (status === 429) return 'rate_limit_429';
+  if (status === 502) return 'bad_gateway_502';
   if (status === 503) return 'service_unavailable_503';
+  if (status === 504) return 'gateway_timeout_504';
   return undefined;
 }
 

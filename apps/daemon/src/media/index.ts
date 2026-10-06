@@ -16,6 +16,8 @@
 // without API keys.
 //
 // Today we ship real integrations for:
+//   * provider 'agnes'      → Agnes Image 2.5 Flash plus asynchronous
+//                              Agnes Video 2.5 Flash submit/poll/download
 //   * provider 'openai'     → OpenAI Images API (gpt-image-* / dall-e-*),
 //                              plus text-to-speech via /v1/audio/speech,
 //                              with auto-detection for Azure OpenAI
@@ -80,6 +82,12 @@ import {
   modelsForSurface,
 } from './models.js';
 import { assertAndFetchExternalAsset } from '../connectionTest.js';
+import {
+  AGNES_BASE_URL,
+  AGNES_IMAGE_MODEL,
+  AGNES_VIDEO_MODEL,
+  getAgnesApiKey,
+} from '../integrations/agnes.js';
 import {
   resolveModelAlias,
   resolveProviderConfig,
@@ -633,6 +641,16 @@ export async function generateMedia(args: {
       bytes = result.bytes;
       providerNote = result.providerNote;
       suggestedExt = result.suggestedExt;
+    } else if (def.provider === 'agnes' && surface === 'image') {
+      const result = await renderAgnesImage(ctx, credentials);
+      bytes = result.bytes;
+      providerNote = result.providerNote;
+      suggestedExt = result.suggestedExt;
+    } else if (def.provider === 'agnes' && surface === 'video') {
+      const result = await renderAgnesVideo(ctx, credentials, args.onProgress);
+      bytes = result.bytes;
+      providerNote = result.providerNote;
+      suggestedExt = result.suggestedExt;
     } else if (
       def.provider === 'openai'
       && surface === 'audio'
@@ -1041,6 +1059,325 @@ async function renderOpenAIImage(ctx: MediaContext, credentials: ProviderConfig)
   };
 }
 
+const AGNES_IMAGE_TIMEOUT_MS = 3 * 60 * 1000;
+const AGNES_VIDEO_SUBMIT_TIMEOUT_MS = 60 * 1000;
+const AGNES_VIDEO_DEFAULT_POLL_INTERVAL_MS = 2_000;
+const AGNES_VIDEO_DEFAULT_TIMEOUT_MS = 12 * 60 * 1000;
+const AGNES_MAX_IMAGE_BYTES = 32 * 1024 * 1024;
+const AGNES_MAX_VIDEO_BYTES = 512 * 1024 * 1024;
+
+function agnesNetworkError(operation: string, error: unknown): Error {
+  const cause = isRecord(error) ? error.cause : undefined;
+  const transportCode = errorStringProp(error, 'code') || errorStringProp(cause, 'code');
+  const detail = transportCode ? ` (${transportCode})` : '';
+  return Object.assign(
+    new Error(`Agnes ${operation} could not reach the provider${detail}. Check outbound TLS access or HTTPS_PROXY.`),
+    {
+      code: 'AGNES_NETWORK_ERROR',
+      status: 502,
+      retryable: true,
+    },
+  );
+}
+
+function agnesNotConfiguredError(): Error {
+  return Object.assign(
+    new Error('Agnes is not configured. Set OD_AGNES_API_KEY on the daemon.'),
+    {
+      code: 'AGNES_NOT_CONFIGURED',
+      status: 503,
+      retryable: false,
+    },
+  );
+}
+
+function positiveEnvMs(name: string, fallback: number): number {
+  const value = Number(process.env[name]);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+async function readMediaResponseBytes(
+  response: Response,
+  providerTag: string,
+  maxBytes: number,
+): Promise<Buffer> {
+  const announced = Number(response.headers.get('content-length'));
+  if (Number.isFinite(announced) && announced > maxBytes) {
+    throw new Error(`${providerTag} asset exceeds the ${maxBytes}-byte download limit`);
+  }
+  if (!response.body) throw new Error(`${providerTag} asset response was empty`);
+  const reader = response.body.getReader();
+  const chunks: Buffer[] = [];
+  let total = 0;
+  while (true) {
+    const chunk = await reader.read();
+    if (chunk.done) break;
+    total += chunk.value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel().catch(() => undefined);
+      throw new Error(`${providerTag} asset exceeds the ${maxBytes}-byte download limit`);
+    }
+    chunks.push(Buffer.from(chunk.value));
+  }
+  if (total === 0) throw new Error(`${providerTag} asset response was empty`);
+  return Buffer.concat(chunks, total);
+}
+
+function boundedUpstreamErrorDetail(text: string, maxLength = 240): string {
+  const trimmed = text.trim();
+  if (!trimmed) return 'empty response body';
+
+  try {
+    const parsed: unknown = JSON.parse(trimmed);
+    if (isRecord(parsed)) {
+      const nested = isRecord(parsed.error) ? parsed.error.message : undefined;
+      const direct = parsed.message;
+      const candidate = typeof nested === 'string'
+        ? nested
+        : typeof direct === 'string'
+          ? direct
+          : typeof parsed.error === 'string'
+            ? parsed.error
+            : undefined;
+      if (candidate?.trim()) return truncate(candidate.replace(/\s+/g, ' ').trim(), maxLength);
+    }
+  } catch {
+    // Plain-text and HTML gateway responses are handled below.
+  }
+
+  const readable = /<(?:html|head|body|title|script|style)\b/i.test(trimmed)
+    ? trimmed
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+    : trimmed;
+  return truncate(readable.replace(/\s+/g, ' ').trim() || 'unreadable response body', maxLength);
+}
+
+function agnesHeaders(apiKey: string): Record<string, string> {
+  return {
+    accept: 'application/json',
+    authorization: `Bearer ${apiKey}`,
+    'content-type': 'application/json',
+  };
+}
+
+function agnesAssetHeaders(url: string, apiKey: string): Record<string, string> {
+  try {
+    return new URL(url).origin === new URL(AGNES_BASE_URL).origin
+      ? { authorization: `Bearer ${apiKey}` }
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+async function renderAgnesImage(ctx: MediaContext, _credentials: ProviderConfig): Promise<RenderResult> {
+  const apiKey = getAgnesApiKey();
+  if (!apiKey) throw agnesNotConfiguredError();
+  const body = {
+    model: AGNES_IMAGE_MODEL,
+    prompt: ctx.prompt || 'A polished, high-quality design image.',
+    size: '1K',
+    ratio: ctx.aspect || '1:1',
+    extra_body: { response_format: 'url' },
+  };
+  let response: Response;
+  try {
+    response = await fetchImageGenerationWithResponseRetry(
+      () => fetch(`${AGNES_BASE_URL}/images/generations`, withMediaRequestInit(ctx, {
+        method: 'POST',
+        headers: agnesHeaders(apiKey),
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(AGNES_IMAGE_TIMEOUT_MS),
+      })),
+      (summary) => ctx.onProviderRequestSettled?.({
+        providerId: 'agnes',
+        ...summary,
+      }),
+    );
+  } catch (error) {
+    throw agnesNetworkError('image request', error);
+  }
+  const payload = await parseOpenAICompatibleJson(response, 'agnes image');
+  const entry = payload && Array.isArray(payload.data) ? payload.data[0] : null;
+  if (!entry) throw new Error('agnes image response had no data[0]');
+
+  let bytes: Buffer;
+  if (typeof entry.b64_json === 'string' && entry.b64_json) {
+    const encoded = entry.b64_json.includes(',')
+      ? entry.b64_json.slice(entry.b64_json.indexOf(',') + 1)
+      : entry.b64_json;
+    bytes = Buffer.from(encoded, 'base64');
+    if (bytes.length === 0 || bytes.length > AGNES_MAX_IMAGE_BYTES) {
+      throw new Error('agnes image returned invalid image bytes');
+    }
+  } else if (typeof entry.url === 'string' && entry.url) {
+    const asset = await assertAndFetchExternalAsset(
+      entry.url,
+      withMediaRequestInit(ctx, {
+        headers: agnesAssetHeaders(entry.url, apiKey),
+        signal: AbortSignal.timeout(AGNES_IMAGE_TIMEOUT_MS),
+      }),
+    );
+    if (!asset.ok) throw new Error(`agnes image asset fetch ${asset.status}`);
+    bytes = await readMediaResponseBytes(asset, 'agnes image', AGNES_MAX_IMAGE_BYTES);
+  } else {
+    throw new Error('agnes image response had neither data[0].url nor data[0].b64_json');
+  }
+
+  return {
+    bytes,
+    providerNote: `agnes/${AGNES_IMAGE_MODEL} · ${ctx.aspect} · 1K · ${bytes.length} bytes`,
+    suggestedExt: sniffImageExt(bytes),
+  };
+}
+
+function agnesVideoSeconds(length: number | undefined): string {
+  const rounded = Math.round(length ?? 5);
+  return String(Math.max(4, Math.min(12, rounded)));
+}
+
+function agnesVideoAspect(aspect: string | undefined): string {
+  const supported = new Set(['16:9', '9:16', '1:1', '4:3', '3:4']);
+  return supported.has(aspect || '') ? aspect! : '16:9';
+}
+
+function agnesVideoPollUrl(videoId: string): string {
+  const url = new URL('/agnesapi', AGNES_BASE_URL);
+  url.searchParams.set('video_id', videoId);
+  url.searchParams.set('model_name', AGNES_VIDEO_MODEL);
+  return url.toString();
+}
+
+async function agnesJsonResponse(response: Response, label: string): Promise<Record<string, any>> {
+  const text = await response.text();
+  if (!response.ok) {
+    throw Object.assign(
+      new Error(`${label} ${response.status}: ${boundedUpstreamErrorDetail(text)}`),
+      {
+        status: response.status,
+        code: 'AGNES_UPSTREAM_ERROR',
+        retryable: [429, 500, 502, 503, 504].includes(response.status),
+      },
+    );
+  }
+  try {
+    const parsed = JSON.parse(text);
+    if (!parsed || typeof parsed !== 'object') throw new Error('not an object');
+    return parsed as Record<string, any>;
+  } catch {
+    throw new Error(`${label} returned non-JSON: ${truncate(text, 180)}`);
+  }
+}
+
+async function renderAgnesVideo(
+  ctx: MediaContext,
+  _credentials: ProviderConfig,
+  onProgress?: ProgressFn,
+): Promise<RenderResult> {
+  const apiKey = getAgnesApiKey();
+  if (!apiKey) throw agnesNotConfiguredError();
+  const seconds = agnesVideoSeconds(ctx.length);
+  const aspectRatio = agnesVideoAspect(ctx.aspect);
+  onProgress?.(`Submitting ${AGNES_VIDEO_MODEL} video generation…`);
+  let submitted: Response;
+  try {
+    submitted = await fetch(`${AGNES_BASE_URL}/videos`, withMediaRequestInit(ctx, {
+      method: 'POST',
+      headers: agnesHeaders(apiKey),
+      body: JSON.stringify({
+        model: AGNES_VIDEO_MODEL,
+        prompt: ctx.prompt || 'A polished cinematic product video.',
+        mode: 'text',
+        seconds,
+        size: '720P',
+        aspect_ratio: aspectRatio,
+        n: 1,
+      }),
+      signal: AbortSignal.timeout(AGNES_VIDEO_SUBMIT_TIMEOUT_MS),
+    }));
+  } catch (error) {
+    throw agnesNetworkError('video submission', error);
+  }
+  const submission = await agnesJsonResponse(submitted, 'agnes video submit');
+  const videoId = String(
+    submission.video_id
+    ?? submission.id
+    ?? submission.task_id
+    ?? submission.data?.video_id
+    ?? '',
+  ).trim();
+  if (!videoId) throw new Error('agnes video submit response had no video_id');
+
+  const pollIntervalMs = positiveEnvMs(
+    'OD_AGNES_VIDEO_POLL_INTERVAL_MS',
+    AGNES_VIDEO_DEFAULT_POLL_INTERVAL_MS,
+  );
+  const timeoutMs = positiveEnvMs(
+    'OD_AGNES_VIDEO_TIMEOUT_MS',
+    AGNES_VIDEO_DEFAULT_TIMEOUT_MS,
+  );
+  const deadline = Date.now() + timeoutMs;
+  let lastProgress = '';
+  let videoUrl = '';
+  while (Date.now() < deadline) {
+    await sleep(pollIntervalMs);
+    let response: Response;
+    try {
+      response = await fetch(agnesVideoPollUrl(videoId), withMediaRequestInit(ctx, {
+        method: 'GET',
+        headers: {
+          accept: 'application/json',
+          authorization: `Bearer ${apiKey}`,
+        },
+        signal: AbortSignal.timeout(Math.min(30_000, timeoutMs)),
+      }));
+    } catch (error) {
+      throw agnesNetworkError('video status request', error);
+    }
+    const snapshot = await agnesJsonResponse(response, 'agnes video poll');
+    const status = String(snapshot.status ?? snapshot.data?.status ?? '').trim().toLowerCase();
+    const progress = snapshot.progress ?? snapshot.data?.progress;
+    const progressText = progress === undefined || progress === null || progress === ''
+      ? ''
+      : `${String(progress).replace(/%$/, '')}%`;
+    const update = [status || 'processing', progressText].filter(Boolean).join(' · ');
+    if (update && update !== lastProgress) {
+      onProgress?.(`Agnes video: ${update}`);
+      lastProgress = update;
+    }
+    if (status === 'failed' || status === 'error' || status === 'cancelled' || status === 'canceled') {
+      const reason = snapshot.error?.message ?? snapshot.error ?? snapshot.message ?? 'generation failed';
+      throw new Error(`agnes video failed: ${truncate(reason, 240)}`);
+    }
+    if (status === 'completed' || status === 'succeeded' || status === 'success') {
+      videoUrl = String(snapshot.url ?? snapshot.data?.url ?? '').trim();
+      if (!videoUrl) throw new Error('agnes video completed without a top-level url');
+      break;
+    }
+  }
+  if (!videoUrl) {
+    throw new Error(`agnes video timed out after ${Math.round(timeoutMs / 1000)}s`);
+  }
+
+  onProgress?.('Downloading completed Agnes video…');
+  const asset = await assertAndFetchExternalAsset(
+    videoUrl,
+    withMediaRequestInit(ctx, {
+      headers: agnesAssetHeaders(videoUrl, apiKey),
+      signal: AbortSignal.timeout(3 * 60 * 1000),
+    }),
+  );
+  if (!asset.ok) throw new Error(`agnes video asset fetch ${asset.status}`);
+  const bytes = await readMediaResponseBytes(asset, 'agnes video', AGNES_MAX_VIDEO_BYTES);
+  return {
+    bytes,
+    providerNote: `agnes/${AGNES_VIDEO_MODEL} · ${aspectRatio} · 720P · ${seconds}s · ${bytes.length} bytes`,
+    suggestedExt: '.mp4',
+  };
+}
+
 async function renderImageRouterImage(ctx: MediaContext, credentials: ProviderConfig): Promise<RenderResult> {
   if (!credentials.apiKey) {
     throw new Error(
@@ -1186,12 +1523,27 @@ function customImageOverridesOpenAIModel(
 async function parseOpenAICompatibleJson(resp: Response, providerTag: string): Promise<any> {
   const text = await resp.text();
   if (!resp.ok) {
-    throw new Error(`${providerTag} ${resp.status}: ${truncate(text, 240)}`);
+    const isAgnes = providerTag.startsWith('agnes');
+    throw Object.assign(
+      new Error(`${providerTag} ${resp.status}: ${boundedUpstreamErrorDetail(text)}`),
+      {
+        status: resp.status,
+        code: isAgnes ? 'AGNES_UPSTREAM_ERROR' : 'MEDIA_UPSTREAM_ERROR',
+        retryable: [429, 500, 502, 503, 504].includes(resp.status),
+      },
+    );
   }
   try {
     return JSON.parse(text);
   } catch {
-    throw new Error(`${providerTag} non-JSON response: ${truncate(text, 200)}`);
+    throw Object.assign(
+      new Error(`${providerTag} non-JSON response: ${truncate(text, 200)}`),
+      {
+        status: 502,
+        code: providerTag.startsWith('agnes') ? 'AGNES_INVALID_RESPONSE' : 'MEDIA_INVALID_RESPONSE',
+        retryable: true,
+      },
+    );
   }
 }
 

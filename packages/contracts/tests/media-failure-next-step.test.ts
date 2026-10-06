@@ -73,6 +73,8 @@ describe('mediaFailureNextStep', () => {
         }),
       ).toBe('open-settings');
       expect(mediaFailureNextStep({ code: 'STUB_PROVIDER_DISABLED' })).toBe('open-settings');
+      expect(mediaFailureNextStep({ code: 'AGNES_NOT_CONFIGURED', status: 503, retryable: false }))
+        .toBe('open-settings');
     });
 
     it('separates an expired Open Design session from a wrong BYOK key', () => {
@@ -98,6 +100,8 @@ describe('mediaFailureNextStep', () => {
       ).toBe('retry-later');
       expect(mediaFailureNextStep({ code: 'DAEMON_RESTART' })).toBe('retry-later');
       expect(mediaFailureNextStep({ code: 'MEDIA_DISPATCHER_UNREACHABLE' })).toBe('retry-later');
+      expect(mediaFailureNextStep({ code: 'AGNES_NETWORK_ERROR', status: 502, retryable: true }))
+        .toBe('retry-later');
     });
 
     it('honours an explicit retryable verdict when nothing else names a cause', () => {

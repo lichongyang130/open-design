@@ -147,12 +147,35 @@ describe('image-generation response retry', () => {
     });
   });
 
+  it.each([
+    [502, 'bad_gateway_502'],
+    [504, 'gateway_timeout_504'],
+  ] as const)('retries transient gateway status %s once', async (status, retryReason) => {
+    const onSettled = vi.fn();
+    const issueRequest = vi.fn()
+      .mockResolvedValueOnce(new Response('gateway unavailable', {
+        status,
+        headers: { 'retry-after': '0' },
+      }))
+      .mockResolvedValueOnce(new Response('ok', { status: 200 }));
+
+    const response = await fetchImageGenerationWithResponseRetry(issueRequest, onSettled);
+
+    expect(response.status).toBe(200);
+    expect(issueRequest).toHaveBeenCalledTimes(2);
+    expect(onSettled).toHaveBeenCalledWith(expect.objectContaining({
+      retryReason,
+      retryCount: 1,
+      retryFinalResult: 'success',
+    }));
+  });
+
   it('does not retry other response failures', async () => {
-    const issueRequest = vi.fn(async () => new Response('bad gateway', { status: 502 }));
+    const issueRequest = vi.fn(async () => new Response('internal error', { status: 500 }));
 
     const response = await fetchImageGenerationWithResponseRetry(issueRequest);
 
-    expect(response.status).toBe(502);
+    expect(response.status).toBe(500);
     expect(issueRequest).toHaveBeenCalledOnce();
   });
 

@@ -36,7 +36,11 @@ export interface MediaGenerationResultProps {
   response_status?: number;
   attempt_count: number;
   retry_count: number;
-  retry_reason?: 'rate_limit_429' | 'service_unavailable_503';
+  retry_reason?:
+    | 'rate_limit_429'
+    | 'bad_gateway_502'
+    | 'service_unavailable_503'
+    | 'gateway_timeout_504';
   retry_after_ms?: number;
   retry_delay_ms?: number;
   retry_final_result: 'not_attempted' | 'success' | 'failed' | 'skipped_retry_after_budget';
