@@ -852,6 +852,7 @@
     *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   }
 </style>
+<link rel="stylesheet" href="/studio-templates.css" />
 </head>
 <body>
   <div class="scene" aria-hidden="true">
@@ -1286,6 +1287,7 @@
     </section>
   </div>
 
+<script src="/studio-templates.js"></script>
 <script>
 (function () {
   "use strict";
@@ -3713,62 +3715,97 @@
   function prettyName(id) {
     return String(id).split(/[-_]/).map(function (w) { return w ? w.charAt(0).toUpperCase() + w.slice(1) : w; }).join(" ");
   }
+  function templateGenerationMode(item) {
+    var map = { web: "landing", app: "app", dashboard: "dashboard", commerce: "landing", deck: "deck", brand: "poster" };
+    return map[item.category] || "landing";
+  }
+
+  function openTemplatePreview(item, page) {
+    var library = window.StudioTemplates;
+    if (!library || !item) return;
+    library.open(item.id, {
+      lang: state.lang,
+      page: page || 0,
+      onUse: function (selected, intent) {
+        var info = library.localized(selected, state.lang);
+        state.genMode = templateGenerationMode(selected);
+        useTemplate(info.name);
+        if (intent === "brief") {
+          $("prompt").value = state.lang === "zh"
+            ? "参考「" + info.name + "」的完整结构和示例内容，为我的业务创建一套可编辑方案…"
+            : "Use the full structure and sample content from “" + info.name + "” to create an editable project for my business…";
+        } else if (intent === "remix") {
+          $("prompt").value = state.lang === "zh"
+            ? "Remix「" + info.name + "」为一个新项目，保留信息架构并替换成我的品牌内容…"
+            : "Remix “" + info.name + "” as a new project, keeping the information architecture and replacing it with my brand content…";
+        }
+      }
+    });
+  }
+
   function renderTemplates() {
     var d = I18N[state.lang];
+    var library = window.StudioTemplates;
     var tabs = $("tpTabs");
-    tabs.innerHTML = "";
-    var real = state.realDTpl && state.realDTpl.length > 0;
-    var catOf = real ? tplCategoryOf : tplCatOfDemo;
-    var source = real ? state.realDTpl : d.templates;
-    /* 只展示有内容的分类（顺序固定，与 tplTabs 对齐），避免空 tab */
-    var counts = {};
-    source.forEach(function (x) { var c = catOf(x); counts[c] = (counts[c] || 0) + 1; });
-    var tabList = [{ k: "all", label: d.tplTabs[0], n: source.length }];
-    TPL_CATS.forEach(function (c, i) {
-      if (counts[c]) tabList.push({ k: c, label: d.tplTabs[i + 1], n: counts[c] });
-    });
-    if (state.tpTab >= tabList.length) state.tpTab = 0;
-    tabList.forEach(function (tb, i) {
-      var b = document.createElement("button");
-      b.type = "button";
-      b.className = "pill" + (state.tpTab === i ? " on" : "");
-      b.textContent = tb.label;
-      b.addEventListener("click", function () { state.tpTab = i; renderTemplates(); });
-      tabs.appendChild(b);
-    });
-    var feat;
-    if (real) {
-      $("tpSub").textContent = d.tpSub + "  " + d.pjLive;
-      var pick = state.realDTpl.filter(function (x) { return /landing|pitch|portfolio/.test(x.id); })[0] || state.realDTpl[0];
-      feat = {
-        t: prettyName(pick.name || pick.id),
-        d: (pick.description || "").split("\n")[0],
-        uses: (pick.triggers && pick.triggers[0]) || ""
-      };
-    } else {
-      $("tpSub").textContent = d.tpSub;
-      feat = d.featured;
-    }
-    $("tpFeatured").innerHTML =
-      '<div class="art">' + ICONS.deck + "</div>" +
-      '<div class="fx"><div class="k">' + t("tpFeaturedK") + "</div><h3>" + feat.t + "</h3><p>" + feat.d + '</p>' +
-      '<button type="button" class="btn-new" id="tpUse">' + t("tpUse") + '</button><span class="m">' + feat.uses + (real ? "" : " " + t("tpUses")) + "</span></div>";
-    $("tpUse").addEventListener("click", function () { useTemplate(feat.t); });
     var grid = $("tpGrid");
+    tabs.innerHTML = "";
     grid.innerHTML = "";
-    var key = tabList[state.tpTab].k;
-    var list = key === "all" ? source : source.filter(function (x) { return catOf(x) === key; });
-    list.forEach(function (tp, i) {
-      var g = GRADS[(i + 3) % GRADS.length].split(",");
-      var sub = real ? t(SF_LABEL[tp.surface] || "sfWeb") : tp.k;
-      var use = real ? ((tp.triggers && tp.triggers[0]) || sub) : (tp.n + " " + t("tpUses"));
-      var c = document.createElement("div");
-      c.className = "tcard";
-      c.innerHTML =
-        '<div class="pv" style="background:linear-gradient(140deg,' + g[0] + "," + g[1] + ')">' + ICONS[real ? (SF_ICON[tp.surface] || "web") : tp.ic] + "</div>" +
-        '<div class="body"><span><b>' + (real ? prettyName(tp.name || tp.id) : tp.t) + '</b><span class="sub">' + sub + '</span></span><span class="use">' + use + "</span></div>";
-      c.addEventListener("click", function () { useTemplate(real ? prettyName(tp.name || tp.id) : tp.t); });
-      grid.appendChild(c);
+
+    if (!library || !Array.isArray(library.items)) {
+      $("tpSub").textContent = d.tpSub;
+      $("tpFeatured").innerHTML = '<div class="fx"><h3>' + d.featured.t + '</h3><p>' + d.featured.d + '</p></div>';
+      return;
+    }
+
+    var source = library.items;
+    var categories = library.categories(state.lang);
+    if (state.tpTab >= categories.length) state.tpTab = 0;
+    categories.forEach(function (category, index) {
+      var button = document.createElement("button");
+      button.type = "button";
+      button.className = "pill" + (state.tpTab === index ? " on" : "");
+      button.innerHTML = esc(category.label) + '<span class="n">' + category.count + '</span>';
+      button.addEventListener("click", function () {
+        state.tpTab = index;
+        renderTemplates();
+      });
+      tabs.appendChild(button);
+    });
+
+    $("tpSub").textContent = library.text(state.lang, "librarySub");
+    var featured = source.filter(function (item) { return item.featured; })[0] || source[0];
+    $("tpFeatured").innerHTML = library.featuredMarkup(featured, state.lang);
+    $("tpPreviewFeatured").addEventListener("click", function () { openTemplatePreview(featured, 0); });
+    var featuredArt = $("tpFeatured").querySelector(".tpl-featured-art");
+    if (featuredArt) {
+      featuredArt.setAttribute("role", "button");
+      featuredArt.setAttribute("tabindex", "0");
+      featuredArt.setAttribute("aria-label", library.text(state.lang, "preview") + " " + library.localized(featured, state.lang).name);
+      featuredArt.addEventListener("click", function () { openTemplatePreview(featured, 0); });
+      featuredArt.addEventListener("keydown", function (event) {
+        if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openTemplatePreview(featured, 0); }
+      });
+    }
+
+    var selectedCategory = categories[state.tpTab].id;
+    var visible = selectedCategory === "all" ? source : source.filter(function (item) { return item.category === selectedCategory; });
+    visible.forEach(function (item) {
+      var info = library.localized(item, state.lang);
+      var card = document.createElement("article");
+      card.className = "tcard tpl-commercial-card";
+      card.tabIndex = 0;
+      card.setAttribute("role", "button");
+      card.setAttribute("aria-label", library.text(state.lang, "preview") + " " + info.name);
+      card.setAttribute("data-template-id", item.id);
+      card.innerHTML = library.cardMarkup(item, state.lang);
+      card.addEventListener("click", function () { openTemplatePreview(item, 0); });
+      card.addEventListener("keydown", function (event) {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openTemplatePreview(item, 0);
+        }
+      });
+      grid.appendChild(card);
     });
   }
 
