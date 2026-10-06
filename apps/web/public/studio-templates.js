@@ -47,8 +47,25 @@
       featured: "本周商业精选",
       featuredDescription: "完整的 13 页面品牌手册，覆盖策略、视觉规范、落地应用与资源下载。所有页面均为可点击、可交互 HTML，而不是静态占位图。",
       previewScreens: "预览 13 个界面",
-      librarySub: "18 套商业级模板 · 每套 13 个可交互界面 · 共 234 个真实页面",
-      uses: "次使用"
+      librarySub: "{kits} 套商业级模板 · 每套 {screens} 个可交互界面 · 共 {pages} 个真实页面",
+      uses: "次使用",
+      scrollable: "长页可滚动",
+      scrollHintCanvas: "向上滚动 · 浏览完整长页",
+      interactionHint: "界面内所有按钮、导航与卡片都可点击，并产生真实反馈",
+      navHint: "点击导航项可直接切换界面",
+      deepTitle: "完整商业版长页",
+      deepSub: "首屏之下还有数据、案例、定价与常见问题等完整章节",
+      readingProgress: "阅读进度",
+      toTop: "回到顶部",
+      pressed: "已触发：",
+      added: "已加入",
+      liked: "已收藏",
+      subscribed: "订阅成功",
+      sentMessage: "消息已发送",
+      playState: "正在播放",
+      cartLabel: "购物袋",
+      resetFilters: "重置筛选",
+      faqLabel: "常见问题"
     },
     en: {
       commercial: "Commercial license",
@@ -85,12 +102,29 @@
       featured: "COMMERCIAL PICK",
       featuredDescription: "A complete 13-screen brand playbook covering strategy, visual rules, applications, and downloadable assets. Every page is clickable HTML—not a placeholder image.",
       previewScreens: "Preview 13 screens",
-      librarySub: "18 commercial-grade kits · 13 interactive screens each · 234 real pages",
-      uses: "uses"
+      librarySub: "{kits} commercial-grade kits · {screens} interactive screens each · {pages} real pages",
+      uses: "uses",
+      scrollable: "Scrollable page",
+      scrollHintCanvas: "Scroll up · browse the full-length page",
+      interactionHint: "Every button, nav item, and card in the artwork is clickable with real feedback",
+      navHint: "Click a navigation item to jump straight to that screen",
+      deepTitle: "Full commercial page",
+      deepSub: "Below the fold: data, case studies, pricing, and FAQ chapters",
+      readingProgress: "Reading progress",
+      toTop: "Back to top",
+      pressed: "Activated: ",
+      added: "Added",
+      liked: "Saved",
+      subscribed: "Subscribed",
+      sentMessage: "Message sent",
+      playState: "Now playing",
+      cartLabel: "Shopping bag",
+      resetFilters: "Reset filters",
+      faqLabel: "FAQ"
     }
   };
 
-  var TEMPLATES = [
+  var BASE_TEMPLATES = [
     {
       id: "northstar-saas-console", category: "dashboard", kind: "dashboard", skin: "northstar",
       accent: "#9cff57", alt: "#71d7ff", bg: "#101411", surface: "#f2f5ee", ink: "#152015", uses: "18.6k",
@@ -201,6 +235,15 @@
     }
   ];
 
+  /* The extended catalog (studio-templates-catalog.js) carries 50 more commercial kits. */
+  var CATALOG_TEMPLATES = Array.isArray(global.StudioTemplateCatalog) ? global.StudioTemplateCatalog : [];
+  var TEMPLATES = BASE_TEMPLATES.concat(CATALOG_TEMPLATES);
+  TEMPLATES.forEach(function (template) {
+    if (!template.more) return;
+    template.zh.pages = template.zh.pages.concat(template.more.zh || []);
+    template.en.pages = template.en.pages.concat(template.more.en || []);
+  });
+
   /* Every commercial kit ships as a complete product, not a three-screen teaser. */
   var TEMPLATE_EXTRA_PAGES = {
     "northstar-saas-console": {
@@ -285,7 +328,23 @@
   });
 
   function langOf(lang) { return lang === "en" ? "en" : "zh"; }
-  function text(lang, key) { return COPY[langOf(lang)][key] || key; }
+  function text(lang, key, values) {
+    var copy = COPY[langOf(lang)][key] || key;
+    if (!values) return copy;
+    return String(copy).replace(/\{(\w+)\}/g, function (match, name) {
+      return values[name] == null ? match : String(values[name]);
+    });
+  }
+  /* Every kit in the catalog ships 13 screens; the library subtitle reads from real data. */
+  var SCREENS_PER_KIT = 13;
+  function libraryStats() {
+    var pages = 0;
+    TEMPLATES.forEach(function (item) { pages += (item.zh.pages || []).length; });
+    return { kits: TEMPLATES.length, screens: SCREENS_PER_KIT, pages: pages };
+  }
+  function librarySubtitle(lang) {
+    return text(lang, "librarySub", libraryStats());
+  }
   function localized(template, lang) { return template[langOf(lang)] || template.zh; }
   function esc(value) {
     return String(value == null ? "" : value)
@@ -306,15 +365,27 @@
       return { id: key, label: CATEGORY_COPY[key][langOf(lang)], count: count };
     });
   }
+  /* Pick a readable foreground for accent-filled surfaces from the accent itself,
+     so light and dark palettes both keep commercial-grade contrast. */
+  function accentInk(hex) {
+    var value = String(hex || "").replace("#", "").trim();
+    if (value.length === 3) value = value[0] + value[0] + value[1] + value[1] + value[2] + value[2];
+    if (value.length !== 6) return "#12160f";
+    var channels = [0, 2, 4].map(function (offset) { return parseInt(value.slice(offset, offset + 2), 16) / 255; });
+    if (channels.some(function (channel) { return isNaN(channel); })) return "#12160f";
+    var luminance = 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+    return luminance > 0.62 ? "#12160f" : "#ffffff";
+  }
   function cssVars(template, alternate) {
     var accent = alternate ? template.alt : template.accent;
-    return "--tpl-accent:" + esc(accent) + ";--tpl-bg:" + esc(template.bg) + ";--tpl-surface:" + esc(template.surface) + ";--tpl-ink:" + esc(template.ink) + ";";
+    return "--tpl-accent:" + esc(accent) + ";--tpl-on-accent:" + esc(accentInk(accent)) +
+      ";--tpl-bg:" + esc(template.bg) + ";--tpl-surface:" + esc(template.surface) + ";--tpl-ink:" + esc(template.ink) + ";";
   }
   function dots() {
     return '<span class="tpl-window-dots"><i></i><i></i><i></i></span>';
   }
-  function action(label) {
-    return '<button type="button" class="tpl-demo-action" data-demo-action="' + esc(label) + '">' + esc(label) + '</button>';
+  function action(label, attributes) {
+    return '<button type="button" class="tpl-demo-action" data-demo-action="' + esc(label) + '"' + (attributes || "") + '>' + esc(label) + '</button>';
   }
   function navItems(info, page) {
     var last = info.pages.length - 1;
@@ -324,7 +395,7 @@
     if (indexes.indexOf(page) < 0) indexes[indexes.length - 1] = page;
     return indexes.filter(function (index, position) { return indexes.indexOf(index) === position; }).map(function (index) {
       var name = info.pages[index];
-      return '<button type="button" class="tpl-mini-nav' + (index === page ? " is-active" : "") + '" data-demo-action="' + esc(name) + '">' + esc(name) + '</button>';
+      return '<button type="button" class="tpl-mini-nav' + (index === page ? " is-active" : "") + '" data-goto-screen="' + index + '" data-screen-name="' + esc(name) + '" aria-current="' + (index === page ? "page" : "false") + '">' + esc(name) + '</button>';
     }).join("");
   }
   function barChart(seed) {
@@ -396,7 +467,7 @@
   }
   function serviceArt(template, info, page, alternate) {
     var variant = page % 3;
-    var kind = template.kind;
+    var kind = template.serviceKind || template.kind;
     var isFood = kind === "restaurant";
     var isTravel = kind === "travel";
     var isNonprofit = kind === "nonprofit";
@@ -415,32 +486,289 @@
     var variant = page % 3;
     return '<div class="tpl-art tpl-art--campaign tpl-skin-' + esc(template.skin) + ' tpl-page-variant-' + (page % 6) + ' tpl-screen-' + (page + 1) + '" style="' + cssVars(template, alternate) + '"><div class="tpl-campaign-head"><b>SIGNAL / CAMPAIGN KIT</b><span>' + esc(info.pages[page]) + '</span><em>' + pageNumber(page) + '</em></div><div class="tpl-moodboard"><section class="tpl-poster"><small>DROP ' + pageNumber(page) + '</small><h2>' + ["MAKE<br>NOISE.", "SHOW<br>THE WORK.", "KEEP<br>MOVING."][variant] + '</h2><i></i></section><section class="tpl-social-post"><header><i></i><b>@signal.studio</b><span>•••</span></header><div class="tpl-social-art"><b>' + ["NEW / NOW", "BEHIND / IT", "RESULTS / IN"][variant] + '</b></div><footer>♡　⌁　↗<span>2,804 likes</span></footer></section><section class="tpl-campaign-plan"><header>CONTENT PLAN <span>W' + (12 + page) + '</span></header>' + ["Tease", "Reveal", "Explain", "Convert"].map(function (x, i) { return '<button type="button" data-demo-action="' + x + '"><span>' + ["MON", "TUE", "THU", "SAT"][i] + '</span><b>' + x + '</b><i class="' + (i < variant + 2 ? "done" : "") + '"></i></button>'; }).join("") + '</section></div></div>';
   }
-  function artMarkup(template, page, lang, compact, alternate) {
-    var info = localized(template, lang);
-    page = Math.max(0, Math.min(info.pages.length - 1, Number(page) || 0));
-    if (template.kind === "dashboard" || template.kind === "health" || template.kind === "hr" || template.kind === "ai") return dashboardArt(template, info, page, alternate);
-    if (template.kind === "commerce") return commerceArt(template, info, page, alternate);
-    if (template.kind === "mobile") return mobileArt(template, info, page, alternate);
-    if (template.kind === "event") return eventArt(template, info, page, alternate);
-    if (template.kind === "deck" || template.kind === "editorial" || template.kind === "brand" || template.kind === "report") return documentArt(template, info, page, alternate);
-    if (template.kind === "portfolio") return portfolioArt(template, info, page, alternate);
-    if (template.kind === "realestate" || template.kind === "restaurant" || template.kind === "travel" || template.kind === "nonprofit") return serviceArt(template, info, page, alternate);
-    if (template.kind === "course") return courseArt(template, info, page, alternate);
-    if (template.kind === "campaign") return campaignArt(template, info, page, alternate);
+  /* ── Family: marketing landing page ──────────────────────────────────── */
+  function landingArt(template, info, page, alternate) {
+    var variant = page % 3;
+    var word = esc(template.id.split("-")[0]).toUpperCase();
+    var headlines = {
+      zh: ["把复杂业务，交给一套系统", "增长需要的，是可靠的底座", "从第一天就为规模而设计"],
+      en: ["Run the complex parts on rails", "A dependable base for growth", "Built for scale from day one"]
+    };
+    var cta = { zh: ["免费开始使用", "预约产品演示", "查看客户案例"], en: ["Start for free", "Book a demo", "See customer stories"] };
+    var inner = '<div class="tpl-landing">' +
+      '<nav class="tpl-landing-nav"><b>' + word + '<i>.</i></b><div>' + navItems(info, page) + '</div><span class="tpl-landing-nav-actions">' + action(variant === 1 ? "Sign in" : "Get started") + '</span></nav>' +
+      '<header class="tpl-landing-hero"><div class="tpl-landing-copy"><span class="tpl-eyebrow"><i></i>' + esc(info.category) + '</span><h2>' + headlines[langKey(info)][variant] + '</h2><p>' + esc(info.desc) + '</p><div class="tpl-landing-cta">' + action(cta[langKey(info)][variant]) + '<button type="button" class="tpl-ghost-action" data-demo-action="Watch tour">▶ ' + esc(info.pages[page]) + '</button></div>' +
+        '<div class="tpl-landing-proof">' + info.tags.map(function (tag, index) { return '<span><b>' + (18 + index * 12 + page) + (index === 1 ? "%" : "K+") + '</b>' + esc(tag) + '</span>'; }).join("") + '</div></div>' +
+        '<div class="tpl-landing-visual tpl-visual-' + variant + '"><div class="tpl-visual-chrome">' + dots() + '<span>' + esc(domainOf(template)) + '</span></div><div class="tpl-visual-body"><section class="tpl-visual-side"><i></i><i></i><i></i><i></i></section><section class="tpl-visual-main"><div class="tpl-visual-kpi">' + [0, 1, 2].map(function (i) { return '<button type="button" data-demo-action="Metric ' + (i + 1) + '"><span></span><b>' + (1240 + i * 380 + page * 12) + '</b><em>+' + (8 + i * 4) + '%</em></button>'; }).join("") + '</div>' + barChart(page) + '</section></div></div></header>' +
+      '<footer class="tpl-landing-logos">' + [0, 1, 2, 3, 4].map(function (i) { return '<i class="tpl-logo-mark m' + i + '"></i>'; }).join("") + '</footer>' +
+      '</div>';
+    return browserShell(template, info, page, inner, "landing", alternate);
+  }
+
+  /* ── Family: product application shell ───────────────────────────────── */
+  function appArt(template, info, page, alternate) {
+    var variant = page % 3;
+    var word = esc(template.id.split("-")[0]).toUpperCase();
+    var inner = '<div class="tpl-appshell">' +
+      '<aside class="tpl-app-rail"><b>' + word + '<i>•</i></b><div class="tpl-side-nav">' + navItems(info, page) + '</div>' +
+        '<div class="tpl-app-rail-foot">' + [0, 1, 2].map(function (i) { return '<button type="button" data-demo-action="' + ["Search", "Notifications", "Help"][i] + '"><i>' + ["⌕", "◔", "?"][i] + '</i></button>'; }).join("") + '</div></aside>' +
+      '<main class="tpl-app-main"><header class="tpl-app-head"><div><span>' + esc(info.category) + '</span><h3>' + esc(info.pages[page]) + '</h3></div><div class="tpl-app-head-actions"><button type="button" class="tpl-chip" data-demo-action="Filter">Filter</button><button type="button" class="tpl-chip is-on" data-demo-action="View">Board</button><button type="button" class="tpl-demo-action" data-demo-action="New">+ ' + esc(["New task", "New doc", "New item"][variant]) + '</button></div></header>' +
+      '<div class="tpl-app-grid"><section class="tpl-app-list">' + [0, 1, 2, 3, 4].map(function (i) {
+        var label = info.pages[(page + i + 1) % info.pages.length];
+        return '<button type="button" class="tpl-app-row' + (i === 0 ? " is-active" : "") + '" data-demo-action="' + esc(label) + '"><span class="tpl-app-dot s' + (i % 3) + '"></span><span class="tpl-app-row-copy"><b>' + esc(label) + '</b><small>' + esc(info.tags[i % info.tags.length]) + ' · ' + (i + 1) + 'd</small></span><em class="tpl-app-state st' + (i % 3) + '">' + ["In progress", "Review", "Done"][i % 3] + '</em><i class="tpl-app-avatar a' + (i % 4) + '"></i></button>';
+      }).join("") + '</section>' +
+      '<section class="tpl-app-detail"><header><b>' + esc(info.pages[(page + 1) % info.pages.length]) + '</b><span>•••</span></header>' +
+        '<div class="tpl-app-props">' + info.tags.map(function (tag, i) { return '<span data-toggle="prop"><i></i>' + esc(tag) + ' ' + (i + 3) + '</span>'; }).join("") + '</div>' +
+        '<p class="tpl-app-text">' + esc(info.desc) + '</p>' +
+        '<div class="tpl-app-checks">' + [0, 1, 2, 3].map(function (i) { return '<button type="button" class="tpl-check' + (i < 2 ? " is-done" : "") + '" data-toggle="check"><i></i><span>' + esc(info.pages[(page + i + 2) % info.pages.length]) + '</span></button>'; }).join("") + '</div>' +
+        '<div class="tpl-app-thread">' + [0, 1].map(function (i) { return '<div class="tpl-app-comment"><i class="tpl-app-avatar a' + (i + 1) + '"></i><span><b>' + esc(info.tags[i % info.tags.length]) + '</b><small>' + (i + 1) + 'h ago</small></span><p>' + esc(info.desc.split(" ").slice(0, 9).join(" ")) + '</p></div>'; }).join("") + '</div></section></div></main></div>';
+    return browserShell(template, info, page, inner, "app", alternate);
+  }
+
+  /* ── Family: booking flow ────────────────────────────────────────────── */
+  function bookingArt(template, info, page, alternate) {
+    var slots = ["09:00", "10:30", "13:00", "14:30", "16:00", "17:30"];
+    var days = langKey(info) === "zh" ? ["周一", "周二", "周三", "周四", "周五", "周六"] : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    var inner = '<div class="tpl-booking"><header class="tpl-booking-head"><b>' + esc(template.id.split("-")[0]).toUpperCase() + '</b><div class="tpl-booking-steps">' + info.pages.slice(0, 3).map(function (name, index) { return '<button type="button" data-goto-screen="' + index + '" data-screen-name="' + esc(name) + '" class="' + (index === page ? "is-active" : index < page ? "is-done" : "") + '"><i>' + (index + 1) + '</i>' + esc(name) + '</button>'; }).join("") + '</div><span class="tpl-booking-hours">◷ 08:00 — 20:00</span></header>' +
+      '<main class="tpl-booking-main"><section class="tpl-booking-form"><span class="tpl-eyebrow"><i></i>' + esc(info.category) + '</span><h3>' + esc(info.pages[page]) + '</h3><p>' + esc(info.desc) + '</p>' +
+        '<div class="tpl-field-row"><label class="tpl-field"><span>' + (langKey(info) === "zh" ? "服务项目" : "Service") + '</span><b>' + esc(info.tags[0]) + '</b></label><label class="tpl-field"><span>' + (langKey(info) === "zh" ? "医师/顾问" : "Practitioner") + '</span><b>' + esc(info.tags[1]) + '</b></label></div>' +
+        '<div class="tpl-day-row">' + days.map(function (day, index) { return '<button type="button" data-toggle="day" class="' + (index === 2 ? "is-on" : "") + '"><b>' + day + '</b><small>' + (12 + index) + ' ' + (langKey(info) === "zh" ? "日" : "Nov") + '</small></button>'; }).join("") + '</div>' +
+        '<div class="tpl-slot-row">' + slots.map(function (slot, index) { return '<button type="button" data-select="slot" class="' + (index === 2 ? "is-on" : "") + (index === 5 ? " is-off" : "") + '">' + slot + '</button>'; }).join("") + '</div></section>' +
+        '<aside class="tpl-booking-summary"><header><b>' + (langKey(info) === "zh" ? "预约摘要" : "Summary") + '</b><span>·</span></header>' +
+          '<ul>' + info.tags.map(function (tag, index) { return '<li><span>' + esc(tag) + '</span><b>' + (langKey(info) === "zh" ? "已选择" : "Selected") + ' ' + (index + 1) + '</b></li>'; }).join("") + '</ul>' +
+          '<div class="tpl-summary-total"><span>' + (langKey(info) === "zh" ? "费用预估" : "Estimated") + '</span><b>¥' + (380 + page * 60) + '</b></div>' +
+          action(langKey(info) === "zh" ? "确认预约" : "Confirm booking") +
+          '<small class="tpl-summary-note">' + (langKey(info) === "zh" ? "可提前 24 小时免费改期" : "Free rescheduling up to 24h") + '</small></aside></main></div>';
+    return browserShell(template, info, page, inner, "booking", alternate);
+  }
+
+  /* ── Family: media library / player ──────────────────────────────────── */
+  function mediaArt(template, info, page, alternate) {
+    var variant = page % 3;
+    var word = esc(template.id.split("-")[0]).toUpperCase();
+    var inner = '<div class="tpl-media">' +
+      '<aside class="tpl-media-rail"><b>' + word + '</b><div class="tpl-side-nav">' + navItems(info, page) + '</div><section class="tpl-media-note"><small>Now playing</small><b>' + esc(info.pages[page]) + '</b><i><em style="width:' + (32 + variant * 18) + '%"></em></i></section></aside>' +
+      '<main class="tpl-media-main"><header><div><small>' + esc(info.category).toUpperCase() + '</small><h3>' + esc(info.pages[page]) + '</h3></div><button type="button" class="tpl-chip is-on" data-toggle="follow">' + (langKey(info) === "zh" ? "已订阅" : "Following") + '</button></header>' +
+      '<section class="tpl-media-player tpl-visual-' + variant + '"><div class="tpl-media-art"><i></i><i></i><i></i></div><button type="button" class="tpl-play" data-demo-action="Play"><span>▶</span></button><div class="tpl-media-bar"><span class="tpl-media-time">12:48</span><i><em style="width:' + (28 + variant * 16) + '%"></em></i><span class="tpl-media-time">43:20</span></div><div class="tpl-media-controls">' + ["⏮", "⏸", "⏭", "⇄", "♥"].map(function (glyph, index) { return '<button type="button" data-demo-action="Control ' + glyph + '"' + (index === 4 ? ' data-like="1"' : "") + '>' + glyph + '</button>'; }).join("") + '</div></section>' +
+      '<section class="tpl-media-list">' + [0, 1, 2, 3].map(function (i) {
+        var title = info.pages[(page + i + 1) % info.pages.length];
+        return '<button type="button" class="tpl-media-ep' + (i === 0 ? " is-active" : "") + '" data-demo-action="' + esc(title) + '"><span class="tpl-media-ep-art s' + i + '"></span><span><b>' + esc(title) + '</b><small>' + esc(info.tags[i % info.tags.length]) + ' · ' + (24 + i * 6) + ' min</small></span><em>' + (i === 0 ? "▶" : (i + 1) + 'd ago') + '</em></button>';
+      }).join("") + '</section></main></div>';
+    return browserShell(template, info, page, inner, "media", alternate);
+  }
+
+  /* ── Family: social feed ─────────────────────────────────────────────── */
+  function feedArt(template, info, page, alternate) {
+    var variant = page % 3;
+    var inner = '<div class="tpl-feed"><nav class="tpl-feed-nav"><b>' + esc(template.id.split("-")[0]).toUpperCase() + '</b><div>' + navItems(info, page) + '</div><span class="tpl-feed-search">⌕ ' + esc(info.category) + '</span></nav>' +
+      '<div class="tpl-feed-columns"><section class="tpl-feed-stream">' +
+        '<div class="tpl-feed-compose"><i class="tpl-app-avatar a0"></i><span>' + (langKey(info) === "zh" ? "分享你的" : "Share your") + ' ' + esc(info.tags[0]) + ' …</span><button type="button" class="tpl-demo-action" data-demo-action="' + (langKey(info) === "zh" ? "发布" : "Post") + '">' + (langKey(info) === "zh" ? "发布" : "Post") + '</button></div>' +
+        [0, 1, 2].map(function (i) {
+          var title = info.pages[(page + i + 1) % info.pages.length];
+          return '<article class="tpl-feed-post"><header><i class="tpl-app-avatar a' + (i + 1) + '"></i><span><b>@' + esc(info.tags[i % info.tags.length].toLowerCase().replace(/[^a-z0-9]+/g, "") || "studio") + '</b><small>' + esc(title) + ' · ' + (i + 1) + 'h</small></span><em>•••</em></header><div class="tpl-feed-media v' + i + '"><i></i><i></i></div><footer><button type="button" data-like="1">♡ ' + (128 + i * 34 + page) + '</button><button type="button" data-demo-action="Comment">⌁ ' + (12 + i * 5) + '</button><button type="button" data-demo-action="Save">⌘</button></footer></article>';
+        }).join("") + '</section>' +
+      '<aside class="tpl-feed-side"><section class="tpl-feed-topics"><b>' + (langKey(info) === "zh" ? "热门话题" : "Trending") + '</b>' + info.tags.concat(info.pages.slice(page, page + 2)).map(function (tag, i) { return '<button type="button" data-demo-action="' + esc(tag) + '"><span>#' + esc(String(tag).replace(/\s+/g, "")) + '</span><em>' + (i + 1) + '</em></button>'; }).join("") + '</section>' +
+        '<section class="tpl-feed-people"><b>' + (langKey(info) === "zh" ? "推荐关注" : "Who to follow") + '</b>' + [0, 1, 2].map(function (i) { return '<div class="tpl-feed-person"><i class="tpl-app-avatar a' + (i + 2) + '"></i><span><b>' + esc(info.tags[i % info.tags.length]) + '</b><small>' + (page + i + 2) + 'K ' + (langKey(info) === "zh" ? "粉丝" : "followers") + '</small></span><button type="button" data-toggle="follow">+</button></div>'; }).join("") + '</section></aside></div></div>';
+    return browserShell(template, info, page, inner, "feed", alternate);
+  }
+
+  function langKey(info) { return info && info.__lang === "en" ? "en" : "zh"; }
+  function domainOf(template) { return esc(template.id.replace(/-/g, ".")); }
+
+  function heroArtMarkup(template, info, page, alternate) {
+    var kind = template.kind;
+    if (kind === "landing" || kind === "web") return landingArt(template, info, page, alternate);
+    if (kind === "app") return appArt(template, info, page, alternate);
+    if (kind === "booking") return bookingArt(template, info, page, alternate);
+    if (kind === "media") return mediaArt(template, info, page, alternate);
+    if (kind === "feed") return feedArt(template, info, page, alternate);
+    if (kind === "dashboard" || kind === "health" || kind === "hr" || kind === "ai") return dashboardArt(template, info, page, alternate);
+    if (kind === "commerce") return commerceArt(template, info, page, alternate);
+    if (kind === "mobile") return mobileArt(template, info, page, alternate);
+    if (kind === "event") return eventArt(template, info, page, alternate);
+    if (kind === "deck" || kind === "editorial" || kind === "brand" || kind === "report") return documentArt(template, info, page, alternate);
+    if (kind === "portfolio") return portfolioArt(template, info, page, alternate);
+    if (kind === "realestate" || kind === "restaurant" || kind === "travel" || kind === "nonprofit" || kind === "service") return serviceArt(template, info, page, alternate);
+    if (kind === "course") return courseArt(template, info, page, alternate);
+    if (kind === "campaign") return campaignArt(template, info, page, alternate);
     return dashboardArt(template, info, page, alternate);
+  }
+
+  /* ── Long-form page: below-the-fold commercial chapters ─────────────── */
+  var DEEP_FEATURES = {
+    zh: ["全链路数据打通", "智能自动化流程", "细粒度权限体系", "实时多人协同", "可视化数据报表", "开放接口与集成", "移动端随时处理", "企业级安全合规"],
+    en: ["End-to-end data", "Smart automation", "Granular permissions", "Realtime collaboration", "Visual reporting", "Open APIs", "Mobile ready", "Enterprise security"]
+  };
+  var DEEP_FEATURE_COPY = {
+    zh: "把流程、数据与权限收进一套系统，团队少开会，多交付。",
+    en: "Keep process, data, and permissions in one place so the team ships instead of syncing."
+  };
+  var DEEP_PLANS = {
+    zh: [
+      { name: "Starter", price: 199, note: "适合 5 人以内团队", perks: ["基础工作台", "3 个协作空间", "社区支持"] },
+      { name: "Growth", price: 699, note: "最受欢迎的增长方案", perks: ["无限空间", "自动化流程", "优先支持", "数据分析"] },
+      { name: "Enterprise", price: null, note: "定制与私有化部署", perks: ["单点登录", "私有部署", "专属客户成功", "SLA 保障"] }
+    ],
+    en: [
+      { name: "Starter", price: 29, note: "For teams under 5", perks: ["Core workspace", "3 spaces", "Community support"] },
+      { name: "Growth", price: 99, note: "Most teams choose this", perks: ["Unlimited spaces", "Automations", "Priority support", "Analytics"] },
+      { name: "Enterprise", price: null, note: "Custom & self-hosted", perks: ["SSO / SCIM", "Self-hosting", "Dedicated CSM", "SLA"] }
+    ]
+  };
+  var DEEP_FAQ = {
+    zh: [
+      { q: "上线需要多长时间？", a: "标准落地通常在两周内完成：第一周完成数据接入与权限配置，第二周完成团队培训与试运行。" },
+      { q: "是否支持与现有系统集成？", a: "支持开放的 REST 与 Webhook 接口，已内置常见 CRM、工单、表格与数据仓库的连接器。" },
+      { q: "数据安全如何保障？", a: "全链路加密传输、按角色隔离的数据权限、完整的操作审计日志，并支持私有化部署。" },
+      { q: "如何计费与升级？", a: "按活跃席位按月计费，可随时升级或降级；年付享两月赠送，企业版支持按需定制。" }
+    ],
+    en: [
+      { q: "How long does rollout take?", a: "Most teams are live in two weeks: week one covers data and permissions, week two covers training and piloting." },
+      { q: "Can it integrate with our stack?", a: "Yes — open REST and webhook APIs plus built-in connectors for CRM, ticketing, spreadsheets, and warehouses." },
+      { q: "How is data secured?", a: "Encrypted in transit and at rest, role-scoped permissions, full audit logs, and optional self-hosting." },
+      { q: "How does billing work?", a: "Per active seat, monthly, upgrade or downgrade anytime. Annual plans include two months free." }
+    ]
+  };
+
+  function deepBandHead(kicker, title, sub) {
+    return '<header class="tpl-band-head"><span>' + esc(kicker) + '</span><h3>' + esc(title) + '</h3>' + (sub ? '<p>' + esc(sub) + '</p>' : '') + '</header>';
+  }
+
+  function statBand(template, info, page, lang) {
+    var c = langKey(info);
+    var values = [
+      { value: 38 + (page % 5) * 9, suffix: "%", label: c === "zh" ? "效率提升" : "Efficiency gain" },
+      { value: 12 + (page % 4) * 6, suffix: "K+", label: c === "zh" ? "活跃团队" : "Active teams" },
+      { value: 4 + (page % 3), suffix: "×", label: c === "zh" ? "投产比" : "Return on spend" },
+      { value: 96 + (page % 3), suffix: "/100", label: c === "zh" ? "客户满意度" : "Customer score" }
+    ];
+    return '<section class="tpl-band tpl-band--stats" data-band>' + statBandHeadMarkup(page, info) +
+      '<div class="tpl-stat-grid">' + values.map(function (item, index) {
+        return '<article class="tpl-stat" data-band-item style="--d:' + index + '"><b><span data-countup="' + item.value + '">0</span>' + item.suffix + '</b><span>' + esc(item.label) + '</span><i></i></article>';
+      }).join("") + '</div></section>';
+  }
+  function statBandHeadMarkup(page, info) {
+    return deepBandHead(text(langKey(info), "deepTitle"), info.pages[page], text(langKey(info), "deepSub"));
+  }
+
+  function featureBand(template, info, page, lang) {
+    var c = langKey(info);
+    var pool = DEEP_FEATURES[c];
+    var start = page % pool.length;
+    var items = [];
+    for (var i = 0; i < 6; i += 1) items.push(pool[(start + i) % pool.length]);
+    var glyphs = ["◆", "◇", "⬡", "◎", "▣", "✦"];
+    return '<section class="tpl-band tpl-band--features" data-band>' + deepBandHead(c === "zh" ? "能力矩阵" : "Capability matrix", c === "zh" ? "一套系统覆盖完整流程" : "One system, the whole workflow", DEEP_FEATURE_COPY[c]) +
+      '<div class="tpl-feature-grid">' + items.map(function (item, index) {
+        return '<button type="button" class="tpl-feature-card" data-band-item data-demo-action="' + esc(item) + '" style="--d:' + index + '"><i>' + glyphs[index % glyphs.length] + '</i><b>' + esc(item) + '</b><span>' + esc(info.tags[index % info.tags.length]) + '</span><em>›</em></button>';
+      }).join("") + '</div></section>';
+  }
+
+  function showcaseBand(template, info, page, lang) {
+    var c = langKey(info);
+    var titles = [info.pages[(page + 1) % info.pages.length], info.pages[(page + 2) % info.pages.length], info.pages[(page + 3) % info.pages.length]];
+    return '<section class="tpl-band tpl-band--showcase" data-band>' + deepBandHead(c === "zh" ? "真实场景" : "In the real world", c === "zh" ? "已经在这些场景跑起来" : "Already running in these scenarios", c === "zh" ? "从试点到全面铺开，每一步都有可复用的方法。" : "From pilot to rollout, every step comes with a playbook.") +
+      '<div class="tpl-showcase-grid">' + titles.map(function (title, index) {
+        return '<article class="tpl-showcase-card tpl-showcase-' + index + '" data-band-item style="--d:' + index + '"><div class="tpl-showcase-art"><i></i><i></i><i></i></div><div class="tpl-showcase-copy"><span>' + esc(info.category) + '</span><b>' + esc(title) + '</b><small>' + (c === "zh" ? "查看完整案例" : "Read the case") + ' ›</small></div><button type="button" class="tpl-showcase-open" data-demo-action="' + esc(title) + '" aria-label="' + esc(title) + '"></button></article>';
+      }).join("") + '</div></section>';
+  }
+
+  function trustBand(template, info, page, lang) {
+    var c = langKey(info);
+    var names = ["Northwind", "Verta", "Kite Labs", "Aurora", "Mono", "Halo"];
+    var quotes = {
+      zh: ["上线三个月，跨部门沟通成本下降了一半，数据终于只有一份口径。", "迁移过程比预期顺利，团队几乎零学习成本就上手了。"],
+      en: ["Three months in, cross-team overhead halved and everyone finally reads one source of truth.", "Migration was smoother than expected — the team was productive almost immediately."]
+    };
+    return '<section class="tpl-band tpl-band--trust" data-band>' +
+      '<div class="tpl-logo-strip">' + names.map(function (name, index) { return '<span data-band-item style="--d:' + index + '">' + esc(name) + '</span>'; }).join("") + '</div>' +
+      '<div class="tpl-quote-grid">' + quotes[c].map(function (quote, index) {
+        return '<blockquote class="tpl-quote" data-band-item style="--d:' + index + '"><div class="tpl-quote-stars">' + [0, 1, 2, 3, 4].map(function (star) { return '<button type="button" data-like="1" aria-label="star">★</button>'; }).join("") + '</div><p>“' + esc(quote) + '”</p><footer><i class="tpl-app-avatar a' + (index + 1) + '"></i><span><b>' + esc(info.tags[index % info.tags.length]) + '</b><small>' + esc(names[index]) + ' · ' + (c === "zh" ? "客户成功负责人" : "Head of Operations") + '</small></span></footer></blockquote>';
+      }).join("") + '</div></section>';
+  }
+
+  function pricingBand(template, info, page, lang) {
+    var c = langKey(info);
+    return '<section class="tpl-band tpl-band--pricing" data-band id="tplBandPricing">' + deepBandHead(c === "zh" ? "定价方案" : "Pricing", c === "zh" ? "按团队规模选择，随时升级" : "Pick a plan, upgrade anytime", c === "zh" ? "所有方案均含 14 天全功能试用，无需信用卡。" : "Every plan starts with a 14-day full-feature trial. No card required.") +
+      '<div class="tpl-billing-switch" role="group" aria-label="billing"><button type="button" data-billing="monthly" class="is-on">' + (c === "zh" ? "按月" : "Monthly") + '</button><button type="button" data-billing="yearly">' + (c === "zh" ? "按年 · 省两月" : "Yearly · 2 months free") + '</button></div>' +
+      '<div class="tpl-plan-grid">' + DEEP_PLANS[c].map(function (plan, index) {
+        return '<article class="tpl-plan' + (index === 1 ? " is-featured" : "") + '" data-band-item style="--d:' + index + '">' +
+          (index === 1 ? '<span class="tpl-plan-flag">' + (c === "zh" ? "最受欢迎" : "Most popular") + '</span>' : '') +
+          '<b class="tpl-plan-name">' + esc(plan.name) + '</b><div class="tpl-plan-price">' + (plan.price == null ? '<b>' + (c === "zh" ? "定制" : "Custom") + '</b>' : '<span>' + (c === "zh" ? "¥" : "$") + '</span><b data-plan-price="' + plan.price + '">' + plan.price + '</b><small>/ ' + (c === "zh" ? "月" : "mo") + '</small>') + '</div>' +
+          '<p>' + esc(plan.note) + '</p><ul>' + plan.perks.map(function (perk) { return '<li><i>✓</i>' + esc(perk) + '</li>'; }).join("") + '</ul>' +
+          (plan.price == null ? action(c === "zh" ? "联系销售" : "Contact sales") : action(c === "zh" ? "开始试用" : "Start trial")) + '</article>';
+      }).join("") + '</div></section>';
+  }
+
+  function faqBand(template, info, page, lang) {
+    var c = langKey(info);
+    return '<section class="tpl-band tpl-band--faq" data-band>' + deepBandHead(text(c, "faqLabel"), c === "zh" ? "你可能还想知道" : "Questions we hear most", c === "zh" ? "点击问题即可展开答案。" : "Click a question to expand the answer.") +
+      '<div class="tpl-faq-list">' + DEEP_FAQ[c].map(function (item, index) {
+        return '<article class="tpl-faq-item' + (index === 0 ? " is-open" : "") + '" data-accordion data-band-item style="--d:' + index + '"><button type="button" class="tpl-faq-q" data-accordion-toggle="1"><span>' + esc(item.q) + '</span><i>' + (index === 0 ? "−" : "+") + '</i></button><div class="tpl-faq-a"><p>' + esc(item.a) + '</p></div></article>';
+      }).join("") + '</div></section>';
+  }
+
+  function ctaBand(template, info, page, lang) {
+    var c = langKey(info);
+    return '<section class="tpl-band tpl-band--cta" data-band>' +
+      '<div class="tpl-cta-card" data-band-item><div><h3>' + (c === "zh" ? "准备好把这套方案用起来了吗？" : "Ready to put this system to work?") + '</h3><p>' + esc(info.desc) + '</p>' +
+      '<form class="tpl-subscribe" data-subscribe><input type="email" placeholder="' + (c === "zh" ? "输入工作邮箱" : "Work email") + '" aria-label="email" /><button type="submit" class="tpl-demo-action">' + (c === "zh" ? "获取方案" : "Get the plan") + '</button></form>' +
+      '<small>' + (c === "zh" ? "我们只发送与本次方案相关的内容，随时可退订。" : "We only send content related to this plan. Unsubscribe anytime.") + '</small></div>' +
+      '<div class="tpl-cta-side"><span class="tpl-cta-badge">' + (c === "zh" ? "14 天试用" : "14-day trial") + '</span><button type="button" class="tpl-ghost-action" data-demo-action="' + (c === "zh" ? "预约演示" : "Book a demo") + '">' + (c === "zh" ? "预约演示" : "Book a demo") + '</button><button type="button" class="tpl-ghost-action" data-to-top="1">↑ ' + esc(text(c, "toTop")) + '</button></div></div>' +
+      '<footer class="tpl-deep-foot"><div><b>' + esc(String(template.id.split("-")[0]).toUpperCase()) + '</b><small>' + esc(info.category) + ' · © 2026</small></div><nav>' + info.pages.slice(0, 5).map(function (name, index) { return '<button type="button" data-goto-screen="' + index + '" data-screen-name="' + esc(name) + '">' + esc(name) + '</button>'; }).join("") + '</nav><nav>' + info.tags.map(function (tag) { return '<button type="button" data-demo-action="' + esc(tag) + '">' + esc(tag) + '</button>'; }).join("") + '</nav></footer></section>';
+  }
+
+  function deepBands(template, info, page, lang) {
+    return statBand(template, info, page, lang) +
+      featureBand(template, info, page, lang) +
+      showcaseBand(template, info, page, lang) +
+      trustBand(template, info, page, lang) +
+      pricingBand(template, info, page, lang) +
+      faqBand(template, info, page, lang) +
+      ctaBand(template, info, page, lang);
+  }
+
+  function artMarkup(template, page, lang, compact, alternate) {
+    var resolved = langOf(lang);
+    var info = localized(template, resolved);
+    info.__lang = resolved;
+    page = Math.max(0, Math.min(info.pages.length - 1, Number(page) || 0));
+    var hero = heroArtMarkup(template, info, page, alternate);
+    if (compact) return hero;
+    /* Full preview renders a real long page: the screen plus every chapter below the fold. */
+    return '<div class="tpl-art tpl-art--deep tpl-skin-' + esc(template.skin) + ' tpl-page-variant-' + (page % 6) + '" style="' + cssVars(template, alternate) + '">' +
+      '<div class="tpl-deep-hero">' + hero + '</div>' +
+      deepBands(template, info, page, resolved) +
+      '</div>';
+  }
+
+  /* ── Library thumbnails ─────────────────────────────────────────────── */
+  function thumbnailMarkup(template, lang, page) {
+    var info = localized(template, lang);
+    var total = info.pages.length;
+    var index = Math.max(0, Math.min(total - 1, Number(page) || 0));
+    return '<div class="tpl-thumb">' +
+      '<div class="tpl-thumb-chrome">' + dots() + '<span class="tpl-thumb-url">' + domainOf(template) + '</span><span class="tpl-thumb-live"><i></i>' + text(lang, "live") + '</span></div>' +
+      '<div class="tpl-thumb-view"><div class="tpl-thumb-scroll">' +
+        '<div class="tpl-thumb-screen is-current">' + artMarkup(template, index, lang, true, false) + '</div>' +
+        /* The next screen is hydrated on first hover so 60+ thumbnails stay cheap to paint. */
+        '<div class="tpl-thumb-screen" data-thumb-next="' + ((index + 1) % total) + '" data-thumb-template="' + esc(template.id) + '" data-thumb-lang="' + esc(langOf(lang)) + '"></div>' +
+      '</div><span class="tpl-thumb-scrollhint"><i>⇣</i>' + text(lang, "scrollable") + '</span></div>' +
+      '<div class="tpl-thumb-foot"><span class="tpl-thumb-dots-rail">' + info.pages.slice(0, 8).map(function (name, i) { return '<i class="' + (i === 0 ? "is-on" : "") + '"></i>'; }).join("") + '</span><span class="tpl-thumb-count">' + total + ' ' + text(lang, "screens") + '</span></div>' +
+      '</div>';
   }
 
   function cardMarkup(template, lang) {
     var info = localized(template, lang);
-    return '<div class="tpl-card-stage">' + artMarkup(template, 0, lang, true, false) + '<span class="tpl-pro-badge">' + text(lang, "pro") + '</span><span class="tpl-card-live"><i></i>' + text(lang, "live") + '</span></div>' +
+    return '<div class="tpl-card-stage">' + thumbnailMarkup(template, lang, 0) + '<span class="tpl-pro-badge">' + text(lang, "pro") + '</span></div>' +
       '<div class="tpl-card-body"><div class="tpl-card-copy"><span>' + esc(info.category) + '</span><h3>' + esc(info.name) + '</h3><div class="tpl-card-tags">' + info.tags.slice(0, 2).map(function (tag) { return '<em>' + esc(tag) + '</em>'; }).join("") + '</div></div><div class="tpl-card-meta"><b>' + info.pages.length + '</b><span>' + text(lang, "screens") + '</span><i>↗</i></div></div>';
   }
   function featuredMarkup(template, lang) {
     var info = localized(template, lang);
-    return '<div class="tpl-featured-art">' + artMarkup(template, 0, lang, true, false) + '</div><div class="tpl-featured-copy"><div class="tpl-featured-kicker"><span>' + text(lang, "featured") + '</span><i>' + text(lang, "commercial") + '</i></div><h3>' + esc(info.name) + '</h3><p>' + text(lang, "featuredDescription") + '</p><div class="tpl-featured-tags">' + info.tags.map(function (tag) { return '<span>' + esc(tag) + '</span>'; }).join("") + '</div><button type="button" class="btn-new tpl-featured-open" id="tpPreviewFeatured">' + text(lang, "previewScreens") + '<span>↗</span></button><small>' + esc(template.uses) + ' ' + text(lang, "uses") + '</small></div>';
+    return '<div class="tpl-featured-art">' + thumbnailMarkup(template, lang, 0) + '</div><div class="tpl-featured-copy"><div class="tpl-featured-kicker"><span>' + text(lang, "featured") + '</span><i>' + text(lang, "commercial") + '</i></div><h3>' + esc(info.name) + '</h3><p>' + text(lang, "featuredDescription") + '</p><div class="tpl-featured-tags">' + info.tags.map(function (tag) { return '<span>' + esc(tag) + '</span>'; }).join("") + '</div><button type="button" class="btn-new tpl-featured-open" id="tpPreviewFeatured">' + text(lang, "previewScreens") + '<span>↗</span></button><small>' + esc(template.uses) + ' ' + text(lang, "uses") + '</small></div>';
   }
 
-  var modalState = { template: null, page: 0, lang: "zh", alternate: false, viewport: "desktop", onUse: null, returnFocus: null };
+  var modalState = { template: null, page: 0, lang: "zh", alternate: false, viewport: "desktop", billing: "monthly", cart: 0, onUse: null, returnFocus: null, scrollTops: {} };
   var keyHandlerBound = false;
 
   function ensureModal() {
@@ -457,76 +785,80 @@
           '<div class="tpl-preview-actions"><span class="tpl-license-badge" id="tplLicenseBadge"></span><button type="button" class="tpl-head-btn" id="tplShareButton"><span>↗</span><b></b></button><button type="button" class="tpl-head-btn tpl-favorite-btn" id="tplFavoriteButton" aria-pressed="false"><span>♡</span><b></b></button><div class="tpl-use-split"><button type="button" class="tpl-use-main" id="tplUseMain"></button><button type="button" class="tpl-use-more" id="tplUseMore" aria-haspopup="menu" aria-expanded="false">⌄</button><div class="tpl-use-menu" id="tplUseMenu" role="menu"></div></div><button type="button" class="tpl-preview-close" id="tplPreviewClose" aria-label="Close">×</button></div>' +
         '</header>' +
         '<div class="tpl-preview-toolbar">' +
-          '<div class="tpl-current-screen"><span id="tplScreenCounter"></span><b id="tplScreenName"></b></div>' +
-          '<div class="tpl-toolbar-actions"><div class="tpl-viewport-switch" id="tplViewportSwitch"><button type="button" data-preview-viewport="desktop" aria-pressed="true"><span>▰</span><b></b></button><button type="button" data-preview-viewport="tablet" aria-pressed="false"><span>▯</span><b></b></button><button type="button" data-preview-viewport="mobile" aria-pressed="false"><span>▯</span><b></b></button></div><button type="button" class="tpl-colorway-button" id="tplColorway"><i></i><span></span></button></div>' +
+          '<div class="tpl-current-screen"><span id="tplScreenCounter"></span><b id="tplScreenName"></b><em class="tpl-scrollable-badge" id="tplScrollBadge"><i>⇣</i><span></span></em></div>' +
+          '<div class="tpl-toolbar-actions"><button type="button" class="tpl-top-button" id="tplToTop"><span>↑</span><b id="tplToTopLabel"></b></button><div class="tpl-viewport-switch" id="tplViewportSwitch"><button type="button" data-preview-viewport="desktop" aria-pressed="true"><span>▰</span><b></b></button><button type="button" data-preview-viewport="tablet" aria-pressed="false"><span>▯</span><b></b></button><button type="button" data-preview-viewport="mobile" aria-pressed="false"><span>▯</span><b></b></button></div><button type="button" class="tpl-colorway-button" id="tplColorway"><i></i><span></span></button></div>' +
         '</div>' +
         '<div class="tpl-preview-workspace">' +
-          '<div class="tpl-preview-stage"><button type="button" class="tpl-preview-arrow prev" id="tplPrevScreen">‹</button><div class="tpl-preview-canvas" id="tplPreviewCanvas" data-viewport="desktop"></div><button type="button" class="tpl-preview-arrow next" id="tplNextScreen">›</button></div>' +
+          '<div class="tpl-preview-stage"><button type="button" class="tpl-preview-arrow prev" id="tplPrevScreen">‹</button>' +
+            '<div class="tpl-preview-canvas" id="tplPreviewCanvas" data-viewport="desktop">' +
+              '<div class="tpl-canvas-scroll" id="tplCanvasScroll" tabindex="0" role="group" aria-label="interactive page"></div>' +
+              '<div class="tpl-canvas-progress" id="tplCanvasProgress"><i></i></div>' +
+              '<div class="tpl-canvas-toast" id="tplCanvasToast" role="status" aria-live="polite"></div>' +
+              '<div class="tpl-canvas-hint" id="tplCanvasHint" aria-hidden="true"><i>⇣</i><span></span></div>' +
+              '<button type="button" class="tpl-canvas-totop" id="tplCanvasToTop" data-to-top="1" aria-label="back to top">↑</button>' +
+            '</div>' +
+            '<button type="button" class="tpl-preview-arrow next" id="tplNextScreen">›</button></div>' +
           '<aside class="tpl-screen-rail"><header><div><span id="tplRailCount"></span><b id="tplRailTitle"></b></div><small id="tplRailHint"></small></header><div class="tpl-preview-thumbs" id="tplPreviewThumbs" role="list"></div></aside>' +
         '</div>' +
-        '<footer class="tpl-preview-foot"><div class="tpl-interaction-state"><i></i><span><b id="tplInteractionLabel"></b><small id="tplInteractionText"></small></span></div><div class="tpl-prototype-meta"><span><i></i>PROTOTYPE</span><b id="tplFooterPage"></b></div></footer>' +
+        '<footer class="tpl-preview-foot"><div class="tpl-interaction-state"><i></i><span><b id="tplInteractionLabel"></b><small id="tplInteractionText"></small></span></div><div class="tpl-prototype-meta"><span><i></i>HTML · CSS · JS</span><b id="tplFooterPage"></b></div></footer>' +
       '</section>';
     document.body.appendChild(modal);
 
-    modal.addEventListener("click", function (event) {
-      if (event.target === modal) close();
-    });
-    document.getElementById("tplPreviewClose").addEventListener("click", close);
+    var canvas = document.getElementById("tplCanvasScroll");
+    var canvasFrame = document.getElementById("tplPreviewCanvas");
+
+    modal.addEventListener("click", function (event) { if (event.target === modal) close(); });
     document.getElementById("tplPrevScreen").addEventListener("click", function () { changePage(-1); });
     document.getElementById("tplNextScreen").addEventListener("click", function () { changePage(1); });
     document.getElementById("tplColorway").addEventListener("click", function () {
       modalState.alternate = !modalState.alternate;
-      renderCanvas();
+      renderModal();
     });
     document.getElementById("tplViewportSwitch").addEventListener("click", function (event) {
       var button = event.target.closest("[data-preview-viewport]");
       if (!button) return;
-      modalState.viewport = button.getAttribute("data-preview-viewport") || "desktop";
+      modalState.viewport = button.getAttribute("data-preview-viewport");
       renderModal();
     });
+    document.getElementById("tplToTop").addEventListener("click", function () { scrollCanvasTo(0); });
+    document.getElementById("tplCanvasToTop").addEventListener("click", function () { scrollCanvasTo(0); });
     document.getElementById("tplUseMain").addEventListener("click", function () { applyTemplate("direct"); });
     document.getElementById("tplUseMore").addEventListener("click", function (event) {
       event.stopPropagation();
       var menu = document.getElementById("tplUseMenu");
-      var open = !menu.classList.contains("show");
-      menu.classList.toggle("show", open);
-      event.currentTarget.setAttribute("aria-expanded", open ? "true" : "false");
+      var open = menu.classList.toggle("show");
+      document.getElementById("tplUseMore").setAttribute("aria-expanded", open ? "true" : "false");
     });
     document.getElementById("tplUseMenu").addEventListener("click", function (event) {
       var item = event.target.closest("[data-template-intent]");
       if (!item) return;
       applyTemplate(item.getAttribute("data-template-intent"));
     });
-    document.getElementById("tplShareButton").addEventListener("click", shareTemplate);
-    document.getElementById("tplFavoriteButton").addEventListener("click", toggleFavorite);
     document.getElementById("tplPreviewThumbs").addEventListener("click", function (event) {
-      var button = event.target.closest("[data-template-page]");
-      if (!button) return;
-      modalState.page = Number(button.getAttribute("data-template-page")) || 0;
+      var item = event.target.closest("[data-template-page]");
+      if (!item) return;
+      modalState.page = Number(item.getAttribute("data-template-page")) || 0;
       renderModal();
     });
     document.getElementById("tplPreviewThumbs").addEventListener("keydown", function (event) {
-      if (event.key !== "Enter" && event.key !== " ") return;
-      var button = event.target.closest("[data-template-page]");
-      if (!button) return;
+      var item = event.target.closest("[data-template-page]");
+      if (!item || (event.key !== "Enter" && event.key !== " ")) return;
       event.preventDefault();
-      modalState.page = Number(button.getAttribute("data-template-page")) || 0;
+      modalState.page = Number(item.getAttribute("data-template-page")) || 0;
       renderModal();
     });
-    document.getElementById("tplPreviewCanvas").addEventListener("click", function (event) {
-      var canvas = document.getElementById("tplPreviewCanvas");
-      var button = event.target.closest("[data-demo-action]");
-      var info = modalState.template ? localized(modalState.template, modalState.lang) : null;
-      var label = button ? button.getAttribute("data-demo-action") : (info ? info.pages[modalState.page] : text(modalState.lang, "page"));
+    document.getElementById("tplShareButton").addEventListener("click", shareTemplate);
+    document.getElementById("tplFavoriteButton").addEventListener("click", toggleFavorite);
+
+    canvasFrame.addEventListener("click", handleCanvasClick);
+    canvasFrame.addEventListener("submit", function (event) {
       event.preventDefault();
-      event.stopPropagation();
-      Array.prototype.forEach.call(document.querySelectorAll("#tplPreviewCanvas .is-demo-active"), function (node) { node.classList.remove("is-demo-active"); });
-      if (button) button.classList.add("is-demo-active");
-      canvas.classList.remove("is-canvas-active");
-      void canvas.offsetWidth;
-      canvas.classList.add("is-canvas-active");
-      document.getElementById("tplInteractionText").textContent = text(modalState.lang, "actionDone") + label;
+      var input = event.target.querySelector ? event.target.querySelector("input") : null;
+      if (input && !input.value) { input.focus(); canvasToast(input.getAttribute("placeholder"), "warn"); return; }
+      if (input) input.value = "";
+      canvasToast(text(modalState.lang, "subscribed"));
     });
+    canvas.addEventListener("scroll", onCanvasScroll, { passive: true });
     document.addEventListener("click", function (event) {
       var menu = document.getElementById("tplUseMenu");
       if (!menu || event.target.closest(".tpl-use-split")) return;
@@ -541,30 +873,257 @@
         if (event.key === "Escape") close();
         if (event.key === "ArrowLeft") changePage(-1);
         if (event.key === "ArrowRight") changePage(1);
+        if (event.key === "PageUp") scrollCanvasTo(getCanvas().scrollTop - getCanvas().clientHeight * 0.8);
+        if (event.key === "PageDown") scrollCanvasTo(getCanvas().scrollTop + getCanvas().clientHeight * 0.8);
       });
       keyHandlerBound = true;
     }
     return modal;
   }
 
+  function getCanvas() { return document.getElementById("tplCanvasScroll"); }
+  function getCanvasFrame() { return document.getElementById("tplPreviewCanvas"); }
+
+  function scrollCanvasTo(top) {
+    var canvas = getCanvas();
+    if (!canvas) return;
+    var max = Math.max(0, canvas.scrollHeight - canvas.clientHeight);
+    var target = Math.max(0, Math.min(max, top));
+    if (typeof canvas.scrollTo === "function") canvas.scrollTo({ top: target, behavior: "smooth" });
+    else canvas.scrollTop = target;
+  }
+
+  function canvasToast(message, tone) {
+    var toast = document.getElementById("tplCanvasToast");
+    if (!toast) return;
+    toast.textContent = message;
+    toast.setAttribute("data-tone", tone || "ok");
+    toast.classList.add("show");
+    window.clearTimeout(toast.__timer);
+    toast.__timer = window.setTimeout(function () { toast.classList.remove("show"); }, 1700);
+  }
+
+  function ripple(canvas, event, node) {
+    if (!canvas) return;
+    var rect = canvas.getBoundingClientRect();
+    var target = node && node.getBoundingClientRect ? node.getBoundingClientRect() : rect;
+    var span = document.createElement("span");
+    span.className = "tpl-canvas-ripple";
+    span.style.left = ((event.clientX || target.left + target.width / 2) - rect.left + canvas.scrollLeft) + "px";
+    span.style.top = ((event.clientY || target.top + target.height / 2) - rect.top + canvas.scrollTop) + "px";
+    canvas.appendChild(span);
+    window.setTimeout(function () { span.remove(); }, 620);
+  }
+
+  function handleCanvasClick(event) {
+    var canvas = getCanvas();
+    if (!canvas) return;
+    var node = event.target.closest ? event.target.closest("button, [data-demo-action], [data-toggle], [data-accordion], [data-goto-screen], [data-to-top], [data-plan-price]") : null;
+    if (!node) {
+      var frame = getCanvasFrame();
+      if (frame) {
+        frame.classList.remove("is-canvas-active");
+        void frame.offsetWidth;
+        frame.classList.add("is-canvas-active");
+      }
+      ripple(canvas, event, null);
+      return;
+    }
+    event.preventDefault();
+    var info = modalState.template ? localized(modalState.template, modalState.lang) : null;
+    var label = node.getAttribute("data-demo-action") || node.getAttribute("data-screen-name") || (node.textContent || "").trim().slice(0, 26);
+    ripple(canvas, event, node);
+    node.classList.add("tpl-pressed");
+    window.setTimeout(function () { node.classList.remove("tpl-pressed"); }, 220);
+
+    if (node.hasAttribute("data-goto-screen")) {
+      var target = Number(node.getAttribute("data-goto-screen")) || 0;
+      modalState.page = target;
+      renderModal();
+      canvasToast(text(modalState.lang, "page") + " " + String(target + 1).padStart(2, "0") + " · " + label);
+      return;
+    }
+    if (node.hasAttribute("data-to-top")) { scrollCanvasTo(0); return; }
+    if (node.hasAttribute("data-accordion-toggle")) {
+      var item = node.closest("[data-accordion]");
+      if (item) {
+        var open = item.classList.toggle("is-open");
+        var glyph = node.querySelector("i");
+        if (glyph) glyph.textContent = open ? "−" : "+";
+      }
+      return;
+    }
+    if (node.hasAttribute("data-billing")) {
+      modalState.billing = node.getAttribute("data-billing");
+      applyBilling();
+      return;
+    }
+    if (node.hasAttribute("data-like")) {
+      var liked = node.classList.toggle("is-liked");
+      var digits = node.textContent.match(/\d+/);
+      if (digits) {
+        var base = Number(digits[0]);
+        node.textContent = node.textContent.replace(String(base), String(liked ? base + 1 : Math.max(0, base - 1)));
+      } else if (/[♡♥]/.test(node.textContent)) {
+        node.textContent = node.textContent.replace(liked ? "♡" : "♥", liked ? "♥" : "♡");
+      }
+      canvasToast(liked ? text(modalState.lang, "liked") + " · " + label : label);
+      return;
+    }
+    if (node.hasAttribute("data-toggle")) {
+      var group = node.parentElement;
+      if (group && group.hasAttribute("data-select")) group = group.parentElement;
+      var siblings = group ? group.querySelectorAll("[data-toggle]") : [node];
+      Array.prototype.forEach.call(siblings, function (sibling) { if (sibling !== node) sibling.classList.remove("is-on"); });
+      node.classList.toggle("is-on");
+      canvasToast(label + " · " + (node.classList.contains("is-on") ? "✓" : "○"));
+      return;
+    }
+    if (node.hasAttribute("data-select")) {
+      var row = node.parentElement;
+      if (row) Array.prototype.forEach.call(row.querySelectorAll("[data-select]"), function (sibling) { sibling.classList.remove("is-on"); });
+      node.classList.add("is-on");
+      canvasToast(label);
+      return;
+    }
+    if (node.hasAttribute("data-cart-add")) {
+      modalState.cart += 1;
+      updateCartChip();
+      canvasToast(text(modalState.lang, "added") + " · " + label + " · " + text(modalState.lang, "cartLabel") + " ×" + modalState.cart);
+      return;
+    }
+    if (node.hasAttribute("data-demo-action")) {
+      var form = node.closest("[data-subscribe]");
+      if (form) {
+        var input = form.querySelector("input");
+        if (input && !input.value) { input.focus(); canvasToast(input.getAttribute("placeholder"), "warn"); return; }
+        if (input) input.value = "";
+        canvasToast(text(modalState.lang, "subscribed"));
+        return;
+      }
+      var cartLike = /bag|cart|购物|加入/i.test(label);
+      if (cartLike) { modalState.cart += 1; updateCartChip(); }
+      canvasToast(text(modalState.lang, "pressed") + label + (cartLike ? " · " + text(modalState.lang, "cartLabel") + " ×" + modalState.cart : ""));
+      setInteractionText(text(modalState.lang, "pressed") + label);
+      return;
+    }
+    var fallback = node.getAttribute("data-screen-name") || (info ? info.pages[modalState.page] : label);
+    canvasToast(text(modalState.lang, "pressed") + fallback);
+    setInteractionText(text(modalState.lang, "pressed") + fallback);
+  }
+
+  function updateCartChip() {
+    var canvas = getCanvas();
+    if (!canvas) return;
+    Array.prototype.forEach.call(canvas.querySelectorAll("[data-cart-count]"), function (chip) {
+      chip.textContent = String(modalState.cart);
+      chip.classList.add("is-bump");
+      window.setTimeout(function () { chip.classList.remove("is-bump"); }, 260);
+    });
+  }
+
+  function applyBilling() {
+    var canvas = getCanvas();
+    if (!canvas) return;
+    var yearly = modalState.billing === "yearly";
+    Array.prototype.forEach.call(canvas.querySelectorAll("[data-billing]"), function (button) {
+      button.classList.toggle("is-on", button.getAttribute("data-billing") === modalState.billing);
+    });
+    Array.prototype.forEach.call(canvas.querySelectorAll("[data-plan-price]"), function (node) {
+      var base = Number(node.getAttribute("data-plan-price")) || 0;
+      node.textContent = String(yearly ? Math.round(base * 10) : base);
+    });
+  }
+
+  function setInteractionText(value) {
+    var node = document.getElementById("tplInteractionText");
+    if (node) node.textContent = value;
+  }
+
+  function onCanvasScroll() {
+    var canvas = getCanvas();
+    if (!canvas) return;
+    var max = Math.max(1, canvas.scrollHeight - canvas.clientHeight);
+    var ratio = Math.max(0, Math.min(1, canvas.scrollTop / max));
+    var bar = document.querySelector("#tplCanvasProgress i");
+    if (bar) bar.style.width = (ratio * 100).toFixed(1) + "%";
+    var badge = document.getElementById("tplScrollBadge");
+    if (badge) badge.classList.toggle("is-read", ratio > 0.02);
+    var toTop = document.getElementById("tplCanvasToTop");
+    if (toTop) toTop.classList.toggle("show", ratio > 0.06);
+    var hint = document.getElementById("tplCanvasHint");
+    if (hint) hint.classList.toggle("show", ratio < 0.02);
+    if (modalState.template) modalState.scrollTops[modalState.page] = canvas.scrollTop;
+    revealBands(canvas, ratio);
+  }
+
+  function revealBands(canvas, ratio) {
+    var bands = canvas.querySelectorAll("[data-band-item]");
+    if (!bands.length) return;
+    var canvasTop = canvas.getBoundingClientRect().top;
+    var visibleBottom = canvas.clientHeight * 1.08;
+    Array.prototype.forEach.call(bands, function (band) {
+      if (band.classList.contains("is-in")) return;
+      if (band.getBoundingClientRect().top - canvasTop < visibleBottom) {
+        band.classList.add("is-in");
+        var counter = band.querySelector("[data-countup]");
+        if (counter) countUp(counter);
+      }
+    });
+    if (ratio > 0) {
+      var head = document.getElementById("tplScrollBadge");
+      if (head) head.classList.toggle("is-read", true);
+    }
+  }
+
+  function countUp(node) {
+    var target = Number(node.getAttribute("data-countup")) || 0;
+    var start = performance.now();
+    var duration = 700;
+    function step(now) {
+      var progress = Math.min(1, (now - start) / duration);
+      var eased = 1 - Math.pow(1 - progress, 3);
+      node.textContent = String(Math.round(target * eased));
+      if (progress < 1) window.requestAnimationFrame(step);
+    }
+    window.requestAnimationFrame(step);
+  }
+
   function renderCanvas() {
     if (!modalState.template) return;
-    var canvas = document.getElementById("tplPreviewCanvas");
+    var canvas = getCanvas();
+    var frame = getCanvasFrame();
+    canvas.scrollTop = 0;
     canvas.innerHTML = artMarkup(modalState.template, modalState.page, modalState.lang, false, modalState.alternate);
-    canvas.setAttribute("data-viewport", modalState.viewport || "desktop");
+    frame.setAttribute("data-viewport", modalState.viewport || "desktop");
     Array.prototype.forEach.call(document.querySelectorAll("#tplViewportSwitch [data-preview-viewport]"), function (button) {
       var selected = button.getAttribute("data-preview-viewport") === modalState.viewport;
       button.classList.toggle("is-active", selected);
       button.setAttribute("aria-pressed", selected ? "true" : "false");
     });
     document.getElementById("templatePreview").setAttribute("data-colorway", modalState.alternate ? "alternate" : "primary");
+    applyBilling();
+    canvas.scrollTop = 0;
+    revealBands(canvas, 0);
+    var scrolled = canvas.scrollHeight - canvas.clientHeight > 40;
+    var badge = document.getElementById("tplScrollBadge");
+    if (badge) {
+      badge.querySelector("span").textContent = text(modalState.lang, "scrollable");
+      badge.classList.toggle("is-scrollable", scrolled);
+    }
+    var hint = document.getElementById("tplCanvasHint");
+    if (hint) {
+      hint.querySelector("span").textContent = text(modalState.lang, "scrollHintCanvas");
+      hint.classList.toggle("show", scrolled);
+    }
   }
+
   function renderModal() {
     var template = modalState.template;
     if (!template) return;
     var info = localized(template, modalState.lang);
     var c = COPY[modalState.lang];
-    document.getElementById("tplPreviewKicker").textContent = info.category + " · " + c.live;
+    document.getElementById("tplPreviewKicker").textContent = info.category + " · " + c.live + " · " + c.scrollable;
     document.getElementById("tplPreviewTitle").textContent = info.name;
     document.getElementById("tplPreviewDescription").textContent = info.desc;
     document.getElementById("tplPreviewTags").innerHTML = info.tags.map(function (tag) { return '<span>' + esc(tag) + '</span>'; }).join("");
@@ -574,6 +1133,7 @@
     document.getElementById("tplFavoriteButton").querySelector("span").textContent = isFavorite(template.id) ? "♥" : "♡";
     document.getElementById("tplFavoriteButton").setAttribute("aria-pressed", isFavorite(template.id) ? "true" : "false");
     document.getElementById("tplUseMain").textContent = c.use;
+    document.getElementById("tplToTopLabel").textContent = c.toTop;
     document.getElementById("tplPreviewClose").setAttribute("aria-label", c.close);
     document.getElementById("tplPrevScreen").setAttribute("aria-label", c.previous);
     document.getElementById("tplNextScreen").setAttribute("aria-label", c.next);
@@ -585,9 +1145,9 @@
     document.getElementById("tplScreenName").textContent = info.pages[modalState.page];
     document.getElementById("tplRailCount").textContent = info.pages.length + " " + c.screens;
     document.getElementById("tplRailTitle").textContent = c.screenRailTitle;
-    document.getElementById("tplRailHint").textContent = c.scrollHint;
+    document.getElementById("tplRailHint").textContent = c.scrollHint + " · " + c.navHint;
     document.getElementById("tplInteractionLabel").textContent = c.interaction;
-    document.getElementById("tplInteractionText").textContent = c.interactionReady;
+    document.getElementById("tplInteractionText").textContent = c.interactionHint;
     document.getElementById("tplFooterPage").textContent = String(modalState.page + 1).padStart(2, "0") + " / " + String(info.pages.length).padStart(2, "0") + " · " + info.pages[modalState.page];
     document.getElementById("tplUseMenu").innerHTML = [
       { id: "direct", title: c.useNow, sub: c.useNowSub, icon: "↗" },
@@ -596,7 +1156,7 @@
     ].map(function (item) { return '<button type="button" role="menuitem" data-template-intent="' + item.id + '"><i>' + item.icon + '</i><span><b>' + esc(item.title) + '</b><small>' + esc(item.sub) + '</small></span></button>'; }).join("");
     document.getElementById("tplPreviewThumbs").innerHTML = info.pages.map(function (name, index) {
       var number = String(index + 1).padStart(2, "0");
-      return '<div role="button" tabindex="0" class="tpl-screen-item' + (index === modalState.page ? " is-active" : "") + '" data-template-page="' + index + '"><span class="tpl-screen-thumb">' + artMarkup(template, index, modalState.lang, true, modalState.alternate) + '</span><span class="tpl-screen-copy"><b><i>' + number + '</i>' + esc(name) + '</b><small>' + c[modalState.viewport || "desktop"] + ' · ' + c.interactive + '</small></span><em>›</em></div>';
+      return '<div role="button" tabindex="0" class="tpl-screen-item' + (index === modalState.page ? " is-active" : "") + '" data-template-page="' + index + '" aria-label="' + esc(number + " " + name) + '"><span class="tpl-screen-thumb"><span class="tpl-screen-thumb-scroll">' + artMarkup(template, index, modalState.lang, true, modalState.alternate) + '</span><em class="tpl-screen-index">' + number + '</em></span><span class="tpl-screen-copy"><b>' + esc(name) + '</b><small>' + c[modalState.viewport || "desktop"] + ' · ' + c.interactive + '</small></span><em>›</em></div>';
     }).join("");
     renderCanvas();
     requestAnimationFrame(function () {
@@ -650,6 +1210,9 @@
     modalState.page = Math.max(0, Math.min(localized(template, modalState.lang).pages.length - 1, Number(options && options.page) || 0));
     modalState.alternate = false;
     modalState.viewport = "desktop";
+    modalState.billing = "monthly";
+    modalState.cart = 0;
+    modalState.scrollTops = {};
     modalState.onUse = options && options.onUse;
     modalState.returnFocus = document.activeElement;
     renderModal();
@@ -667,14 +1230,49 @@
     if (modalState.returnFocus && typeof modalState.returnFocus.focus === "function") modalState.returnFocus.focus();
   }
 
+  function screensOf(template, lang) {
+    return localized(template, langOf(lang)).pages.slice();
+  }
+
+  function hydrateThumbnail(host) {
+    if (!host || !host.querySelector) return;
+    var pending = host.querySelector("[data-thumb-next]");
+    if (!pending || pending.getAttribute("data-ready") === "1") return;
+    var template = byId(pending.getAttribute("data-thumb-template"));
+    if (!template) return;
+    var page = Number(pending.getAttribute("data-thumb-next")) || 0;
+    var lang = langOf(pending.getAttribute("data-thumb-lang"));
+    pending.innerHTML = artMarkup(template, page, lang, true, false);
+    pending.setAttribute("data-ready", "1");
+  }
+
+  if (typeof document !== "undefined" && document.addEventListener) {
+    document.addEventListener("mouseover", function (event) {
+      var host = event.target && event.target.closest ? event.target.closest(".tpl-thumb") : null;
+      if (host) hydrateThumbnail(host);
+    });
+    document.addEventListener("focusin", function (event) {
+      var host = event.target && event.target.closest ? event.target.closest(".tpl-thumb") : null;
+      if (host) hydrateThumbnail(host);
+    });
+    document.addEventListener("touchstart", function (event) {
+      var host = event.target && event.target.closest ? event.target.closest(".tpl-thumb") : null;
+      if (host) hydrateThumbnail(host);
+    }, { passive: true });
+  }
+
   global.StudioTemplates = {
     items: TEMPLATES,
     byId: byId,
     localized: localized,
     categories: categoryList,
     text: text,
+    stats: libraryStats,
+    subtitle: librarySubtitle,
+    screensOf: screensOf,
     cardMarkup: cardMarkup,
     featuredMarkup: featuredMarkup,
+    thumbnailMarkup: thumbnailMarkup,
     artMarkup: artMarkup,
     open: open,
     close: close

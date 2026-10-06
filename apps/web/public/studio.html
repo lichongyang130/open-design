@@ -1287,6 +1287,7 @@
     </section>
   </div>
 
+<script src="/studio-templates-catalog.js"></script>
 <script src="/studio-templates.js"></script>
 <script>
 (function () {
@@ -2183,6 +2184,7 @@
   }
 
   var state = {
+    tplShown: 24,
     lang: (function () {
       try { var s = localStorage.getItem("db-lang"); if (s === "zh" || s === "en") return s; } catch (e) {}
       return (navigator.language || "en").toLowerCase().indexOf("zh") === 0 ? "zh" : "en";
@@ -3767,12 +3769,13 @@
       button.innerHTML = esc(category.label) + '<span class="n">' + category.count + '</span>';
       button.addEventListener("click", function () {
         state.tpTab = index;
+        state.tplShown = 24;
         renderTemplates();
       });
       tabs.appendChild(button);
     });
 
-    $("tpSub").textContent = library.text(state.lang, "librarySub");
+    $("tpSub").textContent = typeof library.subtitle === "function" ? library.subtitle(state.lang) : library.text(state.lang, "librarySub");
     var featured = source.filter(function (item) { return item.featured; })[0] || source[0];
     $("tpFeatured").innerHTML = library.featuredMarkup(featured, state.lang);
     $("tpPreviewFeatured").addEventListener("click", function () { openTemplatePreview(featured, 0); });
@@ -3789,7 +3792,8 @@
 
     var selectedCategory = categories[state.tpTab].id;
     var visible = selectedCategory === "all" ? source : source.filter(function (item) { return item.category === selectedCategory; });
-    visible.forEach(function (item) {
+    var shown = visible.slice(0, state.tplShown);
+    shown.forEach(function (item) {
       var info = library.localized(item, state.lang);
       var card = document.createElement("article");
       card.className = "tcard tpl-commercial-card";
@@ -3807,6 +3811,14 @@
       });
       grid.appendChild(card);
     });
+    if (visible.length > shown.length) {
+      var more = document.createElement("button");
+      more.type = "button";
+      more.className = "more-btn tpl-more";
+      more.textContent = t("sysMore").replace("{n}", String(visible.length - shown.length));
+      more.addEventListener("click", function () { state.tplShown += 24; renderTemplates(); });
+      grid.appendChild(more);
+    }
   }
 
   function renderSystems() {
