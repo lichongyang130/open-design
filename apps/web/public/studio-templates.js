@@ -33,15 +33,21 @@
       previous: "上一个界面",
       next: "下一个界面",
       close: "关闭预览",
-      interaction: "交互演示",
-      interactionReady: "点击模板内的导航、按钮或数据卡片体验交互",
+      interaction: "交互原型",
+      interactionReady: "页面任意区域、导航、按钮和数据卡片都可以点击",
       actionDone: "已触发：",
       page: "界面",
       included: "已包含",
+      screenRailTitle: "全部界面",
+      scrollHint: "向下滚动查看完整页面清单",
+      interactive: "可交互",
+      desktop: "桌面",
+      tablet: "平板",
+      mobile: "手机",
       featured: "本周商业精选",
-      featuredDescription: "完整的多页面品牌手册，包含策略、视觉规范与落地示例。所有内容均为可编辑 HTML，而不是静态占位图。",
-      previewScreens: "预览 3 个界面",
-      librarySub: "18 套可直接使用的商业模板 · 54 个可交互界面 · 支持 Remix",
+      featuredDescription: "完整的 13 页面品牌手册，覆盖策略、视觉规范、落地应用与资源下载。所有页面均为可点击、可交互 HTML，而不是静态占位图。",
+      previewScreens: "预览 13 个界面",
+      librarySub: "18 套商业级模板 · 每套 13 个可交互界面 · 共 234 个真实页面",
       uses: "次使用"
     },
     en: {
@@ -65,15 +71,21 @@
       previous: "Previous screen",
       next: "Next screen",
       close: "Close preview",
-      interaction: "Interactive demo",
-      interactionReady: "Try the navigation, buttons, or data cards inside the template",
+      interaction: "Interactive prototype",
+      interactionReady: "Every page area, navigation item, button, and data card is clickable",
       actionDone: "Activated: ",
       page: "Screen",
       included: "Included",
+      screenRailTitle: "All screens",
+      scrollHint: "Scroll down to browse the complete page set",
+      interactive: "Interactive",
+      desktop: "Desktop",
+      tablet: "Tablet",
+      mobile: "Mobile",
       featured: "COMMERCIAL PICK",
-      featuredDescription: "A complete multi-page brand playbook with strategy, visual rules, and launch examples. Every screen is editable HTML—not a placeholder image.",
-      previewScreens: "Preview 3 screens",
-      librarySub: "18 production-ready templates · 54 interactive screens · Remix supported",
+      featuredDescription: "A complete 13-screen brand playbook covering strategy, visual rules, applications, and downloadable assets. Every page is clickable HTML—not a placeholder image.",
+      previewScreens: "Preview 13 screens",
+      librarySub: "18 commercial-grade kits · 13 interactive screens each · 234 real pages",
       uses: "uses"
     }
   };
@@ -189,6 +201,89 @@
     }
   ];
 
+  /* Every commercial kit ships as a complete product, not a three-screen teaser. */
+  var TEMPLATE_EXTRA_PAGES = {
+    "northstar-saas-console": {
+      zh: ["增长漏斗", "订阅计划", "客户列表", "客户详情", "产品使用", "留存队列", "销售管道", "团队绩效", "告警中心", "系统设置"],
+      en: ["Growth funnel", "Subscription plans", "Customer list", "Customer profile", "Product usage", "Retention cohorts", "Sales pipeline", "Team performance", "Alert center", "Settings"]
+    },
+    "forma-furniture-store": {
+      zh: ["搜索结果", "空间灵感", "搭配方案", "购物车", "结算配送", "支付确认", "订单追踪", "会员中心", "收藏清单", "品牌故事"],
+      en: ["Search results", "Room inspiration", "Styled sets", "Shopping bag", "Delivery checkout", "Payment", "Order tracking", "Member account", "Wishlist", "Brand story"]
+    },
+    "moneta-mobile-finance": {
+      zh: ["登录验证", "主卡管理", "交易明细", "账单详情", "收款码", "定期存款", "投资组合", "信用评分", "安全中心", "个人设置"],
+      en: ["Secure sign in", "Card management", "Transactions", "Bill detail", "Receive money", "Savings goals", "Portfolio", "Credit score", "Security center", "Profile settings"]
+    },
+    "afterlight-conference": {
+      zh: ["嘉宾详情", "会场地图", "单日日程", "工作坊详情", "门票方案", "购票结算", "参会凭证", "合作伙伴", "媒体中心", "常见问题"],
+      en: ["Speaker profile", "Venue map", "Daily schedule", "Workshop detail", "Ticket tiers", "Ticket checkout", "Event pass", "Partners", "Press room", "FAQ"]
+    },
+    "orbit-venture-deck": {
+      zh: ["用户痛点", "产品方案", "核心能力", "商业模式", "竞争格局", "市场进入", "增长数据", "团队介绍", "财务预测", "融资用途"],
+      en: ["Customer problem", "Product solution", "Core capabilities", "Business model", "Competitive map", "Go to market", "Traction", "Team", "Financial forecast", "Use of funds"]
+    },
+    "fieldnotes-digital-guide": {
+      zh: ["品牌定位", "受众画像", "核心叙事", "语气原则", "视觉节奏", "内容框架", "渠道示例", "发布计划", "评估指标", "资源附录"],
+      en: ["Positioning", "Audience portraits", "Core narrative", "Voice principles", "Visual rhythm", "Content framework", "Channel examples", "Launch plan", "Success metrics", "Resource appendix"]
+    },
+    "folio-architecture": {
+      zh: ["项目索引", "住宅案例", "公共空间", "文化建筑", "空间细节", "设计过程", "材料研究", "获奖记录", "团队成员", "联系工作室"],
+      en: ["Project index", "Residential case", "Public space", "Cultural building", "Spatial details", "Design process", "Material studies", "Awards", "Team", "Contact studio"]
+    },
+    "nest-property-market": {
+      zh: ["地图找房", "筛选结果", "社区详情", "户型图册", "设施清单", "经纪人档案", "看房日程", "贷款测算", "收藏房源", "个人中心"],
+      en: ["Map search", "Filtered results", "Neighborhood", "Floor plans", "Amenities", "Agent profile", "Viewing calendar", "Mortgage calculator", "Saved homes", "Account"]
+    },
+    "serein-restaurant": {
+      zh: ["主厨故事", "食材产地", "酒水单", "菜品详情", "私人宴会", "桌位选择", "预订确认", "礼品卡", "媒体报道", "到店指南"],
+      en: ["Chef story", "Our producers", "Wine list", "Dish detail", "Private dining", "Choose a table", "Booking confirmation", "Gift cards", "Press", "Visit us"]
+    },
+    "roam-travel-booking": {
+      zh: ["目的地搜索", "酒店列表", "酒店详情", "房型选择", "体验活动", "行程编辑", "旅伴邀请", "订单结算", "电子凭证", "旅行账户"],
+      en: ["Destination search", "Hotel results", "Hotel detail", "Room selection", "Local experiences", "Itinerary builder", "Invite travelers", "Trip checkout", "Travel pass", "Traveler account"]
+    },
+    "pulse-care-center": {
+      zh: ["患者档案", "检查结果", "用药计划", "医生排班", "远程问诊", "护理任务", "风险预警", "健康报告", "消息中心", "机构设置"],
+      en: ["Patient profile", "Test results", "Medication plan", "Clinician roster", "Telehealth visit", "Care tasks", "Risk alerts", "Health report", "Messages", "Clinic settings"]
+    },
+    "lumen-course-platform": {
+      zh: ["课程详情", "讲师主页", "章节目录", "视频课堂", "阅读材料", "互动测验", "作业提交", "讨论社区", "学习日历", "结业证书"],
+      en: ["Course detail", "Instructor profile", "Curriculum", "Video lesson", "Reading material", "Interactive quiz", "Assignment", "Discussion", "Learning calendar", "Certificate"]
+    },
+    "signal-social-campaign": {
+      zh: ["策略简报", "受众洞察", "创意方向", "素材看板", "短视频脚本", "帖子详情", "审批流程", "投放计划", "实时数据", "复盘报告"],
+      en: ["Campaign brief", "Audience insight", "Creative direction", "Asset board", "Video script", "Post detail", "Approval flow", "Media plan", "Live analytics", "Campaign report"]
+    },
+    "arca-brand-system": {
+      zh: ["标志规范", "安全空间", "品牌色彩", "字体系统", "图形语言", "图标系统", "摄影风格", "社媒应用", "包装应用", "下载中心"],
+      en: ["Logo rules", "Clear space", "Color system", "Typography", "Graphic language", "Icon system", "Photography", "Social templates", "Packaging", "Download center"]
+    },
+    "common-good-impact-report": {
+      zh: ["年度寄语", "组织使命", "项目地图", "教育成果", "社区成果", "资金流向", "伙伴网络", "志愿者故事", "未来计划", "数据附录"],
+      en: ["Annual letter", "Mission", "Program map", "Education outcomes", "Community outcomes", "Funds allocation", "Partner network", "Volunteer story", "Next year", "Data appendix"]
+    },
+    "welcome-people-ops": {
+      zh: ["欢迎清单", "第一周计划", "培训课程", "导师配对", "组织架构", "成员档案", "福利中心", "设备申请", "反馈问卷", "入职完成"],
+      en: ["Welcome checklist", "First week", "Training hub", "Buddy matching", "Org chart", "People directory", "Benefits", "Equipment request", "Pulse survey", "Onboarding complete"]
+    },
+    "muse-ai-workspace": {
+      zh: ["新建项目", "提示词编辑器", "文档生成", "图片生成", "视频生成", "版本对比", "团队评论", "共享空间", "模型管理", "工作区设置"],
+      en: ["New project", "Prompt editor", "Document generation", "Image generation", "Video generation", "Version compare", "Team comments", "Shared workspace", "Model manager", "Workspace settings"]
+    },
+    "kindred-nonprofit": {
+      zh: ["使命介绍", "项目列表", "项目详情", "影响力地图", "受助者故事", "志愿者报名", "活动日历", "捐赠方案", "捐赠结算", "公开透明"],
+      en: ["Our mission", "Programs", "Program detail", "Impact map", "Community story", "Volunteer signup", "Events", "Giving options", "Donation checkout", "Transparency"]
+    }
+  };
+
+  TEMPLATES.forEach(function (template) {
+    var extra = TEMPLATE_EXTRA_PAGES[template.id];
+    if (!extra) return;
+    template.zh.pages = template.zh.pages.concat(extra.zh);
+    template.en.pages = template.en.pages.concat(extra.en);
+  });
+
   function langOf(lang) { return lang === "en" ? "en" : "zh"; }
   function text(lang, key) { return COPY[langOf(lang)][key] || key; }
   function localized(template, lang) { return template[langOf(lang)] || template.zh; }
@@ -199,6 +294,7 @@
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
   }
+  function pageNumber(page) { return String(page + 1).padStart(2, "0"); }
   function byId(id) {
     for (var i = 0; i < TEMPLATES.length; i += 1) if (TEMPLATES[i].id === id) return TEMPLATES[i];
     return null;
@@ -221,7 +317,13 @@
     return '<button type="button" class="tpl-demo-action" data-demo-action="' + esc(label) + '">' + esc(label) + '</button>';
   }
   function navItems(info, page) {
-    return info.pages.map(function (name, index) {
+    var last = info.pages.length - 1;
+    var indexes = [0];
+    var start = Math.max(1, Math.min(Math.max(1, page - 1), Math.max(1, last - 2)));
+    for (var i = start; i <= Math.min(last, start + 2); i += 1) indexes.push(i);
+    if (indexes.indexOf(page) < 0) indexes[indexes.length - 1] = page;
+    return indexes.filter(function (index, position) { return indexes.indexOf(index) === position; }).map(function (index) {
+      var name = info.pages[index];
       return '<button type="button" class="tpl-mini-nav' + (index === page ? " is-active" : "") + '" data-demo-action="' + esc(name) + '">' + esc(name) + '</button>';
     }).join("");
   }
@@ -236,12 +338,13 @@
     return '<svg class="tpl-spark" viewBox="0 0 160 48" preserveAspectRatio="none" aria-hidden="true"><path d="M2 42 C18 38 20 26 36 30 S58 40 70 25 S90 8 102 18 S125 35 158 4" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M2 42 C18 38 20 26 36 30 S58 40 70 25 S90 8 102 18 S125 35 158 4 L158 48 L2 48Z" fill="currentColor" opacity=".08"/></svg>';
   }
   function browserShell(template, info, page, inner, className, alternate) {
-    return '<div class="tpl-art tpl-art--' + esc(className) + ' tpl-skin-' + esc(template.skin) + '" style="' + cssVars(template, alternate) + '">' +
+    return '<div class="tpl-art tpl-art--' + esc(className) + ' tpl-skin-' + esc(template.skin) + ' tpl-page-variant-' + (page % 6) + ' tpl-screen-' + (page + 1) + '" style="' + cssVars(template, alternate) + '">' +
       '<div class="tpl-browser"><div class="tpl-browser-bar">' + dots() + '<span class="tpl-address">' + esc(template.id.replace(/-/g, ".")) + '</span><span class="tpl-live-mark"><i></i>LIVE</span></div>' +
       inner + '</div></div>';
   }
   function dashboardArt(template, info, page, alternate) {
-    var metrics = page === 0 ? ["$148.2K", "+24.8%", "8,402"] : page === 1 ? ["2,481", "92.4%", "18m"] : ["$1.84M", "+31.2%", "4.8×"];
+    var variant = page % 3;
+    var metrics = variant === 0 ? ["$148.2K", "+24.8%", "8,402"] : variant === 1 ? ["2,481", "92.4%", "18m"] : ["$1.84M", "+31.2%", "4.8×"];
     var labels = info.tags;
     var inner = '<div class="tpl-dash-shell"><aside><div class="tpl-wordmark"><i></i>' + esc(template.id.split("-")[0]) + '</div><div class="tpl-side-nav">' + navItems(info, page) + '</div><div class="tpl-side-note"><span>' + esc(labels[0]) + '</span><b>PRO workspace</b></div></aside>' +
       '<main><header><div><span>' + esc(info.category) + '</span><h3>' + esc(info.pages[page]) + '</h3></div><div class="tpl-avatar-stack"><i></i><i></i><i></i></div></header>' +
@@ -250,19 +353,22 @@
     return browserShell(template, info, page, inner, template.kind === "ai" ? "ai" : "dashboard", alternate);
   }
   function commerceArt(template, info, page, alternate) {
-    var productNames = page === 0 ? ["Arc lounge", "Linea table", "Soft form"] : page === 1 ? ["Series 01", "Series 02", "Series 03"] : ["Natural oak", "Clay textile", "Hand finish"];
+    var variant = page % 3;
+    var productNames = variant === 0 ? ["Arc lounge", "Linea table", "Soft form"] : variant === 1 ? ["Series 01", "Series 02", "Series 03"] : ["Natural oak", "Clay textile", "Hand finish"];
     var inner = '<div class="tpl-shop"><nav><b>FORMA / ' + String(page + 1).padStart(2, "0") + '</b><div>' + navItems(info, page) + '</div><button type="button" data-demo-action="Cart">Bag <i>' + (page + 1) + '</i></button></nav>' +
-      '<section class="tpl-shop-hero"><div><small>COLLECTION ' + (2026 + page) + '</small><h2>' + esc(info.pages[page]) + '</h2><p>' + esc(info.desc) + '</p>' + action(page === 2 ? "Add to collection" : "Explore collection") + '</div><div class="tpl-object tpl-object-' + page + '"><i></i><i></i></div></section>' +
+      '<section class="tpl-shop-hero"><div><small>COLLECTION ' + (2026 + page) + '</small><h2>' + esc(info.pages[page]) + '</h2><p>' + esc(info.desc) + '</p>' + action(variant === 2 ? "Add to collection" : "Explore collection") + '</div><div class="tpl-object tpl-object-' + variant + '"><i></i><i></i></div></section>' +
       '<section class="tpl-product-row">' + productNames.map(function (name, index) { return '<button type="button" data-demo-action="' + esc(name) + '"><div class="tpl-product-shape s' + index + '"></div><span><b>' + esc(name) + '</b><em>$' + (240 + index * 175) + '</em></span></button>'; }).join("") + '</section></div>';
     return browserShell(template, info, page, inner, "commerce", alternate);
   }
   function mobileArt(template, info, page, alternate) {
-    var money = page === 0 ? "$24,860" : page === 1 ? "$1,250" : "$3,840";
-    return '<div class="tpl-art tpl-art--mobile tpl-skin-' + esc(template.skin) + '" style="' + cssVars(template, alternate) + '"><div class="tpl-mobile-copy"><span>MONETA / 0' + (page + 1) + '</span><h2>' + esc(info.pages[page]) + '</h2><p>' + esc(info.desc) + '</p><div class="tpl-mobile-points"><i></i><span>' + esc(info.tags.join(" · ")) + '</span></div></div>' +
+    var variant = page % 3;
+    var money = variant === 0 ? "$24,860" : variant === 1 ? "$1,250" : "$3,840";
+    return '<div class="tpl-art tpl-art--mobile tpl-skin-' + esc(template.skin) + ' tpl-page-variant-' + (page % 6) + ' tpl-screen-' + (page + 1) + '" style="' + cssVars(template, alternate) + '"><div class="tpl-mobile-copy"><span>MONETA / ' + pageNumber(page) + '</span><h2>' + esc(info.pages[page]) + '</h2><p>' + esc(info.desc) + '</p><div class="tpl-mobile-points"><i></i><span>' + esc(info.tags.join(" · ")) + '</span></div></div>' +
       '<div class="tpl-phone"><div class="tpl-phone-island"></div><header><span>9:41</span><i>◒</i></header><div class="tpl-phone-title"><span>' + esc(info.pages[page]) + '</span><b>•••</b></div><section class="tpl-balance"><small>Total balance</small><h3>' + money + '</h3>' + sparkline() + '</section><div class="tpl-quick-actions">' + ["Send", "Receive", "Bills"].map(function (label, index) { return '<button type="button" data-demo-action="' + label + '"><i>' + ["↗", "↙", "✓"][index] + '</i><span>' + label + '</span></button>'; }).join("") + '</div><div class="tpl-mobile-list"><b>Recent activity</b>' + [0, 1, 2].map(function (i) { return '<button type="button" data-demo-action="Transaction"><i></i><span><b>' + ["Studio plan", "Coffee house", "Transfer"][i] + '</b><small>Today</small></span><em>' + (i === 2 ? "+$850" : "−$" + (18 + i * 34)) + '</em></button>'; }).join("") + '</div></div></div>';
   }
   function eventArt(template, info, page, alternate) {
-    var inner = '<div class="tpl-event"><nav><b>AFTER / LIGHT</b><span>OCT 16—18 · BROOKLYN</span>' + action("Get tickets") + '</nav><main><div class="tpl-event-index">0' + (page + 1) + ' / 03</div><h2>' + (page === 0 ? 'MAKE<br><i>IDEAS</i><br>VISIBLE' : page === 1 ? 'THE<br><i>PEOPLE</i><br>ON STAGE' : 'THREE<br><i>DAYS</i><br>TOGETHER') + '</h2><div class="tpl-event-orbit"><i></i><i></i><i></i><span>' + esc(info.pages[page]) + '</span></div><footer><p>' + esc(info.desc) + '</p><div>' + navItems(info, page) + '</div></footer></main></div>';
+    var variant = page % 3;
+    var inner = '<div class="tpl-event"><nav><b>AFTER / LIGHT</b><span>OCT 16—18 · BROOKLYN</span>' + action("Get tickets") + '</nav><main><div class="tpl-event-index">' + String(page + 1).padStart(2, "0") + ' / ' + String(info.pages.length).padStart(2, "0") + '</div><h2>' + (variant === 0 ? 'MAKE<br><i>IDEAS</i><br>VISIBLE' : variant === 1 ? 'THE<br><i>PEOPLE</i><br>ON STAGE' : 'THREE<br><i>DAYS</i><br>TOGETHER') + '</h2><div class="tpl-event-orbit"><i></i><i></i><i></i><span>' + esc(info.pages[page]) + '</span></div><footer><p>' + esc(info.desc) + '</p><div>' + navItems(info, page) + '</div></footer></main></div>';
     return browserShell(template, info, page, inner, "event", alternate);
   }
   function documentArt(template, info, page, alternate) {
@@ -270,38 +376,44 @@
     var isBrand = template.kind === "brand";
     var isReport = template.kind === "report";
     var title = info.pages[page];
+    var variant = page % 3;
     var inner;
     if (isEditorial) {
-      inner = '<div class="tpl-spread"><article class="tpl-paper tpl-paper-cover"><header><span>FIELDNOTES / ' + (page + 1) + '</span><span>2026 EDITION</span></header><h2>' + (page === 0 ? 'Build a brand<br>people <i>remember.</i>' : page === 1 ? 'Clarity before<br><i>decoration.</i>' : 'Launch with<br><i>confidence.</i>') + '</h2><p>' + esc(info.desc) + '</p><div class="tpl-editorial-stats"><span><b>' + (12 + page * 4) + '</b>principles</span><span><b>' + (38 + page * 6) + '</b>examples</span><span><b>03</b>systems</span></div></article><article class="tpl-paper tpl-paper-content"><span>CHAPTER 0' + (page + 1) + '</span><h3>' + esc(title) + '</h3><blockquote>“A useful system makes the right choice feel obvious.”</blockquote>' + ["Find the sharp idea", "Create a repeatable rhythm", "Test it in the real world", "Document what works"].map(function (x, i) { return '<button type="button" data-demo-action="' + esc(x) + '"><em>0' + (i + 1) + '</em><b>' + x + '</b></button>'; }).join("") + '</article></div>';
+      inner = '<div class="tpl-spread"><article class="tpl-paper tpl-paper-cover"><header><span>FIELDNOTES / ' + (page + 1) + '</span><span>2026 EDITION</span></header><h2>' + (variant === 0 ? 'Build a brand<br>people <i>remember.</i>' : variant === 1 ? 'Clarity before<br><i>decoration.</i>' : 'Launch with<br><i>confidence.</i>') + '</h2><p>' + esc(info.desc) + '</p><div class="tpl-editorial-stats"><span><b>' + (12 + page * 4) + '</b>principles</span><span><b>' + (38 + page * 6) + '</b>examples</span><span><b>03</b>systems</span></div></article><article class="tpl-paper tpl-paper-content"><span>CHAPTER ' + pageNumber(page) + '</span><h3>' + esc(title) + '</h3><blockquote>“A useful system makes the right choice feel obvious.”</blockquote>' + ["Find the sharp idea", "Create a repeatable rhythm", "Test it in the real world", "Document what works"].map(function (x, i) { return '<button type="button" data-demo-action="' + esc(x) + '"><em>0' + (i + 1) + '</em><b>' + x + '</b></button>'; }).join("") + '</article></div>';
     } else if (isBrand) {
-      inner = '<div class="tpl-brand-book"><header><b>ARCA®</b><span>Brand system / v2.1</span><em>0' + (page + 1) + '</em></header><main><section><small>' + esc(info.pages[page]) + '</small><h2>' + (page === 0 ? 'Move with<br>purpose.' : page === 1 ? 'One voice.<br>Many forms.' : 'Built to live<br>everywhere.') + '</h2><p>' + esc(info.desc) + '</p></section><section class="tpl-brand-canvas"><div class="tpl-logo-shape"><i></i><i></i></div><div class="tpl-swatches"><i></i><i></i><i></i><i></i></div><b>Aa</b></section></main></div>';
+      inner = '<div class="tpl-brand-book"><header><b>ARCA®</b><span>Brand system / v2.1</span><em>' + pageNumber(page) + '</em></header><main><section><small>' + esc(info.pages[page]) + '</small><h2>' + (variant === 0 ? 'Move with<br>purpose.' : variant === 1 ? 'One voice.<br>Many forms.' : 'Built to live<br>everywhere.') + '</h2><p>' + esc(info.desc) + '</p></section><section class="tpl-brand-canvas"><div class="tpl-logo-shape"><i></i><i></i></div><div class="tpl-swatches"><i></i><i></i><i></i><i></i></div><b>Aa</b></section></main></div>';
     } else if (isReport) {
-      inner = '<div class="tpl-report"><section class="tpl-report-lead"><small>COMMON GOOD / 2026</small><h2>' + (page === 0 ? 'Small actions.<br><i>Lasting change.</i>' : page === 1 ? 'Impact you<br><i>can measure.</i>' : 'Every number<br><i>has a name.</i>') + '</h2><p>' + esc(info.desc) + '</p><span>0' + (page + 1) + ' / 03</span></section><section class="tpl-report-data"><header>' + esc(title) + '<span>↗</span></header><div class="tpl-big-number">' + ["42K", "87%", "126"][page] + '<small>' + esc(info.tags[page]) + '</small></div>' + barChart(page + 2) + '<footer><span>Verified outcomes</span><span>2024—2026</span></footer></section></div>';
+      inner = '<div class="tpl-report"><section class="tpl-report-lead"><small>COMMON GOOD / 2026</small><h2>' + (variant === 0 ? 'Small actions.<br><i>Lasting change.</i>' : variant === 1 ? 'Impact you<br><i>can measure.</i>' : 'Every number<br><i>has a name.</i>') + '</h2><p>' + esc(info.desc) + '</p><span>' + pageNumber(page) + ' / ' + String(info.pages.length).padStart(2, "0") + '</span></section><section class="tpl-report-data"><header>' + esc(title) + '<span>↗</span></header><div class="tpl-big-number">' + ["42K", "87%", "126"][variant] + '<small>' + esc(info.tags[variant]) + '</small></div>' + barChart(page + 2) + '<footer><span>Verified outcomes</span><span>2024—2026</span></footer></section></div>';
     } else {
-      inner = '<div class="tpl-deck"><header><b>ORBIT<span>°</span></b><em>INVESTOR DECK · CONFIDENTIAL</em><i>0' + (page + 1) + '</i></header><main><section><small>' + esc(info.pages[page]) + '</small><h2>' + (page === 0 ? 'The operating system<br>for <i>bold teams.</i>' : page === 1 ? 'A $4.8B market<br>ready to <i>move.</i>' : 'Compounding growth.<br><i>Capital efficient.</i>') + '</h2><p>' + esc(info.desc) + '</p></section><section class="tpl-deck-chart"><div><b>' + ["10×", "$4.8B", "184%"][page] + '</b><span>' + esc(info.tags[page]) + '</span></div>' + sparkline() + '</section></main><footer><span>ORBIT LABS</span><span>STRICTLY PRIVATE</span></footer></div>';
+      inner = '<div class="tpl-deck"><header><b>ORBIT<span>°</span></b><em>INVESTOR DECK · CONFIDENTIAL</em><i>' + pageNumber(page) + '</i></header><main><section><small>' + esc(info.pages[page]) + '</small><h2>' + (variant === 0 ? 'The operating system<br>for <i>bold teams.</i>' : variant === 1 ? 'A $4.8B market<br>ready to <i>move.</i>' : 'Compounding growth.<br><i>Capital efficient.</i>') + '</h2><p>' + esc(info.desc) + '</p></section><section class="tpl-deck-chart"><div><b>' + ["10×", "$4.8B", "184%"][variant] + '</b><span>' + esc(info.tags[variant]) + '</span></div>' + sparkline() + '</section></main><footer><span>ORBIT LABS</span><span>STRICTLY PRIVATE</span></footer></div>';
     }
-    return '<div class="tpl-art tpl-art--document tpl-doc-' + esc(template.kind) + ' tpl-skin-' + esc(template.skin) + '" style="' + cssVars(template, alternate) + '">' + inner + '</div>';
+    return '<div class="tpl-art tpl-art--document tpl-doc-' + esc(template.kind) + ' tpl-skin-' + esc(template.skin) + ' tpl-page-variant-' + (page % 6) + ' tpl-screen-' + (page + 1) + '" style="' + cssVars(template, alternate) + '">' + inner + '</div>';
   }
   function portfolioArt(template, info, page, alternate) {
-    var inner = '<div class="tpl-portfolio"><header><b>FOLIO / A</b><div>' + navItems(info, page) + '</div><span>EST. 2018</span></header><main><div class="tpl-project-number">0' + (page + 1) + '</div><section class="tpl-architecture-image"><i></i><i></i><i></i></section><section class="tpl-project-copy"><small>SELECTED WORK / ' + (2024 + page) + '</small><h2>' + ["House of quiet light", "Museum on the edge", "A room for making"][page] + '</h2><p>' + esc(info.desc) + '</p>' + action("View case study") + '</section></main></div>';
+    var variant = page % 3;
+    var inner = '<div class="tpl-portfolio"><header><b>FOLIO / A</b><div>' + navItems(info, page) + '</div><span>EST. 2018</span></header><main><div class="tpl-project-number">' + pageNumber(page) + '</div><section class="tpl-architecture-image"><i></i><i></i><i></i></section><section class="tpl-project-copy"><small>SELECTED WORK / ' + (2024 + page) + '</small><h2>' + ["House of quiet light", "Museum on the edge", "A room for making"][variant] + '</h2><p>' + esc(info.desc) + '</p>' + action("View case study") + '</section></main></div>';
     return browserShell(template, info, page, inner, "portfolio", alternate);
   }
   function serviceArt(template, info, page, alternate) {
+    var variant = page % 3;
     var kind = template.kind;
     var isFood = kind === "restaurant";
     var isTravel = kind === "travel";
     var isNonprofit = kind === "nonprofit";
-    var headline = isFood ? ["A table for<br>slow evenings.", "From the coast,<br>this season.", "Your table<br>is waiting."][page] : isTravel ? ["Go where the<br>light feels new.", "Three days,<br>perfectly paced.", "One step from<br>your next story."][page] : isNonprofit ? ["Good grows<br>when shared.", "Meet the people<br>making change.", "Give clearly.<br>See the impact."][page] : ["Find a place<br>that feels yours.", "Space, light,<br>and a new view.", "Come see it<br>for yourself."][page];
-    var actionLabel = isFood ? ["Discover our story", "View menu", "Reserve a table"][page] : isTravel ? ["Start exploring", "Build this trip", "Confirm booking"][page] : isNonprofit ? ["See our impact", "Read their stories", "Donate now"][page] : ["Explore homes", "View details", "Request a viewing"][page];
-    var inner = '<div class="tpl-service tpl-service-' + kind + '"><nav><b>' + esc(template.id.split("-")[0]).toUpperCase() + '</b><div>' + navItems(info, page) + '</div><span>MENU</span></nav><main><section class="tpl-service-copy"><small>0' + (page + 1) + ' / ' + esc(info.category) + '</small><h2>' + headline + '</h2><p>' + esc(info.desc) + '</p>' + action(actionLabel) + '</section><section class="tpl-service-image"><div class="tpl-scene"><i></i><i></i><i></i><i></i></div><div class="tpl-floating-card"><small>' + esc(info.tags[page]) + '</small><b>' + (isFood ? "Seasonal tasting" : isTravel ? "Curated escape" : isNonprofit ? "Verified impact" : "Private listing") + '</b><span>' + (isFood ? "8 courses · 2 hours" : isTravel ? "3 nights · from $680" : isNonprofit ? "92% directly to programs" : "$1.28M · 3 beds") + '</span></div></section></main></div>';
+    var headline = isFood ? ["A table for<br>slow evenings.", "From the coast,<br>this season.", "Your table<br>is waiting."][variant] : isTravel ? ["Go where the<br>light feels new.", "Three days,<br>perfectly paced.", "One step from<br>your next story."][variant] : isNonprofit ? ["Good grows<br>when shared.", "Meet the people<br>making change.", "Give clearly.<br>See the impact."][variant] : ["Find a place<br>that feels yours.", "Space, light,<br>and a new view.", "Come see it<br>for yourself."][variant];
+    var actionLabel = isFood ? ["Discover our story", "View menu", "Reserve a table"][variant] : isTravel ? ["Start exploring", "Build this trip", "Confirm booking"][variant] : isNonprofit ? ["See our impact", "Read their stories", "Donate now"][variant] : ["Explore homes", "View details", "Request a viewing"][variant];
+    var inner = '<div class="tpl-service tpl-service-' + kind + '"><nav><b>' + esc(template.id.split("-")[0]).toUpperCase() + '</b><div>' + navItems(info, page) + '</div><span>MENU</span></nav><main><section class="tpl-service-copy"><small>' + pageNumber(page) + ' / ' + esc(info.category) + '</small><h2>' + headline + '</h2><p>' + esc(info.desc) + '</p>' + action(actionLabel) + '</section><section class="tpl-service-image"><div class="tpl-scene"><i></i><i></i><i></i><i></i></div><div class="tpl-floating-card"><small>' + esc(info.tags[variant]) + '</small><b>' + (isFood ? "Seasonal tasting" : isTravel ? "Curated escape" : isNonprofit ? "Verified impact" : "Private listing") + '</b><span>' + (isFood ? "8 courses · 2 hours" : isTravel ? "3 nights · from $680" : isNonprofit ? "92% directly to programs" : "$1.28M · 3 beds") + '</span></div></section></main></div>';
     return browserShell(template, info, page, inner, "service", alternate);
   }
   function courseArt(template, info, page, alternate) {
-    var inner = '<div class="tpl-course"><aside><b>LUMEN<span>+</span></b><div>' + navItems(info, page) + '</div><section><span>Course progress</span><b>' + (34 + page * 22) + '%</b><i><em style="width:' + (34 + page * 22) + '%"></em></i></section></aside><main><header><div><small>MASTERCLASS 04</small><h3>' + esc(info.pages[page]) + '</h3></div><span>◉ 12 learners online</span></header><div class="tpl-course-grid"><section class="tpl-video"><div class="tpl-play" data-demo-action="Play lesson">▶</div><span>12:48 / 28:30</span></section><section class="tpl-lessons"><b>In this module</b>' + ["Start with the outcome", "Map the core journey", "Prototype the moment", "Share and learn"].map(function (x, i) { return '<button type="button" data-demo-action="' + esc(x) + '" class="' + (i === page ? "is-active" : "") + '"><i>' + (i + 1) + '</i><span><b>' + x + '</b><small>' + (8 + i * 3) + ' min</small></span></button>'; }).join("") + '</section></div></main></div>';
+    var variant = page % 4;
+    var progress = 28 + variant * 18;
+    var inner = '<div class="tpl-course"><aside><b>LUMEN<span>+</span></b><div>' + navItems(info, page) + '</div><section><span>Course progress</span><b>' + progress + '%</b><i><em style="width:' + progress + '%"></em></i></section></aside><main><header><div><small>MASTERCLASS 04</small><h3>' + esc(info.pages[page]) + '</h3></div><span>◉ 12 learners online</span></header><div class="tpl-course-grid"><section class="tpl-video"><div class="tpl-play" data-demo-action="Play lesson">▶</div><span>12:48 / 28:30</span></section><section class="tpl-lessons"><b>In this module</b>' + ["Start with the outcome", "Map the core journey", "Prototype the moment", "Share and learn"].map(function (x, i) { return '<button type="button" data-demo-action="' + esc(x) + '" class="' + (i === variant ? "is-active" : "") + '"><i>' + (i + 1) + '</i><span><b>' + x + '</b><small>' + (8 + i * 3) + ' min</small></span></button>'; }).join("") + '</section></div></main></div>';
     return browserShell(template, info, page, inner, "course", alternate);
   }
   function campaignArt(template, info, page, alternate) {
-    return '<div class="tpl-art tpl-art--campaign tpl-skin-' + esc(template.skin) + '" style="' + cssVars(template, alternate) + '"><div class="tpl-campaign-head"><b>SIGNAL / CAMPAIGN KIT</b><span>' + esc(info.pages[page]) + '</span><em>0' + (page + 1) + '</em></div><div class="tpl-moodboard"><section class="tpl-poster"><small>DROP 0' + (page + 1) + '</small><h2>' + ["MAKE<br>NOISE.", "SHOW<br>THE WORK.", "KEEP<br>MOVING."][page] + '</h2><i></i></section><section class="tpl-social-post"><header><i></i><b>@signal.studio</b><span>•••</span></header><div class="tpl-social-art"><b>' + ["NEW / NOW", "BEHIND / IT", "RESULTS / IN"][page] + '</b></div><footer>♡　⌁　↗<span>2,804 likes</span></footer></section><section class="tpl-campaign-plan"><header>CONTENT PLAN <span>W' + (12 + page) + '</span></header>' + ["Tease", "Reveal", "Explain", "Convert"].map(function (x, i) { return '<button type="button" data-demo-action="' + x + '"><span>' + ["MON", "TUE", "THU", "SAT"][i] + '</span><b>' + x + '</b><i class="' + (i < page + 2 ? "done" : "") + '"></i></button>'; }).join("") + '</section></div></div>';
+    var variant = page % 3;
+    return '<div class="tpl-art tpl-art--campaign tpl-skin-' + esc(template.skin) + ' tpl-page-variant-' + (page % 6) + ' tpl-screen-' + (page + 1) + '" style="' + cssVars(template, alternate) + '"><div class="tpl-campaign-head"><b>SIGNAL / CAMPAIGN KIT</b><span>' + esc(info.pages[page]) + '</span><em>' + pageNumber(page) + '</em></div><div class="tpl-moodboard"><section class="tpl-poster"><small>DROP ' + pageNumber(page) + '</small><h2>' + ["MAKE<br>NOISE.", "SHOW<br>THE WORK.", "KEEP<br>MOVING."][variant] + '</h2><i></i></section><section class="tpl-social-post"><header><i></i><b>@signal.studio</b><span>•••</span></header><div class="tpl-social-art"><b>' + ["NEW / NOW", "BEHIND / IT", "RESULTS / IN"][variant] + '</b></div><footer>♡　⌁　↗<span>2,804 likes</span></footer></section><section class="tpl-campaign-plan"><header>CONTENT PLAN <span>W' + (12 + page) + '</span></header>' + ["Tease", "Reveal", "Explain", "Convert"].map(function (x, i) { return '<button type="button" data-demo-action="' + x + '"><span>' + ["MON", "TUE", "THU", "SAT"][i] + '</span><b>' + x + '</b><i class="' + (i < variant + 2 ? "done" : "") + '"></i></button>'; }).join("") + '</section></div></div>';
   }
   function artMarkup(template, page, lang, compact, alternate) {
     var info = localized(template, lang);
@@ -321,14 +433,14 @@
   function cardMarkup(template, lang) {
     var info = localized(template, lang);
     return '<div class="tpl-card-stage">' + artMarkup(template, 0, lang, true, false) + '<span class="tpl-pro-badge">' + text(lang, "pro") + '</span><span class="tpl-card-live"><i></i>' + text(lang, "live") + '</span></div>' +
-      '<div class="tpl-card-body"><div class="tpl-card-copy"><span>' + esc(info.category) + '</span><h3>' + esc(info.name) + '</h3><div class="tpl-card-tags">' + info.tags.slice(0, 2).map(function (tag) { return '<em>' + esc(tag) + '</em>'; }).join("") + '</div></div><div class="tpl-card-meta"><b>3</b><span>' + text(lang, "screens") + '</span><i>↗</i></div></div>';
+      '<div class="tpl-card-body"><div class="tpl-card-copy"><span>' + esc(info.category) + '</span><h3>' + esc(info.name) + '</h3><div class="tpl-card-tags">' + info.tags.slice(0, 2).map(function (tag) { return '<em>' + esc(tag) + '</em>'; }).join("") + '</div></div><div class="tpl-card-meta"><b>' + info.pages.length + '</b><span>' + text(lang, "screens") + '</span><i>↗</i></div></div>';
   }
   function featuredMarkup(template, lang) {
     var info = localized(template, lang);
     return '<div class="tpl-featured-art">' + artMarkup(template, 0, lang, true, false) + '</div><div class="tpl-featured-copy"><div class="tpl-featured-kicker"><span>' + text(lang, "featured") + '</span><i>' + text(lang, "commercial") + '</i></div><h3>' + esc(info.name) + '</h3><p>' + text(lang, "featuredDescription") + '</p><div class="tpl-featured-tags">' + info.tags.map(function (tag) { return '<span>' + esc(tag) + '</span>'; }).join("") + '</div><button type="button" class="btn-new tpl-featured-open" id="tpPreviewFeatured">' + text(lang, "previewScreens") + '<span>↗</span></button><small>' + esc(template.uses) + ' ' + text(lang, "uses") + '</small></div>';
   }
 
-  var modalState = { template: null, page: 0, lang: "zh", alternate: false, onUse: null, returnFocus: null };
+  var modalState = { template: null, page: 0, lang: "zh", alternate: false, viewport: "desktop", onUse: null, returnFocus: null };
   var keyHandlerBound = false;
 
   function ensureModal() {
@@ -338,7 +450,22 @@
     modal.id = "templatePreview";
     modal.className = "tpl-preview-overlay";
     modal.hidden = true;
-    modal.innerHTML = '<section class="tpl-preview-dialog" role="dialog" aria-modal="true" aria-labelledby="tplPreviewTitle"><header class="tpl-preview-head"><div class="tpl-preview-title"><span class="tpl-preview-kicker" id="tplPreviewKicker"></span><h2 id="tplPreviewTitle"></h2><p id="tplPreviewDescription"></p><div class="tpl-preview-tags" id="tplPreviewTags"></div></div><div class="tpl-preview-actions"><span class="tpl-license-badge" id="tplLicenseBadge"></span><button type="button" class="tpl-head-btn" id="tplShareButton"><span>↗</span><b></b></button><button type="button" class="tpl-head-btn tpl-favorite-btn" id="tplFavoriteButton" aria-pressed="false"><span>♡</span><b></b></button><div class="tpl-use-split"><button type="button" class="tpl-use-main" id="tplUseMain"></button><button type="button" class="tpl-use-more" id="tplUseMore" aria-haspopup="menu" aria-expanded="false">⌄</button><div class="tpl-use-menu" id="tplUseMenu" role="menu"></div></div><button type="button" class="tpl-preview-close" id="tplPreviewClose" aria-label="Close">×</button></div></header><div class="tpl-preview-toolbar"><div><span id="tplScreenCounter"></span><b id="tplScreenName"></b></div><button type="button" id="tplColorway"><i></i><span></span></button></div><div class="tpl-preview-stage"><button type="button" class="tpl-preview-arrow prev" id="tplPrevScreen">‹</button><div class="tpl-preview-canvas" id="tplPreviewCanvas"></div><button type="button" class="tpl-preview-arrow next" id="tplNextScreen">›</button></div><footer class="tpl-preview-foot"><div class="tpl-preview-thumbs" id="tplPreviewThumbs"></div><div class="tpl-interaction-state"><i></i><span><b id="tplInteractionLabel"></b><small id="tplInteractionText"></small></span></div></footer></section>';
+    modal.innerHTML =
+      '<section class="tpl-preview-dialog" role="dialog" aria-modal="true" aria-labelledby="tplPreviewTitle">' +
+        '<header class="tpl-preview-head">' +
+          '<div class="tpl-preview-title"><span class="tpl-preview-kicker" id="tplPreviewKicker"></span><h2 id="tplPreviewTitle"></h2><p id="tplPreviewDescription"></p><div class="tpl-preview-tags" id="tplPreviewTags"></div></div>' +
+          '<div class="tpl-preview-actions"><span class="tpl-license-badge" id="tplLicenseBadge"></span><button type="button" class="tpl-head-btn" id="tplShareButton"><span>↗</span><b></b></button><button type="button" class="tpl-head-btn tpl-favorite-btn" id="tplFavoriteButton" aria-pressed="false"><span>♡</span><b></b></button><div class="tpl-use-split"><button type="button" class="tpl-use-main" id="tplUseMain"></button><button type="button" class="tpl-use-more" id="tplUseMore" aria-haspopup="menu" aria-expanded="false">⌄</button><div class="tpl-use-menu" id="tplUseMenu" role="menu"></div></div><button type="button" class="tpl-preview-close" id="tplPreviewClose" aria-label="Close">×</button></div>' +
+        '</header>' +
+        '<div class="tpl-preview-toolbar">' +
+          '<div class="tpl-current-screen"><span id="tplScreenCounter"></span><b id="tplScreenName"></b></div>' +
+          '<div class="tpl-toolbar-actions"><div class="tpl-viewport-switch" id="tplViewportSwitch"><button type="button" data-preview-viewport="desktop" aria-pressed="true"><span>▰</span><b></b></button><button type="button" data-preview-viewport="tablet" aria-pressed="false"><span>▯</span><b></b></button><button type="button" data-preview-viewport="mobile" aria-pressed="false"><span>▯</span><b></b></button></div><button type="button" class="tpl-colorway-button" id="tplColorway"><i></i><span></span></button></div>' +
+        '</div>' +
+        '<div class="tpl-preview-workspace">' +
+          '<div class="tpl-preview-stage"><button type="button" class="tpl-preview-arrow prev" id="tplPrevScreen">‹</button><div class="tpl-preview-canvas" id="tplPreviewCanvas" data-viewport="desktop"></div><button type="button" class="tpl-preview-arrow next" id="tplNextScreen">›</button></div>' +
+          '<aside class="tpl-screen-rail"><header><div><span id="tplRailCount"></span><b id="tplRailTitle"></b></div><small id="tplRailHint"></small></header><div class="tpl-preview-thumbs" id="tplPreviewThumbs" role="list"></div></aside>' +
+        '</div>' +
+        '<footer class="tpl-preview-foot"><div class="tpl-interaction-state"><i></i><span><b id="tplInteractionLabel"></b><small id="tplInteractionText"></small></span></div><div class="tpl-prototype-meta"><span><i></i>PROTOTYPE</span><b id="tplFooterPage"></b></div></footer>' +
+      '</section>';
     document.body.appendChild(modal);
 
     modal.addEventListener("click", function (event) {
@@ -350,6 +477,12 @@
     document.getElementById("tplColorway").addEventListener("click", function () {
       modalState.alternate = !modalState.alternate;
       renderCanvas();
+    });
+    document.getElementById("tplViewportSwitch").addEventListener("click", function (event) {
+      var button = event.target.closest("[data-preview-viewport]");
+      if (!button) return;
+      modalState.viewport = button.getAttribute("data-preview-viewport") || "desktop";
+      renderModal();
     });
     document.getElementById("tplUseMain").addEventListener("click", function () { applyTemplate("direct"); });
     document.getElementById("tplUseMore").addEventListener("click", function (event) {
@@ -381,13 +514,18 @@
       renderModal();
     });
     document.getElementById("tplPreviewCanvas").addEventListener("click", function (event) {
+      var canvas = document.getElementById("tplPreviewCanvas");
       var button = event.target.closest("[data-demo-action]");
-      if (!button) return;
+      var info = modalState.template ? localized(modalState.template, modalState.lang) : null;
+      var label = button ? button.getAttribute("data-demo-action") : (info ? info.pages[modalState.page] : text(modalState.lang, "page"));
       event.preventDefault();
       event.stopPropagation();
       Array.prototype.forEach.call(document.querySelectorAll("#tplPreviewCanvas .is-demo-active"), function (node) { node.classList.remove("is-demo-active"); });
-      button.classList.add("is-demo-active");
-      document.getElementById("tplInteractionText").textContent = text(modalState.lang, "actionDone") + button.getAttribute("data-demo-action");
+      if (button) button.classList.add("is-demo-active");
+      canvas.classList.remove("is-canvas-active");
+      void canvas.offsetWidth;
+      canvas.classList.add("is-canvas-active");
+      document.getElementById("tplInteractionText").textContent = text(modalState.lang, "actionDone") + label;
     });
     document.addEventListener("click", function (event) {
       var menu = document.getElementById("tplUseMenu");
@@ -411,7 +549,14 @@
 
   function renderCanvas() {
     if (!modalState.template) return;
-    document.getElementById("tplPreviewCanvas").innerHTML = artMarkup(modalState.template, modalState.page, modalState.lang, false, modalState.alternate);
+    var canvas = document.getElementById("tplPreviewCanvas");
+    canvas.innerHTML = artMarkup(modalState.template, modalState.page, modalState.lang, false, modalState.alternate);
+    canvas.setAttribute("data-viewport", modalState.viewport || "desktop");
+    Array.prototype.forEach.call(document.querySelectorAll("#tplViewportSwitch [data-preview-viewport]"), function (button) {
+      var selected = button.getAttribute("data-preview-viewport") === modalState.viewport;
+      button.classList.toggle("is-active", selected);
+      button.setAttribute("aria-pressed", selected ? "true" : "false");
+    });
     document.getElementById("templatePreview").setAttribute("data-colorway", modalState.alternate ? "alternate" : "primary");
   }
   function renderModal() {
@@ -433,19 +578,31 @@
     document.getElementById("tplPrevScreen").setAttribute("aria-label", c.previous);
     document.getElementById("tplNextScreen").setAttribute("aria-label", c.next);
     document.getElementById("tplColorway").querySelector("span").textContent = c.colorway;
+    document.querySelector('#tplViewportSwitch [data-preview-viewport="desktop"] b').textContent = c.desktop;
+    document.querySelector('#tplViewportSwitch [data-preview-viewport="tablet"] b').textContent = c.tablet;
+    document.querySelector('#tplViewportSwitch [data-preview-viewport="mobile"] b').textContent = c.mobile;
     document.getElementById("tplScreenCounter").textContent = c.page + " " + String(modalState.page + 1).padStart(2, "0") + " / " + String(info.pages.length).padStart(2, "0");
     document.getElementById("tplScreenName").textContent = info.pages[modalState.page];
+    document.getElementById("tplRailCount").textContent = info.pages.length + " " + c.screens;
+    document.getElementById("tplRailTitle").textContent = c.screenRailTitle;
+    document.getElementById("tplRailHint").textContent = c.scrollHint;
     document.getElementById("tplInteractionLabel").textContent = c.interaction;
     document.getElementById("tplInteractionText").textContent = c.interactionReady;
+    document.getElementById("tplFooterPage").textContent = String(modalState.page + 1).padStart(2, "0") + " / " + String(info.pages.length).padStart(2, "0") + " · " + info.pages[modalState.page];
     document.getElementById("tplUseMenu").innerHTML = [
       { id: "direct", title: c.useNow, sub: c.useNowSub, icon: "↗" },
       { id: "brief", title: c.useBrief, sub: c.useBriefSub, icon: "✦" },
       { id: "remix", title: c.remix, sub: c.remixSub, icon: "⎘" }
     ].map(function (item) { return '<button type="button" role="menuitem" data-template-intent="' + item.id + '"><i>' + item.icon + '</i><span><b>' + esc(item.title) + '</b><small>' + esc(item.sub) + '</small></span></button>'; }).join("");
     document.getElementById("tplPreviewThumbs").innerHTML = info.pages.map(function (name, index) {
-      return '<div role="button" tabindex="0" class="' + (index === modalState.page ? "is-active" : "") + '" data-template-page="' + index + '"><span>' + artMarkup(template, index, modalState.lang, true, modalState.alternate) + '</span><b>0' + (index + 1) + '</b><em>' + esc(name) + '</em></div>';
+      var number = String(index + 1).padStart(2, "0");
+      return '<div role="button" tabindex="0" class="tpl-screen-item' + (index === modalState.page ? " is-active" : "") + '" data-template-page="' + index + '"><span class="tpl-screen-thumb">' + artMarkup(template, index, modalState.lang, true, modalState.alternate) + '</span><span class="tpl-screen-copy"><b><i>' + number + '</i>' + esc(name) + '</b><small>' + c[modalState.viewport || "desktop"] + ' · ' + c.interactive + '</small></span><em>›</em></div>';
     }).join("");
     renderCanvas();
+    requestAnimationFrame(function () {
+      var active = document.querySelector("#tplPreviewThumbs [data-template-page].is-active");
+      if (active && typeof active.scrollIntoView === "function") active.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    });
   }
   function changePage(direction) {
     if (!modalState.template) return;
@@ -489,9 +646,10 @@
     if (!template) return false;
     var modal = ensureModal();
     modalState.template = template;
-    modalState.page = Math.max(0, Math.min(2, Number(options && options.page) || 0));
     modalState.lang = langOf(options && options.lang);
+    modalState.page = Math.max(0, Math.min(localized(template, modalState.lang).pages.length - 1, Number(options && options.page) || 0));
     modalState.alternate = false;
+    modalState.viewport = "desktop";
     modalState.onUse = options && options.onUse;
     modalState.returnFocus = document.activeElement;
     renderModal();
