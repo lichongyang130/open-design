@@ -63,7 +63,7 @@ describe('DesignBuddy Studio reliability contracts', () => {
     expect(role).toContain('button.disabled = false');
   });
 
-  it('validates the selected built-in or custom model before project creation', () => {
+  it('enters generation immediately, then validates the model before project persistence', () => {
     const readiness = functionBody(studio, 'ensureGenerationModelReady', 'submitPrompt');
     expect(readiness).toContain('entry.provider === "custom"');
     expect(readiness).toContain('!entry.linked');
@@ -73,12 +73,23 @@ describe('DesignBuddy Studio reliability contracts', () => {
     expect(readiness).toContain('modelRequired');
 
     const submit = functionBody(studio, 'submitPrompt', 'esc');
+    expect(submit).toContain('beginPendingGeneration(submission, v)');
     expect(submit).toContain('ensureGenerationModelReady()');
-    expect(submit).toContain('if (!ready) return false');
-    expect(submit.indexOf('if (!ready)')).toBeLessThan(submit.indexOf('createRealProject(v)'));
+    expect(submit).not.toContain('classList.add("loading")');
+    expect(submit.indexOf('beginPendingGeneration(submission, v)')).toBeLessThan(
+      submit.indexOf('ensureGenerationModelReady()'),
+    );
+    expect(submit.indexOf('if (!ready)')).toBeLessThan(
+      submit.indexOf('createRealProject(v, submission)'),
+    );
+    const pending = functionBody(studio, 'beginPendingGeneration', 'pendingGenerationIsCurrent');
+    expect(pending).toContain('go("gen")');
+    expect(pending).toContain('state.gen.status = "run"');
+    expect(pending.indexOf('go("gen")')).toBeLessThan(pending.indexOf('return true'));
     const create = functionBody(studio, 'createRealProject', 'currentTemplateRoute');
     expect(create).not.toContain('离线演示');
     expect(create).not.toContain('openGen({ id: id');
+    expect(create).toContain('failPendingGeneration(submission, message)');
     expect(create).toContain('projectCreateFailed');
   });
 
@@ -181,7 +192,12 @@ describe('DesignBuddy Studio reliability contracts', () => {
     const readiness = functionBody(studio, 'ensureSuggestionSkillReady', 'loadPlugins');
     expect(readiness).toContain('!state.selSkill.pending');
     const submit = functionBody(studio, 'submitPrompt', 'esc');
-    expect(submit.indexOf('ensureSuggestionSkillReady()')).toBeLessThan(submit.indexOf('createRealProject(v)'));
+    expect(submit.indexOf('beginPendingGeneration(submission, v)')).toBeLessThan(
+      submit.indexOf('ensureSuggestionSkillReady()'),
+    );
+    expect(submit.indexOf('ensureSuggestionSkillReady()')).toBeLessThan(
+      submit.indexOf('createRealProject(v, submission)'),
+    );
     const create = functionBody(studio, 'createRealProject', 'currentTemplateRoute');
     expect(create).toContain('extras.skillId = state.selSkill.id');
   });

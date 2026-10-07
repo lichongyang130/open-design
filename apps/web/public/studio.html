@@ -2948,7 +2948,7 @@
     tileBatch: 0,
     tileBatchRole: null,
     suggestionSkillToken: 0,
-    gen: { pid: null, name: "", events: [], status: "idle", runId: 0, timers: [], mod: {}, offline: false, welcome: false, abort: null, mediaTaskId: null },
+    gen: { pid: null, name: "", events: [], status: "idle", runId: 0, timers: [], mod: {}, offline: false, welcome: false, abort: null, mediaTaskId: null, creating: false, createAbort: null, createToken: 0, pendingPrompt: "", createFailed: false },
     bnFilter: 0,
     realBrain: null,
     genMode: "landing",
@@ -3213,24 +3213,42 @@
     var v = $("prompt").value.trim();
     if (!v) { $("prompt").focus(); return; }
     var btn = $("send");
-    if (btn.classList.contains("loading")) return;
-    btn.classList.add("loading");
+    if (btn.disabled) return;
+    var submission = prepareGenerationSubmission(v);
     btn.disabled = true;
     btn.setAttribute("aria-busy", "true");
-    ensureSuggestionSkillReady().then(function (skillReady) {
-      if (!skillReady) {
-        toast(t("examplesSkillUnavailable"));
-        return false;
-      }
-      return ensureGenerationModelReady().then(function (ready) {
-        if (!ready) return false;
-        return createRealProject(v);
+    beginPendingGeneration(submission, v)
+      .then(function (entered) {
+        if (!entered) return false;
+        return ensureSuggestionSkillReady();
+      })
+      .then(function (skillReady) {
+        if (!skillReady) {
+          if (pendingGenerationIsCurrent(submission)) {
+            toast(t("examplesSkillUnavailable"));
+            cancelPendingGeneration(true);
+          }
+          return false;
+        }
+        return ensureGenerationModelReady();
+      })
+      .then(function (ready) {
+        if (!ready) {
+          if (pendingGenerationIsCurrent(submission)) cancelPendingGeneration(true);
+          return false;
+        }
+        return createRealProject(v, submission);
+      })
+      .catch(function (error) {
+        if (error && error.name === "AbortError") return;
+        var message = cleanErrorMessage(error);
+        if (pendingGenerationIsCurrent(submission)) failPendingGeneration(submission, message);
+        toast(t("projectCreateFailed").replace("{message}", message));
+      })
+      .finally(function () {
+        btn.disabled = false;
+        btn.removeAttribute("aria-busy");
       });
-    }).finally(function () {
-      btn.classList.remove("loading");
-      btn.disabled = false;
-      btn.removeAttribute("aria-busy");
-    });
   }
   /* ── AI 生成过程视图 ─────────────────────────────
      左：对话（发需求 → 引擎分步生成 → 继续修改丰富）
@@ -3767,11 +3785,11 @@
 
   async function startGenTurn(prompt) {
     var requestPrompt = String(prompt || "").trim();
-    if (!state.gen.pid || !requestPrompt || state.gen.status === "run") return;
+    if (!state.gen.pid || !requestPrompt || state.gen.status === "run" || state.gen.createFailed) return;
     var modelEntry = reconcileSelectedModel(false);
     if (!await ensureGenerationModelReady(modelEntry)) return;
     modelEntry = reconcileSelectedModel(false);
-    if (!modelEntry || state.gen.status === "run") return;
+    if (!modelEntry || state.gen.status === "run" || state.gen.createFailed) return;
     if (state.gen.abort) state.gen.abort.abort();
     var controller = new AbortController();
     state.gen.abort = controller;
@@ -3835,6 +3853,11 @@
   }
 
   function stopGen() {
+    if (state.gen.creating) {
+      cancelPendingGeneration(true);
+      toast(t("genToastStop"));
+      return;
+    }
     if (state.gen.status !== "run") return;
     if (state.gen.abort) state.gen.abort.abort();
     state.gen.abort = null;
@@ -3953,6 +3976,8 @@
       badge.innerHTML = (running ? "<i></i>" : "") + t(statusKey);
     } else badge.hidden = true;
     $("genStop").hidden = !running;
+    $("genPrompt").disabled = state.gen.creating === true || state.gen.createFailed === true;
+    $("genSend").disabled = state.gen.creating === true || state.gen.createFailed === true;
     renderGenSug();
     renderGenFiles();
     renderGenQuota();
@@ -4143,6 +4168,10 @@
       b.type = "button";
       b.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' + d.d + '"/></svg><span>' + t(d.k) + "</span>";
       b.setAttribute("data-workbench-action", d.id);
+      b.disabled = state.gen.creating === true || state.gen.createFailed === true;
+      if (b.disabled) b.title = state.gen.createFailed
+        ? (state.lang === "zh" ? "项目创建失败，请返回后重试" : "Project creation failed. Go back and retry")
+        : (state.lang === "zh" ? "项目创建后即可使用" : "Available as soon as the project is created");
       b.addEventListener("click", function () {
         if (window.StudioWorkbench && typeof window.StudioWorkbench.open === "function") {
           window.StudioWorkbench.open(d.id);
@@ -4156,6 +4185,7 @@
 
   /* ── 进入生成视图 ── */
   async function openGen(project, seedPrompt, seedContexts) {
+    if (state.gen.creating || state.gen.createFailed) cancelPendingGeneration(false);
     if (window.StudioWorkbench && typeof window.StudioWorkbench.beforeProjectChange === "function") {
       var canChangeProject = await window.StudioWorkbench.beforeProjectChange();
       if (canChangeProject === false) return;
@@ -4167,6 +4197,7 @@
     state.gen.name = project.t || project.name || "";
     state.gen.events = [];
     state.gen.status = "idle";
+    state.gen.createFailed = false;
     state.gen.mod = {};
     state.gen.offline = false;
     state.gen.runId++;
@@ -4218,6 +4249,10 @@
 
   /* 生成视图事件绑定 */
   $("genBack").addEventListener("click", async function () {
+    if (state.gen.creating || state.gen.createFailed) {
+      cancelPendingGeneration(true);
+      return;
+    }
     if (window.StudioWorkbench && typeof window.StudioWorkbench.beforeProjectChange === "function") {
       var canLeaveProject = await window.StudioWorkbench.beforeProjectChange();
       if (canLeaveProject === false) return;
@@ -4351,7 +4386,7 @@
     return contexts;
   }
 
-  function createRealProject(prompt) {
+  function prepareGenerationSubmission(prompt) {
     var name = prompt.slice(0, 18) + (prompt.length > 18 ? "…" : "");
     var composerSnapshot = composerSubmissionSnapshot();
     var id = "db-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 6);
@@ -4370,11 +4405,147 @@
     if (composerSnapshot.connectorIds.length) base.metadata.connectorIds = composerSnapshot.connectorIds;
     if (composerSnapshot.mcpServerIds.length) base.metadata.mcpServerIds = composerSnapshot.mcpServerIds;
     if (!/https?:\/\//i.test(prompt)) base.pendingPrompt = prompt;
+    return {
+      id: id,
+      name: name,
+      selectedModeId: selectedMode ? selectedMode.id : null,
+      composerSnapshot: composerSnapshot,
+      base: base,
+      token: 0
+    };
+  }
+
+  async function beginPendingGeneration(submission, prompt) {
+    var token = ++state.gen.createToken;
+    submission.token = token;
+    if (state.gen.createAbort) state.gen.createAbort.abort();
+    state.gen.createAbort = null;
+    if (window.StudioWorkbench && typeof window.StudioWorkbench.beforeProjectChange === "function") {
+      var canChangeProject = await window.StudioWorkbench.beforeProjectChange();
+      if (canChangeProject === false || token !== state.gen.createToken) return false;
+    }
+    if (token !== state.gen.createToken) return false;
+    if (state.gen.abort) state.gen.abort.abort();
+    state.gen.abort = null;
+    state.gen.mediaTaskId = null;
+    state.gen.runId++;
+    genClearTimers();
+    var controller = new AbortController();
+    state.gen.createAbort = controller;
+    state.gen.creating = true;
+    state.gen.createFailed = false;
+    state.gen.pendingPrompt = prompt;
+    state.gen.pid = submission.id;
+    state.gen.name = submission.name;
+    state.gen.events = [];
+    state.gen.status = "run";
+    state.gen.mod = {};
+    state.gen.offline = false;
+    state.gen.welcome = false;
+    genPersistChain = Promise.resolve();
+    var modelEntry = reconcileSelectedModel(false);
+    var model = modelEntry ? modelEntry.model : "";
+    var kind = modeKind(submission.selectedModeId) || genKindOf(prompt + " " + submission.name);
+    var now = Date.now();
+    state.gen.events.push(
+      { type: "user", payload: { text: prompt, model: model, surface: modelEntry ? modelEntry.surface : "text" }, at: now },
+      { type: "ai", payload: { text: t("genAiIntro1").replace("{prompt}", generationPromptLabel(prompt)), model: model }, at: now },
+      { type: "step", payload: { text: t("genStepAnalyze").replace("{kind}", t(GEN_KIND_KEY[kind] || "gkPage")) }, at: now }
+    );
+    $("genName").textContent = submission.name || "…";
+    go("gen");
+    renderGenShell();
+    renderGen();
+    return true;
+  }
+
+  function pendingGenerationIsCurrent(submission) {
+    return !!submission && state.gen.creating === true && submission.token === state.gen.createToken;
+  }
+
+  function cancelPendingGeneration(returnHome) {
+    if (!state.gen.creating && !state.gen.createFailed) return false;
+    if (state.gen.createAbort) state.gen.createAbort.abort();
+    state.gen.createAbort = null;
+    state.gen.createToken++;
+    state.gen.creating = false;
+    state.gen.createFailed = false;
+    state.gen.pendingPrompt = "";
+    state.gen.pid = null;
+    state.gen.name = "";
+    state.gen.events = [];
+    state.gen.status = "idle";
+    state.gen.welcome = false;
+    state.gen.runId++;
+    genClearTimers();
+    if (returnHome) {
+      go("home");
+      requestAnimationFrame(function () { $("prompt").focus(); });
+    }
+    return true;
+  }
+
+  function failPendingGeneration(submission, message) {
+    if (!pendingGenerationIsCurrent(submission)) return false;
+    if (state.gen.createAbort) state.gen.createAbort.abort();
+    state.gen.createAbort = null;
+    state.gen.createToken++;
+    state.gen.creating = false;
+    state.gen.createFailed = true;
+    state.gen.status = "stop";
+    var cleanMessage = cleanErrorMessage(message);
+    state.gen.events.push(
+      {
+        type: "ai",
+        payload: {
+          text: t("genToastError").replace("{message}", cleanMessage),
+          message: cleanMessage,
+          error: true
+        },
+        at: Date.now()
+      },
+      { type: "stop", payload: { reason: "error", message: cleanMessage }, at: Date.now() }
+    );
+    renderGenShell();
+    renderGen();
+    return true;
+  }
+
+  function activatePendingGeneration(submission, project, prompt, contexts) {
+    if (!pendingGenerationIsCurrent(submission)) return false;
+    state.gen.createAbort = null;
+    state.gen.creating = false;
+    state.gen.createFailed = false;
+    state.gen.pendingPrompt = "";
+    state.gen.pid = project.id;
+    state.gen.name = project.name || submission.name;
+    state.gen.events = [];
+    state.gen.status = "idle";
+    state.gen.welcome = false;
+    state.gen.offline = false;
+    state.gen.mod = {};
+    genPersistChain = Promise.resolve();
+    $("genName").textContent = state.gen.name || "…";
+    if (window.StudioWorkbench && typeof window.StudioWorkbench.onProjectOpen === "function") {
+      window.StudioWorkbench.onProjectOpen(state.gen.pid, state.gen.name);
+    }
+    if (Array.isArray(contexts) && window.StudioWorkbench && typeof window.StudioWorkbench.addContext === "function") {
+      contexts.forEach(function (context) { window.StudioWorkbench.addContext(context); });
+    }
+    renderGenShell();
+    void startGenTurn(prompt);
+    return true;
+  }
+
+  function createRealProject(prompt, submission) {
+    var base = submission.base;
     var extras = {};
     if (state.selDS) extras.designSystemId = state.selDS.id;
     if (state.selSkill && !state.selSkill.pending) extras.skillId = state.selSkill.id;
     if (state.selPlugin) { extras.pluginId = state.selPlugin.id; extras.pluginSource = state.selPlugin.source; }
-    var attempt = function (body) { return apiSend("/api/projects", "POST", body); };
+    var attempt = function (body) {
+      return apiSend("/api/projects", "POST", body, { signal: state.gen.createAbort && state.gen.createAbort.signal });
+    };
     var withExtras = Object.keys(extras).length > 0;
     return attempt(withExtras ? Object.assign({}, base, extras) : base)
       .catch(function (err) {
@@ -4382,22 +4553,27 @@
         // validation response—not a network/server failure that may have
         // committed already—so a single click cannot create duplicates.
         var validationFailure = err && (err.status === 400 || err.status === 422);
-        return withExtras && validationFailure ? attempt(base) : Promise.reject(err);
+        return pendingGenerationIsCurrent(submission) && withExtras && validationFailure ? attempt(base) : Promise.reject(err);
       })
       .then(async function (r) {
-        toast(t("toastCreated").replace("{name}", name));
+        if (!pendingGenerationIsCurrent(submission)) return null;
+        var proj = r && r.project;
+        var projectId = (proj && proj.id) || submission.id;
+        var projectName = (proj && proj.name) || submission.name;
+        toast(t("toastCreated").replace("{name}", projectName));
         loadProjects();
         showBubble(0);
-        var proj = r && r.project;
-        var projectId = (proj && proj.id) || id;
-        var contexts = await materializeComposerResources(projectId, composerSnapshot);
-        resetSubmittedComposerResources(composerSnapshot);
-        return openGen({ id: projectId, t: (proj && proj.name) || name }, prompt, contexts);
+        var contexts = await materializeComposerResources(projectId, submission.composerSnapshot);
+        resetSubmittedComposerResources(submission.composerSnapshot);
+        if (!pendingGenerationIsCurrent(submission)) return null;
+        activatePendingGeneration(submission, { id: projectId, name: projectName }, prompt, contexts);
+        return r;
       })
       .catch(function (error) {
+        if ((error && error.name === "AbortError") || !pendingGenerationIsCurrent(submission)) return null;
         var message = cleanErrorMessage(error && error.message ? error.message : error);
+        failPendingGeneration(submission, message);
         toast(t("projectCreateFailed").replace("{message}", message));
-        $("prompt").focus();
         return null;
       });
   }
@@ -4432,6 +4608,7 @@
   }
   function applyView() {
     var v = currentView();
+    if ((state.gen.creating || state.gen.createFailed) && v !== "gen") cancelPendingGeneration(false);
     var views = document.querySelectorAll(".view");
     for (var i = 0; i < views.length; i++) views[i].classList.toggle("on", views[i].id === "view-" + v);
     var inner = document.querySelector(".main-inner");
