@@ -288,19 +288,24 @@
   .gen-actions button svg { color: var(--faint); }
   .gen-modal { position: fixed; inset: 0; background: rgba(14,18,15,0.52); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 80; padding: 26px; }
   .gen-modal[hidden] { display: none; }
-  .gm-box { background: #fff; border-radius: 18px; width: min(1120px, 94vw); height: min(780px, 88dvh); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 30px 80px rgba(10,18,11,0.35); }
+  .gm-box { background: #fff; border-radius: 18px; width: min(1280px, 96vw); height: min(900px, 92dvh); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 30px 80px rgba(10,18,11,0.35); }
   .gm-bar { display: flex; gap: 10px; align-items: center; padding: 12px 16px; border-bottom: 1px solid #eef0f1; }
   .gm-bar b { flex: 1; min-width: 0; font-size: 14px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gm-scroll-tip { flex: none; display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 6px 10px; background: #edf7e8; color: #3e7e2b; font-size: 10.5px; font-weight: 800; letter-spacing: .01em; }
   .gm-act { flex: none; font: 700 12.5px/1 inherit; padding: 9px 14px; border-radius: 10px; border: 0; background: var(--ink); color: #f4f8f0; cursor: pointer; }
   .gm-act:hover { opacity: 0.88; }
   .gm-act.ghost { background: #f1f3f2; color: var(--ink); }
-  .gm-frame { flex: 1; min-height: 0; display: grid; place-items: center; background: #f7f8f6; }
-  .gm-frame iframe { width: 100%; height: 100%; border: 0; background: #fff; }
+  .gm-frame { flex: 1; min-height: 0; display: grid; place-items: center; background: #f7f8f6; position: relative; }
+  .gm-frame iframe { width: 100%; height: 100%; border: 0; background: #fff; overscroll-behavior: contain; }
   .gm-frame img, .gm-frame video { width: 100%; height: 100%; display: block; object-fit: contain; background: #101411; }
   .gm-frame video { padding: 12px; }
   @media (max-width: 980px) {
     .gen-wrap { grid-template-columns: 1fr; height: auto; }
     .gen-left { height: 72dvh; border-right: 0; border-bottom: 1px solid #e2e5e7; }
+    .gm-scroll-tip { display: none; }
+    .gm-box { width: 98vw; height: 94dvh; }
+    .gm-bar { gap: 6px; padding: 9px; }
+    .gm-act { padding: 8px 10px; font-size: 11px; }
   }
   .pk-panel { position: fixed; width: 420px; max-width: calc(100vw - 32px); background: #ffffff; border: 1px solid rgba(32,38,30,0.16); border-radius: 16px; box-shadow: 0 24px 64px rgba(20,26,18,0.24), 0 4px 16px rgba(20,26,18,0.10); display: none; z-index: 300; overflow: hidden; }
   .pk-panel.show { display: flex; flex-direction: column; animation: popUp 0.16s ease both; }
@@ -454,15 +459,22 @@
   .pill.on { background: var(--ink); color: #f4f8f0; border-color: transparent; box-shadow: 0 8px 18px rgba(32,38,30,0.22); }
   .pill .n { opacity: 0.55; margin-left: 5px; font-size: 11px; }
 
-  .proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
-  .pcard { border-radius: 20px; overflow: hidden; background: var(--glass); border: 1px solid var(--glass-border); backdrop-filter: blur(18px); box-shadow: 0 10px 26px rgba(58,70,52,0.08); cursor: pointer; transition: transform 0.18s, box-shadow 0.2s; }
-  .pcard:hover { transform: translateY(-3px); box-shadow: 0 18px 40px rgba(58,70,52,0.14); }
+  .proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(268px, 1fr)); gap: 18px; }
+  .pcard { border-radius: 20px; overflow: hidden; background: var(--glass); border: 1px solid var(--glass-border); backdrop-filter: blur(18px); box-shadow: 0 10px 26px rgba(58,70,52,0.08); cursor: pointer; transition: transform 0.18s, box-shadow 0.2s, border-color .2s; content-visibility: auto; contain-intrinsic-size: 310px; }
+  .pcard:hover { transform: translateY(-4px); border-color: rgba(82,128,68,.22); box-shadow: 0 22px 46px rgba(43,58,39,0.16); }
   .pcard:focus-visible { outline: 3px solid rgba(92,184,50,0.34); outline-offset: 3px; }
-  .pcard .thumb { height: 128px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+  .pcard .thumb { height: 174px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; background: #e9eee8; }
   .pcard .thumb svg { filter: drop-shadow(0 6px 14px rgba(30,40,26,0.25)); }
-  .pcard .thumb.real { align-items: stretch; justify-content: stretch; background: #f5f5ef; }
-  .pcard .thumb.real iframe { width: 400%; height: 400%; transform: scale(0.25); transform-origin: 0 0; border: 0; pointer-events: none; background: #f5f5ef; }
-  .pcard .preview-ver { position: absolute; right: 9px; top: 9px; z-index: 2; padding: 4px 8px; border-radius: 999px; background: rgba(18,27,21,0.78); color: #fff; font-size: 9.5px; font-weight: 800; backdrop-filter: blur(8px); }
+  .pcard .thumb.real { align-items: stretch; justify-content: stretch; background: #f5f5ef; isolation: isolate; }
+  .pcard .thumb.real iframe { width: 500%; height: 500%; transform: scale(0.2); transform-origin: 0 0; border: 0; pointer-events: none; background: #f5f5ef; position: relative; z-index: 0; }
+  .pcard .thumb.real::after { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg,rgba(10,16,12,.08),transparent 34%,rgba(8,13,10,.28)); pointer-events: none; }
+  .project-thumb-bar { position: absolute; z-index: 3; left: 9px; right: 9px; top: 9px; height: 22px; border: 1px solid rgba(255,255,255,.55); border-radius: 8px; background: rgba(248,249,246,.82); backdrop-filter: blur(10px); display: flex; align-items: center; gap: 4px; padding: 0 7px; color: #58625b; font-size: 8px; font-weight: 800; box-shadow: 0 4px 14px rgba(17,27,20,.09); }
+  .project-thumb-bar i { width: 4px; height: 4px; border-radius: 50%; background: #99a29b; }
+  .project-thumb-bar span { margin-left: 4px; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .project-thumb-open { position: absolute; z-index: 3; right: 10px; bottom: 10px; padding: 7px 10px; border-radius: 9px; background: rgba(18,27,21,.88); color: #fff; font-size: 9.5px; font-weight: 800; backdrop-filter: blur(10px); transform: translateY(7px); opacity: 0; transition: .18s; }
+  .pcard:hover .project-thumb-open { transform: translateY(0); opacity: 1; }
+  .project-thumb-mode { position: absolute; z-index: 3; left: 10px; bottom: 10px; padding: 5px 8px; border-radius: 999px; background: rgba(255,255,255,.84); color: #263229; font-size: 8.5px; font-weight: 900; letter-spacing: .04em; backdrop-filter: blur(10px); }
+  .pcard .preview-ver { position: absolute; right: 9px; top: 38px; z-index: 3; padding: 4px 8px; border-radius: 999px; background: rgba(18,27,21,0.78); color: #fff; font-size: 9.5px; font-weight: 800; backdrop-filter: blur(8px); }
   .pcard .body { padding: 13px 15px 14px; border-top: 1px solid var(--hairline); }
   .pcard-actions { display: flex; gap: 5px; margin: 10px -4px -5px; padding-top: 9px; border-top: 1px solid var(--hairline); }
   .pcard-actions button { border: 0; border-radius: 8px; background: transparent; color: var(--faint); padding: 5px 8px; font: 650 10px/1 inherit; cursor: pointer; }
@@ -1171,6 +1183,7 @@
             <div class="gm-box">
               <div class="gm-bar">
                 <b id="gmName">…</b>
+                <span class="gm-scroll-tip" id="gmScrollTip">↕ 上下滚动浏览 · 按钮可交互</span>
                 <button type="button" class="gm-act" id="gmNewTab" data-i18n="gNewTab">新窗口</button>
                 <button type="button" class="gm-act" id="gmCopy" data-i18n="gCopyHtml">复制 HTML</button>
                 <button type="button" class="gm-act ghost" id="gmClose" data-i18n="gClose">关闭</button>
@@ -2804,6 +2817,11 @@
     var fr = $("gmFrame");
     fr.innerHTML = "";
     var media = isMediaArtifact(a);
+    var scrollTip = $("gmScrollTip");
+    if (scrollTip) {
+      scrollTip.hidden = media;
+      scrollTip.textContent = state.lang === "zh" ? "↕ 上下滚动浏览 · 按钮可交互" : "↕ Scroll to explore · Buttons are interactive";
+    }
     $("gmCopy").textContent = t(media ? "gDownload" : "gCopyHtml");
     if (media) {
       var rawUrl = artifactRawUrl(a);
@@ -2822,9 +2840,12 @@
       }
     } else {
       var ifr = document.createElement("iframe");
-      ifr.setAttribute("title", a.name || "Agnes HTML preview");
-      ifr.setAttribute("sandbox", "");
+      ifr.setAttribute("title", a.name || "Interactive HTML preview");
+      /* Scripts execute in an opaque sandbox origin: project interactions work,
+         while the artifact still cannot access Studio cookies, storage or DOM. */
+      ifr.setAttribute("sandbox", "allow-scripts allow-forms");
       ifr.setAttribute("referrerpolicy", "no-referrer");
+      ifr.setAttribute("scrolling", "yes");
       ifr.setAttribute("srcdoc", typeof a.html === "string" ? a.html : "");
       fr.appendChild(ifr);
     }
@@ -2944,6 +2965,9 @@
   $("genPrompt").addEventListener("keydown", function (e) {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") $("genSend").click();
   });
+  /* Keep the artifact viewer global so a project thumbnail can open its latest
+     commercial interface directly from the Projects grid. */
+  if ($("genModal") && $("genModal").parentNode !== document.body) document.body.appendChild($("genModal"));
   $("gmClose").addEventListener("click", closeGenPreview);
   $("genModal").addEventListener("click", function (e) { if (e.target === this) closeGenPreview(); });
   $("gmCopy").addEventListener("click", function () {
@@ -3540,7 +3564,10 @@
 
     var title = $("pjTitle") || document.querySelector("#view-projects h1");
     if (title) title.textContent = cfg.title;
-    $("pjSub").textContent = cfg.sub + (real.length ? "  " + d.pjLive : "");
+    var projectCountNote = state.role === "designer" && data.length
+      ? (state.lang === "zh" ? " · " + data.length + " 个商业项目 · 点击缩略图打开互动预览" : " · " + data.length + " commercial projects · Click a thumbnail for live preview")
+      : "";
+    $("pjSub").textContent = cfg.sub + projectCountNote + (real.length ? "  " + d.pjLive : "");
     $("pjSearch").setAttribute("placeholder", cfg.search);
     var newLabel = $("pjNew").querySelector("span");
     if (newLabel) newLabel.textContent = cfg.newLabel;
@@ -3596,6 +3623,7 @@
       if (p.previewHtml) {
         thumb.classList.add("real");
         thumb.style.background = "#f5f5ef";
+        thumb.title = state.lang === "zh" ? "打开可滚动互动预览" : "Open scrollable interactive preview";
         var frame = document.createElement("iframe");
         frame.setAttribute("sandbox", "");
         frame.setAttribute("aria-hidden", "true");
@@ -3603,6 +3631,18 @@
         frame.loading = "lazy";
         frame.srcdoc = p.previewHtml;
         thumb.appendChild(frame);
+        var chrome = document.createElement("span");
+        chrome.className = "project-thumb-bar";
+        chrome.innerHTML = "<i></i><i></i><i></i><span>preview / " + esc((p.starterKey || p.id || "project").replace(/^designer\./, "")) + "</span>";
+        thumb.appendChild(chrome);
+        var modeBadge = document.createElement("span");
+        modeBadge.className = "project-thumb-mode";
+        modeBadge.textContent = p.k;
+        thumb.appendChild(modeBadge);
+        var openBadge = document.createElement("span");
+        openBadge.className = "project-thumb-open";
+        openBadge.textContent = state.lang === "zh" ? "互动预览 ↗" : "Live preview ↗";
+        thumb.appendChild(openBadge);
         var ver = document.createElement("span");
         ver.className = "preview-ver";
         ver.textContent = "v" + (p.version || 1);
@@ -3628,6 +3668,16 @@
           e.stopPropagation();
           if (action.getAttribute("data-project-action") === "rename") renameRealProject(p);
           else deleteRealProject(p);
+          return;
+        }
+        if (p.previewHtml && e.target.closest && e.target.closest(".thumb")) {
+          openGenPreview({
+            name: p.t,
+            version: p.version || 1,
+            kind: p.kind || p.mode,
+            html: p.previewHtml,
+            interactive: p.source === "starter-project"
+          });
           return;
         }
         activate();

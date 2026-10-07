@@ -7,6 +7,10 @@
 
 import type Database from 'better-sqlite3';
 import { randomUUID } from 'node:crypto';
+import {
+  DESIGNER_COMMERCIAL_STARTERS,
+  enhanceLegacyStarterHtml,
+} from './designbuddy-commercial-projects.js';
 
 type SqliteDb = Database.Database;
 type DbRow = Record<string, any>;
@@ -85,7 +89,7 @@ export interface DesignBuddyStarterStatus {
   createdProjectIds: string[];
 }
 
-const DESIGNER_STARTER_VERSION = 1;
+const DESIGNER_STARTER_VERSION = 2;
 const DESIGNER_STARTER_PREF = 'starter-projects:designer';
 
 interface DesignerStarterBlueprint {
@@ -94,6 +98,7 @@ interface DesignerStarterBlueprint {
   mode: 'landing' | 'app' | 'deck' | 'poster' | 'dashboard' | 'design-system';
   prompt: string;
   html: string;
+  interactive?: boolean;
 }
 
 const STARTER_BASE_CSS = `
@@ -110,7 +115,7 @@ function starterDocument(title: string, body: string, extraCss = ''): string {
   return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><style>${STARTER_BASE_CSS}${extraCss}</style></head><body>${body}</body></html>`;
 }
 
-const DESIGNER_STARTERS: DesignerStarterBlueprint[] = [
+const LEGACY_DESIGNER_STARTERS: DesignerStarterBlueprint[] = [
   {
     key: 'designer.brand-site',
     name: '品牌官网改版',
@@ -180,6 +185,11 @@ const DESIGNER_STARTERS: DesignerStarterBlueprint[] = [
       `.ds{padding:75px 0}.intro{max-width:760px;margin-bottom:90px}.intro h1{font-size:clamp(48px,7vw,88px);line-height:1;letter-spacing:-.06em;margin:20px 0}.intro p{max-width:620px;color:#68736c;font-size:17px}.block{border-top:1px solid #dce3da;padding:35px 0 60px;display:grid;grid-template-columns:280px 1fr;gap:6vw}.block-head>span{font-size:11px;color:#59953f}.block-head h2{font-size:30px;margin:10px 0}.block-head p{font-size:13px;color:#68736c}.swatches{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}.swatches article i{display:block;height:150px;border-radius:16px;background:var(--c);margin-bottom:10px}.swatches b,.swatches small{display:block;font-size:11px}.swatches small{color:#7b867e}.type>div:last-child h2{font-size:48px;letter-spacing:-.045em;margin:0 0 30px}.type>div:last-child h3{font-size:28px;margin:0 0 24px}.type>div:last-child p{font-size:16px}.type>div:last-child small{color:#7a857d}.components{padding:28px;display:grid;grid-template-columns:1.2fr 1fr .8fr;gap:28px;box-shadow:none}.components>div>small{font-size:9px;letter-spacing:.12em;color:#79837c}.components input{display:block;width:100%;border:1px solid #d7ded5;border-radius:10px;padding:11px;margin-top:7px;font:13px inherit}.components label{font-size:11px;font-weight:700}.badge{display:inline-flex;padding:6px 9px;border-radius:99px;font-size:10px;margin:3px}.good{background:#e3f7d8;color:#477c32}.warn{background:#fff0d6;color:#8b641c}.neutral{background:#ecefeb;color:#637068}@media(max-width:800px){.block{grid-template-columns:1fr}.swatches article i{height:90px}.components{grid-template-columns:1fr}}`,
     ),
   },
+];
+
+const DESIGNER_STARTERS: DesignerStarterBlueprint[] = [
+  ...LEGACY_DESIGNER_STARTERS,
+  ...DESIGNER_COMMERCIAL_STARTERS,
 ];
 
 const SEED_REVIEWS: Array<{ title: string; author: string; status: DesignBuddyReviewStatus; ageHours: number }> = [
@@ -270,22 +280,27 @@ export function setDesignBuddyRole(db: SqliteDb, role: DesignBuddyRole): DesignB
 function parseStarterPreference(value: unknown): {
   version: number;
   projectIds: string[];
+  starterKeys: string[];
 } {
-  if (typeof value !== 'string' || !value) return { version: 0, projectIds: [] };
+  if (typeof value !== 'string' || !value) return { version: 0, projectIds: [], starterKeys: [] };
   try {
     const parsed = JSON.parse(value) as {
       version?: unknown;
       projectIds?: unknown;
+      starterKeys?: unknown;
     };
     return {
       version: Number.isFinite(Number(parsed.version)) ? Number(parsed.version) : 0,
       projectIds: Array.isArray(parsed.projectIds)
         ? parsed.projectIds.filter((id): id is string => typeof id === 'string' && id.length > 0)
         : [],
+      starterKeys: Array.isArray(parsed.starterKeys)
+        ? parsed.starterKeys.filter((key): key is string => typeof key === 'string' && key.length > 0)
+        : [],
     };
   } catch {
     const version = Number(value);
-    return { version: Number.isFinite(version) ? version : 0, projectIds: [] };
+    return { version: Number.isFinite(version) ? version : 0, projectIds: [], starterKeys: [] };
   }
 }
 
@@ -313,18 +328,47 @@ export function readDesignBuddyStarterStatus(db: SqliteDb, role: DesignBuddyRole
 }
 
 /**
- * Materialize the six Designer starter cards as real project rows plus a
- * replayable v1 generation event stream. The preference marker is written in
- * the same transaction, so retries are idempotent. Once initialized, deleting
- * a starter project is respected: the marker remains and the project is never
- * silently recreated.
+ * Materialize the Designer showcase as persisted projects with replayable v1
+ * artifacts. Version 2 keeps the original six projects and adds fifty
+ * commercial, scrollable, interactive product experiences. Upgrades are
+ * idempotent per starter key, so an existing or intentionally deleted v1
+ * project is never duplicated or silently resurrected.
  */
 export function initializeDesignBuddyStarterProjects(db: SqliteDb, role: DesignBuddyRole): DesignBuddyStarterStatus {
   const current = readDesignBuddyStarterStatus(db, role);
   if (role !== 'designer' || current.initialized) return current;
 
+  const preferenceRow = db.prepare(`SELECT value FROM designbuddy_prefs WHERE key = ?`).get(DESIGNER_STARTER_PREF) as
+    | DbRow
+    | undefined;
+  const preference = parseStarterPreference(preferenceRow?.value);
+  const existingStarterByKey = new Map<string, { id: string; metadata: Record<string, any> }>();
+  const existingRows = db
+    .prepare(`SELECT id, metadata_json AS metadataJson FROM projects`)
+    .all() as Array<{ id: string; metadataJson: string | null }>;
+  for (const row of existingRows) {
+    try {
+      const metadata = JSON.parse(row.metadataJson || '{}') as Record<string, any>;
+      if (metadata.source === 'starter-project' && typeof metadata.starterKey === 'string') {
+        existingStarterByKey.set(metadata.starterKey, { id: row.id, metadata });
+      }
+    } catch {
+      // User projects may contain legacy or malformed metadata. They are never
+      // considered starter rows and must remain untouched by this migration.
+    }
+  }
+
+  const completedKeys = new Set(preference.starterKeys);
+  if (preference.version >= 1) {
+    LEGACY_DESIGNER_STARTERS.forEach((starter) => completedKeys.add(starter.key));
+  }
+  existingStarterByKey.forEach((_row, key) => completedKeys.add(key));
+
   const createdProjectIds: string[] = [];
-  const projectIds: string[] = [];
+  const projectIds = Array.from(new Set([
+    ...preference.projectIds,
+    ...Array.from(existingStarterByKey.values()).map((row) => row.id),
+  ]));
   const now = Date.now();
   const insertProject = db.prepare(
     `INSERT INTO projects
@@ -335,13 +379,47 @@ export function initializeDesignBuddyStarterProjects(db: SqliteDb, role: DesignB
     `INSERT INTO designbuddy_gen (id, project_id, seq, type, payload, created_at)
      VALUES (?, ?, ?, ?, ?, ?)`,
   );
+  const selectArtifactEvents = db.prepare(
+    `SELECT id, payload FROM designbuddy_gen WHERE project_id = ? AND type = 'artifact' ORDER BY seq ASC`,
+  );
+  const updateArtifactEvent = db.prepare(`UPDATE designbuddy_gen SET payload = ? WHERE id = ?`);
   const writePreference = db.prepare(
     `INSERT INTO designbuddy_prefs (key, value, updated_at) VALUES (?, ?, ?)
      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
   );
 
   db.transaction(() => {
+    // Existing v1 starters already live in user databases. Enrich their first
+    // artifact in place so their original buttons now provide visible feedback
+    // without changing later user-generated versions.
+    for (const starter of LEGACY_DESIGNER_STARTERS) {
+      const existing = existingStarterByKey.get(starter.key);
+      if (!existing) continue;
+      const rows = selectArtifactEvents.all(existing.id) as Array<{ id: string; payload: string }>;
+      for (const row of rows) {
+        try {
+          const payload = JSON.parse(row.payload) as Record<string, any>;
+          if (Number(payload.version) !== 1) continue;
+          updateArtifactEvent.run(
+            JSON.stringify({
+              ...payload,
+              name: starter.name,
+              kind: starter.mode,
+              html: enhanceLegacyStarterHtml(starter.html, starter.name),
+              interactive: true,
+            }),
+            row.id,
+          );
+          break;
+        } catch {
+          // Leave an unreadable historical event untouched; the remaining
+          // migration can still add the new commercial showcase safely.
+        }
+      }
+    }
+
     DESIGNER_STARTERS.forEach((starter, index) => {
+      if (completedKeys.has(starter.key)) return;
       const projectId = `db-starter-${randomUUID()}`;
       const projectAt = now - (DESIGNER_STARTERS.length - index - 1) * 3_600_000 - 10_000;
       const metadata = {
@@ -351,6 +429,9 @@ export function initializeDesignBuddyStarterProjects(db: SqliteDb, role: DesignB
         starterKey: starter.key,
         starterVersion: DESIGNER_STARTER_VERSION,
       };
+      const artifactHtml = starter.interactive
+        ? starter.html
+        : enhanceLegacyStarterHtml(starter.html, starter.name);
       const eventSpecs: Array<{
         type: DesignBuddyGenEventType;
         payload: Record<string, any>;
@@ -359,17 +440,17 @@ export function initializeDesignBuddyStarterProjects(db: SqliteDb, role: DesignB
         {
           type: 'ai',
           payload: {
-            text: `收到，我会为「${starter.name}」建立清晰的内容结构与视觉方向。`,
+            text: `收到，我会为「${starter.name}」建立完整的商业内容结构与可交互体验。`,
           },
         },
-        { type: 'step', payload: { text: `分析需求：${starter.name}` } },
+        { type: 'step', payload: { text: `分析业务目标与用户路径：${starter.name}` } },
         {
           type: 'step',
-          payload: { text: '规划信息层级、关键组件与响应式布局' },
+          payload: { text: '搭建可上下滚动的商业页面、响应式模块与视觉层级' },
         },
         {
           type: 'step',
-          payload: { text: '应用 Aurora 视觉语言并完成界面检查' },
+          payload: { text: '连接按钮、标签、收藏、主题与表单反馈并完成检查' },
         },
         {
           type: 'artifact',
@@ -377,13 +458,14 @@ export function initializeDesignBuddyStarterProjects(db: SqliteDb, role: DesignB
             name: starter.name,
             version: 1,
             kind: starter.mode,
-            html: starter.html,
+            html: artifactHtml,
+            interactive: true,
           },
         },
         {
           type: 'ai',
           payload: {
-            text: '第一版已经完成。你可以继续告诉我需要调整的内容，我会生成新的版本。',
+            text: '商业版界面已经完成。点开设计文件后可以上下滚动，并直接体验页面内的按钮与状态反馈。',
           },
         },
         { type: 'done', payload: { version: 1, kind: starter.mode } },
@@ -400,17 +482,26 @@ export function initializeDesignBuddyStarterProjects(db: SqliteDb, role: DesignB
           projectAt + (seqIndex + 1) * 1000,
         );
       });
+      completedKeys.add(starter.key);
       projectIds.push(projectId);
       createdProjectIds.push(projectId);
     });
-    writePreference.run(DESIGNER_STARTER_PREF, JSON.stringify({ version: DESIGNER_STARTER_VERSION, projectIds }), now);
+    writePreference.run(
+      DESIGNER_STARTER_PREF,
+      JSON.stringify({
+        version: DESIGNER_STARTER_VERSION,
+        projectIds: Array.from(new Set(projectIds)),
+        starterKeys: DESIGNER_STARTERS.map((starter) => starter.key),
+      }),
+      now,
+    );
   })();
 
   return {
     role,
     initialized: true,
     version: DESIGNER_STARTER_VERSION,
-    projectIds,
+    projectIds: Array.from(new Set(projectIds)),
     createdProjectIds,
   };
 }
