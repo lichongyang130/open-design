@@ -16,6 +16,10 @@ const previewScript = readFileSync(resolve(repoRoot, 'scripts/preview-studio.mjs
 const daemonChat = readFileSync(resolve(repoRoot, 'apps/daemon/src/routes/chat.ts'), 'utf8');
 const daemonConnectionTest = readFileSync(resolve(repoRoot, 'apps/daemon/src/connectionTest.ts'), 'utf8');
 const daemonDesignBuddy = readFileSync(resolve(repoRoot, 'apps/daemon/src/routes/designbuddy.ts'), 'utf8');
+const clientApp = readFileSync(
+  resolve(repoRoot, 'apps/web/app/[[...slug]]/client-app.tsx'),
+  'utf8',
+);
 const customModelDesign = readFileSync(
   resolve(repoRoot, 'apps/daemon/src/integrations/openai-compatible-design.ts'),
   'utf8',
@@ -32,6 +36,11 @@ function functionBody(source: string, name: string, nextName: string): string {
 }
 
 describe('DesignBuddy Studio reliability contracts', () => {
+  it('brands the transient app-loading shell as DesignBuddy', () => {
+    expect(clientApp).toContain('Loading DesignBuddy…');
+    expect(clientApp).not.toContain('Loading OpenDesign…');
+  });
+
   it('derives the Arena preview origin and health-gates both public services', () => {
     expect(rootPackage.scripts?.['preview-studio']).toBe(
       'node --env-file-if-exists=.env.local ./scripts/preview-studio.mjs',
