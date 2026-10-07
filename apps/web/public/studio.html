@@ -464,7 +464,7 @@
 
   /* Projects form a fluid portfolio wall: cards use the whole viewport while
      staying large enough for each real interface to remain legible. */
-  .proj-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(520px, 100%), 1fr)); gap: 18px; width: 100%; }
+  .proj-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; width: 100%; }
   .pcard { border-radius: 22px; overflow: hidden; background: var(--glass); border: 1px solid var(--glass-border); backdrop-filter: blur(18px); box-shadow: 0 12px 30px rgba(58,70,52,0.09); cursor: pointer; transition: transform 0.18s, box-shadow 0.2s, border-color .2s; content-visibility: auto; contain-intrinsic-size: 470px; }
   .pcard:hover { transform: translateY(-5px); border-color: rgba(82,128,68,.24); box-shadow: 0 26px 54px rgba(43,58,39,0.17); }
   .pcard:focus-visible { outline: 3px solid rgba(92,184,50,0.34); outline-offset: 3px; }

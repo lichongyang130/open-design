@@ -87,7 +87,7 @@ describe('DesignBuddy Studio reliability contracts', () => {
   it('lets the Projects gallery and live artifact thumbnails cover all available space', () => {
     expect(studio).toContain('.main.projects-wall { align-items: stretch; padding: 24px 24px 52px; }');
     expect(studio).toContain('.main-inner.project-wall { width: 100%; max-width: none; }');
-    expect(studio).toContain('repeat(auto-fit, minmax(min(520px, 100%), 1fr))');
+    expect(studio).toContain('grid-template-columns: repeat(3, minmax(0, 1fr))');
     expect(studio).toContain('aspect-ratio: 16 / 10; min-height: 280px');
     expect(studio).toContain('.pcard .thumb.real iframe { position: absolute; inset: 0;');
     const apply = functionBody(studio, 'applyView', 'closePicker');
