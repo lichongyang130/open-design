@@ -97,6 +97,25 @@ export const API_ERROR_CODES = [
   'ARTIFACT_PUBLICATION_BLOCKED',
   'UPSTREAM_UNAVAILABLE',
   'RATE_LIMITED',
+  // DesignBuddy custom-model generation and browser-fallback hardening. These
+  // remain provider-specific so clients can localize remediation without
+  // parsing daemon-authored English messages or exposing upstream responses.
+  'CUSTOM_MODEL_AUTH_FAILED',
+  'CUSTOM_MODEL_EMPTY_RESPONSE',
+  'CUSTOM_MODEL_FORBIDDEN',
+  'CUSTOM_MODEL_HTML_TOO_LARGE',
+  'CUSTOM_MODEL_INVALID_CONFIG',
+  'CUSTOM_MODEL_INVALID_HTML',
+  'CUSTOM_MODEL_INVALID_RESPONSE',
+  'CUSTOM_MODEL_NETWORK_ERROR',
+  'CUSTOM_MODEL_NOT_CONFIGURED',
+  'CUSTOM_MODEL_NOT_FOUND',
+  'CUSTOM_MODEL_PROTOCOL_UNSUPPORTED',
+  'CUSTOM_MODEL_RATE_LIMITED',
+  'CUSTOM_MODEL_RESPONSE_TOO_LARGE',
+  'CUSTOM_MODEL_TIMEOUT',
+  'CUSTOM_MODEL_UNAVAILABLE',
+  'CUSTOM_MODEL_UPSTREAM_ERROR',
   // PR #974 round-4: desktop-paired daemon received an import request
   // but the desktop main process has not yet registered its HMAC secret
   // over sidecar IPC (startup race or daemon-restart-mid-session). The

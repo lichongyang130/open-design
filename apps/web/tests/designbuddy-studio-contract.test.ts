@@ -15,6 +15,11 @@ const templateStyles = readFileSync(resolve(publicRoot, 'studio-templates.css'),
 const previewScript = readFileSync(resolve(repoRoot, 'scripts/preview-studio.mjs'), 'utf8');
 const daemonChat = readFileSync(resolve(repoRoot, 'apps/daemon/src/routes/chat.ts'), 'utf8');
 const daemonConnectionTest = readFileSync(resolve(repoRoot, 'apps/daemon/src/connectionTest.ts'), 'utf8');
+const daemonDesignBuddy = readFileSync(resolve(repoRoot, 'apps/daemon/src/routes/designbuddy.ts'), 'utf8');
+const customModelDesign = readFileSync(
+  resolve(repoRoot, 'apps/daemon/src/integrations/openai-compatible-design.ts'),
+  'utf8',
+);
 const rootPackage = JSON.parse(readFileSync(resolve(repoRoot, 'package.json'), 'utf8')) as {
   scripts?: Record<string, string>;
 };
@@ -58,12 +63,19 @@ describe('DesignBuddy Studio reliability contracts', () => {
     expect(role).toContain('button.disabled = false');
   });
 
-  it('blocks generation before project creation when Agnes is unavailable', () => {
+  it('validates the selected built-in or custom model before project creation', () => {
+    const readiness = functionBody(studio, 'ensureGenerationModelReady', 'submitPrompt');
+    expect(readiness).toContain('entry.provider === "custom"');
+    expect(readiness).toContain('!entry.linked');
+    expect(readiness).toContain('modelCustomRequired');
+    expect(readiness).toContain('modelCustomProtocolUnsupported');
+    expect(readiness).toContain('refreshAgnesConfig()');
+    expect(readiness).toContain('modelRequired');
+
     const submit = functionBody(studio, 'submitPrompt', 'esc');
-    expect(submit).toContain('refreshAgnesConfig()');
-    expect(submit).toContain('if (!configured)');
-    expect(submit).toContain('modelRequired');
-    expect(submit.indexOf('if (!configured)')).toBeLessThan(submit.indexOf('createRealProject(v)'));
+    expect(submit).toContain('ensureGenerationModelReady()');
+    expect(submit).toContain('if (!ready) return false');
+    expect(submit.indexOf('if (!ready)')).toBeLessThan(submit.indexOf('createRealProject(v)'));
     const create = functionBody(studio, 'createRealProject', 'currentTemplateRoute');
     expect(create).not.toContain('离线演示');
     expect(create).not.toContain('openGen({ id: id');
@@ -276,7 +288,7 @@ describe('DesignBuddy Studio reliability contracts', () => {
     const browserTest = functionBody(studio, 'testCustomModelInBrowser', 'setCustomModelTesting');
     expect(browserTest).toContain('mode: "cors"');
     expect(browserTest).toContain('"Authorization": "Bearer " + config.apiKey');
-    expect(browserTest).toContain('config.apiKey, "[REDACTED]"');
+    expect(browserTest).toContain('split(config.apiKey).join("[REDACTED]")');
     expect(browserTest).toContain('viaBrowser: true');
     expect(daemonChat).toContain("body.credentialSource === 'designbuddy_custom_model'");
     expect(daemonChat).toContain('process.env.OD_CUSTOM_MODEL_BASE_URL');
@@ -359,6 +371,135 @@ describe('DesignBuddy Studio reliability contracts', () => {
       retained: 'yes',
     });
     dom.window.close();
+  });
+
+  it('synchronizes collision-safe custom models across the home picker and General settings', () => {
+    const registryStart = studio.indexOf('var AGNES_MODEL_REGISTRY = [');
+    const registryEnd = studio.indexOf('function accountDefaults()', registryStart);
+    expect(registryStart).toBeGreaterThan(-1);
+    expect(registryEnd).toBeGreaterThan(registryStart);
+    const writes: Array<[string, string]> = [];
+    const contract = Function(
+      'localStorage',
+      `${studio.slice(registryStart, registryEnd)}
+       var state = {
+         model: "agnes-3.0-flash",
+         agnesConfigured: true,
+         account: { customModels: [
+           { id: "auto", model: "auto", protocol: "openai", linked: true },
+           { id: "agnes-3.0-flash", model: "agnes-3.0-flash", protocol: "openai", linked: true }
+         ] }
+       };
+       return { state, sharedModelRegistry, customModelSelectionId, modelEntryBySelectionId, reconcileSelectedModel };`,
+    )({
+      getItem: () => null,
+      setItem: (key: string, value: string) => writes.push([key, value]),
+    }) as {
+      state: { model: string; account: { customModels: Array<{ id: string; model: string }> } };
+      sharedModelRegistry: () => Array<{
+        selectionId: string;
+        model: string;
+        provider: string;
+        customIndex: number;
+      }>;
+      customModelSelectionId: (model: { id: string; model: string }) => string;
+      modelEntryBySelectionId: (selectionId: string) => { provider: string; model: string } | null;
+      reconcileSelectedModel: (persist: boolean) => { provider: string; model: string } | null;
+    };
+
+    const registry = contract.sharedModelRegistry();
+    expect(registry.map((entry) => entry.model)).toEqual([
+      'agnes-3.0-flash',
+      'agnes-image-2.5-flash',
+      'agnes-video-2.5-flash',
+      'auto',
+      'agnes-3.0-flash',
+    ]);
+    const customCollision = registry.find((entry) =>
+      entry.provider === 'custom' && entry.model === 'agnes-3.0-flash');
+    expect(customCollision?.selectionId).toMatch(/^custom:/);
+    expect(customCollision?.selectionId).not.toBe('agnes-3.0-flash');
+    expect(contract.modelEntryBySelectionId('agnes-3.0-flash')?.provider).toBe('agnes');
+    expect(contract.modelEntryBySelectionId(customCollision!.selectionId)?.provider).toBe('custom');
+
+    const autoSelection = contract.customModelSelectionId(contract.state.account.customModels[0]!);
+    contract.state.model = autoSelection;
+    expect(contract.reconcileSelectedModel(true)?.model).toBe('auto');
+    expect(writes.at(-1)).toEqual(['db-model', autoSelection]);
+    contract.state.account.customModels.splice(0, 1);
+    expect(contract.reconcileSelectedModel(true)?.model).toBe('agnes-3.0-flash');
+    expect(contract.state.model).toBe('agnes-3.0-flash');
+
+    const picker = functionBody(studio, 'renderModelPicker', 'refreshSynchronizedModelSurfaces');
+    expect(picker).toContain('sharedModelRegistry().forEach');
+    expect(picker).toContain('data-selection-id');
+    expect(picker).toContain('entry.name');
+    expect(picker).toContain('entry.linked');
+    const general = functionBody(studio, 'renderSettingsGeneral', 'renderSettingsProfile');
+    expect(general).toContain('sharedModelRegistry().map');
+    expect(general).toContain('entry.selectionId');
+    const save = functionBody(studio, 'saveCustomModel', 'renderSettingsModels');
+    expect(save).toContain('previousSelectionId');
+    expect(save).toContain('state.model = customModelSelectionId(saved)');
+    expect(save).toContain('refreshSynchronizedModelSurfaces()');
+    const models = functionBody(studio, 'renderSettingsModels', 'renderSettingsGeneral');
+    expect(models).toContain('refreshSynchronizedModelSurfaces()');
+  });
+
+  it('routes custom-model generation through a bounded daemon job with a secure browser fallback', () => {
+    const invoke = functionBody(studio, 'invokeCustomModelText', 'invokeAgnesMedia');
+    expect(invoke).toContain('/api/db/custom-model/generation-jobs');
+    expect(invoke).toContain('credentialSource: config.credentialSource === "server"');
+    expect(invoke).toContain('provider.apiKey = config.apiKey');
+    expect(invoke).toContain('snapshot.status === "succeeded"');
+    expect(invoke).toContain('method: "DELETE"');
+    expect(invoke).toContain('code === "CUSTOM_MODEL_NETWORK_ERROR"');
+    expect(invoke).toContain('code === "CUSTOM_MODEL_TIMEOUT"');
+    expect(invoke).toContain('config.apiKey && config.credentialSource !== "server"');
+    expect(invoke).toContain('invokeCustomModelInBrowser(prompt, kind, version, entry, signal)');
+    expect(invoke).toContain('"CUSTOM_MODEL_BROWSER_KEY_REQUIRED"');
+
+    const browserInvoke = functionBody(
+      studio,
+      'invokeCustomModelInBrowser',
+      'invokeCustomModelText',
+    );
+    expect(browserInvoke).toContain('mode: "cors"');
+    expect(browserInvoke).toContain('credentials: "omit"');
+    expect(browserInvoke).toContain('referrerPolicy: "no-referrer"');
+    expect(browserInvoke).toContain('"Authorization": "Bearer " + config.apiKey');
+    expect(browserInvoke).toContain('readCustomModelBrowserResponse(response, 1024 * 1024)');
+    expect(browserInvoke).toContain('/api/db/custom-model/constrain-html');
+    expect(browserInvoke).toContain('content.split(config.apiKey).join("[REDACTED]")');
+    expect(browserInvoke).not.toContain('html: content');
+
+    const turn = functionBody(studio, 'startGenTurn', 'stopGen');
+    expect(turn).toContain('modelEntry.provider === "custom"');
+    expect(turn).toContain('invokeCustomModelText(requestPrompt');
+    expect(turn).toContain('invokeAgnesText(requestPrompt');
+    expect(daemonDesignBuddy).toContain("app.post('/api/db/custom-model/generation-jobs'");
+    expect(daemonDesignBuddy).toContain("app.post('/api/db/custom-model/constrain-html'");
+    expect(daemonDesignBuddy).toContain('resolveCustomModelGenerationConfig');
+    expect(daemonDesignBuddy).toContain('generateOpenAiCompatibleDesign');
+    expect(daemonDesignBuddy).toContain('constrainOpenAiCompatibleDesignHtml(content)');
+    expect(daemonDesignBuddy).toContain('Buffer.byteLength(content, \'utf8\') > 1024 * 1024');
+    expect(daemonDesignBuddy).toContain('process.env.OD_CUSTOM_MODEL_API_KEY');
+    expect(customModelDesign).toContain('normalizeOpenAiCompatibleBaseUrl');
+    expect(customModelDesign).toContain('export function constrainOpenAiCompatibleDesignHtml');
+    expect(customModelDesign).toContain('CUSTOM_MODEL_AUTH_FAILED');
+    expect(customModelDesign).toContain('HTML_GATEWAY_RESPONSE_PATTERN');
+    expect(customModelDesign).toContain(".replace(/<script\\b[^>]*>[\\s\\S]*?<\\/script\\s*>/gi, '')");
+    expect(studio).toContain('genToastError: "生成失败：{message}"');
+    expect(studio).toContain('genToastError: "Generation failed: {message}"');
+    expect(studio).not.toContain('genToastError: "Agnes 生成失败：{message}"');
+    expect(studio).not.toContain('genToastError: "Agnes generation failed: {message}"');
+    expect(studio).not.toContain('genToastDone: "✦ Agnes 已生成 v{v}"');
+    expect(studio).not.toContain('genToastDone: "✦ Agnes generated v{v}"');
+    const cleanError = functionBody(studio, 'cleanErrorMessage', 'apiRequest');
+    expect(cleanError).toContain('code === "CUSTOM_MODEL_NETWORK_ERROR"');
+    expect(cleanError).toContain('code === "CUSTOM_MODEL_BROWSER_BLOCKED"');
+    expect(cleanError).toContain('code === "CUSTOM_MODEL_AUTH_FAILED"');
+    expect(cleanError).toContain('/^CUSTOM_MODEL_/.test(code)');
   });
 
   it('scopes persisted projects to the active role and initializes all roles', () => {

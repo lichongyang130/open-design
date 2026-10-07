@@ -477,6 +477,9 @@
   .model-option { min-height: 48px; display: grid; grid-template-columns: 21px minmax(0,1fr) 40px 15px; align-items: center; gap: 7px; padding: 6px 7px; border-radius: 9px; text-align: left; }
   .model-option.selected { background: rgba(135,234,92,0.12); }
   .model-option.unavailable { opacity: .46; cursor: not-allowed; }
+  .model-option.needs-setup { background: rgba(224,157,55,0.06); }
+  .model-option.needs-setup:hover { background: rgba(224,157,55,0.12); }
+  .model-options-empty { padding: 16px 10px; color: var(--faint); font-size: 12px; text-align: center; }
   .model-option-main { min-width: 0; display: flex; align-items: center; gap: 6px; }
   .model-option-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
   .model-option.selected .model-option-name { font-weight: 750; }
@@ -1314,32 +1317,13 @@
               <div class="model-menu" id="modelMenu" role="menu" aria-hidden="true" popover="manual">
                 <div class="model-provider-row" aria-live="polite">
                   <span class="model-provider-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.5"/><path d="M8 13.7c1.7-4 5-5.7 8.6-4.3-1.4.5-2.4 1.5-2.9 2.8 1.4-.3 2.6-.1 3.6.7-2.4 3-5.8 3.7-9.3.8Z" fill="currentColor" stroke="none"/></svg></span>
-                  <span class="model-provider-copy"><b>Agnes AI</b><small id="agnesProviderState" data-i18n="modelChecking">正在检查服务端配置…</small></span>
+                  <span class="model-provider-copy"><b id="modelProviderName">Agnes AI</b><small id="agnesProviderState" data-i18n="modelChecking">正在检查服务端配置…</small></span>
                   <span class="model-provider-dot" id="agnesProviderDot" aria-hidden="true"></span>
                 </div>
-                <div class="model-options" id="modelOptions">
-                  <button type="button" class="model-option selected" role="menuitemradio" aria-checked="true" data-model="agnes-3.0-flash" data-surface="text">
-                    <span class="model-option-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5.5h14v10H9l-4 3v-13Z"/><path d="M8.5 9h7M8.5 12h4.5"/></svg></span>
-                    <span class="model-option-main"><span class="model-option-name">agnes-3.0-flash</span><span class="model-badge green" data-i18n="modelReal">真实 API</span></span>
-                    <span class="model-rate" data-i18n="modelText">文本</span>
-                    <svg class="model-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg>
-                  </button>
-                  <button type="button" class="model-option" role="menuitemradio" aria-checked="false" data-model="agnes-image-2.5-flash" data-surface="image">
-                    <span class="model-option-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m5.5 17 4.2-4 2.7 2.3 2.8-3 3.3 4.7"/></svg></span>
-                    <span class="model-option-main"><span class="model-option-name">agnes-image-2.5-flash</span><span class="model-badge green" data-i18n="modelReal">真实 API</span></span>
-                    <span class="model-rate" data-i18n="modelImage">图片</span>
-                    <svg class="model-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg>
-                  </button>
-                  <button type="button" class="model-option" role="menuitemradio" aria-checked="false" data-model="agnes-video-2.5-flash" data-surface="video">
-                    <span class="model-option-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="13" height="14" rx="2"/><path d="m16.5 10 4-2v8l-4-2Z"/><path d="m9 9 3 3-3 3Z"/></svg></span>
-                    <span class="model-option-main"><span class="model-option-name">agnes-video-2.5-flash</span><span class="model-badge green" data-i18n="modelReal">真实 API</span></span>
-                    <span class="model-rate" data-i18n="modelVideo">视频</span>
-                    <svg class="model-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg>
-                  </button>
-                </div>
+                <div class="model-options" id="modelOptions"><div class="model-options-empty">正在加载可用模型…</div></div>
                 <button type="button" class="model-custom-row" id="modelHealth" role="menuitem">
                   <span class="model-custom-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h3l2-5 4 10 2-5h5"/><circle cx="12" cy="12" r="9"/></svg></span>
-                  <span data-i18n="modelCheck">验证 Agnes 连接</span>
+                  <span id="modelHealthLabel" data-i18n="modelCheck">验证 Agnes 连接</span>
                 </button>
               </div>
             </div>
@@ -1680,11 +1664,12 @@
       accountSettings: "设置", accountMemory: "记忆与进化", accountAppearance: "外观", accountAppearanceMeta: "外观上新",
       accountHelp: "帮助与反馈", accountUpdates: "检查更新", accountSignOut: "退出登录", accountCopy: "复制用户名",
       accountCopied: "用户名已复制",
-      modelSelected: "已切换至 {name}", modelPickerAria: "选择 Agnes 模型",
+      modelSelected: "已切换至 {name}", modelPickerAria: "选择大模型",
       modelChecking: "正在检查服务端配置…", modelConfigured: "服务端密钥已配置", modelMissing: "服务端未配置密钥",
-      modelReal: "真实 API", modelText: "文本", modelImage: "图片", modelVideo: "视频", modelCheck: "验证 Agnes 连接",
+      modelReal: "真实 API", modelCustom: "自定义", modelConnected: "已连接", modelNeedsSetup: "需连接", modelText: "文本", modelImage: "图片", modelVideo: "视频", modelCheck: "验证 Agnes 连接", modelManage: "管理与连接自定义模型",
       modelCheckOk: "Agnes 连接正常（{ms}ms）", modelCheckFailed: "Agnes 连接失败：{message}",
       modelRequired: "Agnes 尚未配置，无法开始生成。请在 Daemon 中设置 OD_AGNES_API_KEY 并重启服务。",
+      modelCustomRequired: "自定义模型“{name}”尚未连接。请在设置中完成连接测试并保存。", modelCustomProtocolUnsupported: "自定义协议暂不支持生成。请编辑“{name}”并切换为 OpenAI 兼容协议。", modelCustomInvalid: "自定义模型“{name}”的接口地址或凭据不完整，请在设置中修复。",
       projectCreateFailed: "项目创建失败：{message}", actionFailed: "操作失败：{message}",
       greetPre: "让我们创建", greetSub: "好的作品，从这里开始 —— ", greetSig: "和你的 AI 设计搭子一起。",
       phPrompt: "描述你想生成的内容…",
@@ -1756,10 +1741,10 @@
       genStepInvoke: "调用真实模型：{model}", genStepMediaWait: "等待异步媒体任务：{model}",
       genAiIntro1: "收到！我会按「{prompt}」生成第一版设计。",
       genAiIntro2: "收到！我会按「{prompt}」继续调整现有设计。",
-      genAiOutro: "v{v} 已由 Agnes 生成，在右侧「设计文件」可直接预览。想继续打磨，随时发我。",
-      genAiOutroMedia: "v{v} 已由 Agnes 生成并保存到项目文件，可在右侧直接预览。",
-      genToastDone: "✦ Agnes 已生成 v{v}",
-      genToastStop: "已停止生成", genToastError: "Agnes 生成失败：{message}",
+      genAiOutro: "v{v} 已生成，在右侧「设计文件」可直接预览。想继续打磨，随时发我。",
+      genAiOutroMedia: "v{v} 已生成并保存到项目文件，可在右侧直接预览。",
+      genToastDone: "✦ 已生成 v{v}",
+      genToastStop: "已停止生成", genToastError: "生成失败：{message}",
       gkSignup: "注册流程", gkLanding: "官网页面", gkApp: "移动 App", gkPoster: "海报", gkDeck: "幻灯片", gkDashboard: "数据看板", gkDesignSystem: "设计系统", gkStoryboard: "视频分镜", gkPage: "通用页面",
       gpSignup: "三屏流程：欢迎 → 表单 → 完成",
       gpLanding: "首屏 + 特性 + 行动召唤",
@@ -1908,11 +1893,12 @@
       accountSettings: "Settings", accountMemory: "Memory & evolution", accountAppearance: "Appearance", accountAppearanceMeta: "New looks",
       accountHelp: "Help & feedback", accountUpdates: "Check for updates", accountSignOut: "Sign out", accountCopy: "Copy username",
       accountCopied: "Username copied",
-      modelSelected: "Switched to {name}", modelPickerAria: "Choose an Agnes model",
+      modelSelected: "Switched to {name}", modelPickerAria: "Choose a large model",
       modelChecking: "Checking daemon configuration…", modelConfigured: "Daemon credential configured", modelMissing: "Daemon credential is not configured",
-      modelReal: "Live API", modelText: "Text", modelImage: "Image", modelVideo: "Video", modelCheck: "Verify Agnes connection",
+      modelReal: "Live API", modelCustom: "Custom", modelConnected: "Connected", modelNeedsSetup: "Connect", modelText: "Text", modelImage: "Image", modelVideo: "Video", modelCheck: "Verify Agnes connection", modelManage: "Manage and connect custom models",
       modelCheckOk: "Agnes connection verified ({ms}ms)", modelCheckFailed: "Agnes connection failed: {message}",
       modelRequired: "Agnes is not configured, so generation cannot start. Set OD_AGNES_API_KEY in the daemon and restart it.",
+      modelCustomRequired: "The custom model ‘{name}’ is not connected. Run its connection test in Settings, then save it.", modelCustomProtocolUnsupported: "Custom-protocol generation is not supported yet. Edit ‘{name}’ and select the OpenAI-compatible protocol.", modelCustomInvalid: "The endpoint or credential for ‘{name}’ is incomplete. Fix it in Settings.",
       projectCreateFailed: "Could not create the project: {message}", actionFailed: "Action failed: {message}",
       greetPre: "Let's create a ", greetSub: "Great work starts here — ", greetSig: "with your AI design buddy.",
       phPrompt: "Describe what you want to make…",
@@ -1984,10 +1970,10 @@
       genStepInvoke: "Calling live model: {model}", genStepMediaWait: "Waiting for asynchronous media task: {model}",
       genAiIntro1: "Got it! I’ll create the first version from \"{prompt}\".",
       genAiIntro2: "Got it! I’ll refine the existing design using \"{prompt}\".",
-      genAiOutro: "Agnes generated v{v} — preview it in Design files. Keep refining anytime.",
-      genAiOutroMedia: "Agnes generated and saved v{v} to the project. Preview it on the right.",
-      genToastDone: "✦ Agnes generated v{v}",
-      genToastStop: "Generation stopped", genToastError: "Agnes generation failed: {message}",
+      genAiOutro: "v{v} is ready — preview it in Design files. Keep refining anytime.",
+      genAiOutroMedia: "v{v} is generated and saved to the project. Preview it on the right.",
+      genToastDone: "✦ Generated v{v}",
+      genToastStop: "Generation stopped", genToastError: "Generation failed: {message}",
       gkSignup: "signup flow", gkLanding: "landing page", gkApp: "mobile app", gkPoster: "poster", gkDeck: "slides", gkDashboard: "dashboard", gkDesignSystem: "design system", gkStoryboard: "storyboard", gkPage: "general page",
       gpSignup: "3 screens: welcome → form → done",
       gpLanding: "hero + features + CTA",
@@ -2660,15 +2646,77 @@
       return "";
     }
   }
+  var AGNES_MODEL_REGISTRY = [
+    { selectionId: "agnes-3.0-flash", model: "agnes-3.0-flash", provider: "agnes", surface: "text" },
+    { selectionId: "agnes-image-2.5-flash", model: "agnes-image-2.5-flash", provider: "agnes", surface: "image" },
+    { selectionId: "agnes-video-2.5-flash", model: "agnes-video-2.5-flash", provider: "agnes", surface: "video" }
+  ];
   function readSelectedModel() {
-    var allowed = ["agnes-3.0-flash", "agnes-image-2.5-flash", "agnes-video-2.5-flash"];
     try {
       var saved = localStorage.getItem("db-model");
-      if (allowed.indexOf(saved) >= 0) return saved;
+      if (typeof saved === "string" && saved.trim() && saved.length <= 1000) return saved;
     } catch (e) {}
     return "agnes-3.0-flash";
   }
+  function customModelSelectionId(model) {
+    var name = String(model && (model.model || model.id) || "");
+    var encoded = "";
+    for (var i = 0; i < name.length; i++) encoded += name.charCodeAt(i).toString(16).padStart(4, "0");
+    return "custom:" + encoded;
+  }
+  function sharedModelRegistry() {
+    var registry = AGNES_MODEL_REGISTRY.map(function (entry) {
+      return Object.assign({}, entry, {
+        name: entry.model,
+        linked: state && state.agnesConfigured === true,
+        customIndex: -1,
+        config: null
+      });
+    });
+    var customModels = state && state.account && Array.isArray(state.account.customModels)
+      ? state.account.customModels
+      : [];
+    customModels.forEach(function (config, index) {
+      var name = String(config && (config.model || config.id) || "").trim();
+      if (!name) return;
+      registry.push({
+        selectionId: customModelSelectionId(config),
+        model: name,
+        name: name,
+        provider: "custom",
+        surface: "text",
+        linked: config.linked === true,
+        customIndex: index,
+        config: config
+      });
+    });
+    return registry;
+  }
+  function modelEntryBySelectionId(selectionId) {
+    var registry = sharedModelRegistry();
+    for (var i = 0; i < registry.length; i++) {
+      if (registry[i].selectionId === selectionId) return registry[i];
+    }
+    return null;
+  }
+  function reconcileSelectedModel(persist) {
+    var selected = modelEntryBySelectionId(state.model);
+    if (!selected) {
+      var registry = sharedModelRegistry();
+      selected = registry.filter(function (entry) {
+        return entry.provider === "custom" && entry.model === state.model;
+      })[0] || registry[0] || null;
+      state.model = selected ? selected.selectionId : "agnes-3.0-flash";
+      persist = true;
+    }
+    if (persist) {
+      try { localStorage.setItem("db-model", state.model); } catch (e) {}
+    }
+    return selected;
+  }
   function selectedModelSurface(model) {
+    var entry = modelEntryBySelectionId(model);
+    if (entry) return entry.surface;
     if (model === "agnes-image-2.5-flash") return "image";
     if (model === "agnes-video-2.5-flash") return "video";
     return "text";
@@ -2838,6 +2886,9 @@
     selPlugin: null,
     templateRouteKey: null
   };
+  /* Custom selections use a prefixed, UTF-16-safe key so a custom model named
+     like an Agnes model can never shadow the built-in provider entry. */
+  reconcileSelectedModel(true);
   var $ = function (id) { return document.getElementById(id); };
   function t(k) { return I18N[state.lang][k]; }
 
@@ -2933,26 +2984,62 @@
   }
   $("refreshTiles").addEventListener("click", refreshSuggestionBatch);
 
+  function modelOptionIcon(entry) {
+    if (entry.provider === "custom") return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.2 5L19 10l-4.8 2L12 17l-2.2-5L5 10l4.8-2L12 3Z"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>';
+    if (entry.surface === "image") return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m5.5 17 4.2-4 2.7 2.3 2.8-3 3.3 4.7"/></svg>';
+    if (entry.surface === "video") return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="13" height="14" rx="2"/><path d="m16.5 10 4-2v8l-4-2Z"/><path d="m9 9 3 3-3 3Z"/></svg>';
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5.5h14v10H9l-4 3v-13Z"/><path d="M8.5 9h7M8.5 12h4.5"/></svg>';
+  }
   function renderModelPicker() {
-    var selected = null;
-    Array.prototype.forEach.call($("modelOptions").querySelectorAll(".model-option"), function (button) {
-      var on = button.getAttribute("data-model") === state.model;
-      var unavailable = state.agnesConfigured === false;
-      button.classList.toggle("selected", on);
-      button.classList.toggle("unavailable", unavailable);
-      button.disabled = unavailable;
-      button.setAttribute("aria-disabled", unavailable ? "true" : "false");
+    var selected = reconcileSelectedModel(false);
+    var options = $("modelOptions");
+    var fragment = document.createDocumentFragment();
+    sharedModelRegistry().forEach(function (entry) {
+      var on = !!selected && entry.selectionId === selected.selectionId;
+      var unavailable = entry.provider === "agnes" && state.agnesConfigured === false;
+      var needsSetup = entry.provider === "custom" && (!entry.linked || (entry.config && entry.config.protocol === "custom"));
+      var button = document.createElement("button");
+      button.type = "button";
+      button.className = "model-option" + (on ? " selected" : "") + (unavailable ? " unavailable" : "") + (needsSetup ? " needs-setup" : "");
+      button.setAttribute("role", "menuitemradio");
       button.setAttribute("aria-checked", on ? "true" : "false");
-      if (on) selected = button;
+      button.setAttribute("aria-disabled", unavailable ? "true" : "false");
+      button.setAttribute("data-selection-id", entry.selectionId);
+      button.setAttribute("data-provider", entry.provider);
+      button.disabled = unavailable;
+      button.innerHTML = '<span class="model-option-icon">' + modelOptionIcon(entry) + '</span><span class="model-option-main"><span class="model-option-name"></span><span class="model-badge"></span></span><span class="model-rate"></span><svg class="model-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg>';
+      button.querySelector(".model-option-name").textContent = entry.name;
+      var badge = button.querySelector(".model-badge");
+      badge.textContent = entry.provider === "custom" ? (entry.linked ? t("modelConnected") : t("modelNeedsSetup")) : t("modelReal");
+      badge.className = "model-badge " + (entry.provider === "custom" && !entry.linked ? "red" : "green");
+      button.querySelector(".model-rate").textContent = t(entry.surface === "image" ? "modelImage" : entry.surface === "video" ? "modelVideo" : "modelText");
+      fragment.appendChild(button);
     });
-    var selectedName = selected && selected.querySelector(".model-option-name");
-    $("selectedModelName").textContent = selectedName ? selectedName.textContent : "agnes-3.0-flash";
+    options.innerHTML = "";
+    options.appendChild(fragment);
+    $("selectedModelName").textContent = selected ? selected.name : "agnes-3.0-flash";
+
     var providerState = $("agnesProviderState");
     var providerDot = $("agnesProviderDot");
-    providerDot.classList.toggle("ready", state.agnesConfigured === true);
-    providerDot.classList.toggle("missing", state.agnesConfigured === false);
-    providerState.textContent = state.agnesConfigured === true ? t("modelConfigured") : state.agnesConfigured === false ? t("modelMissing") : t("modelChecking");
+    var customSelected = selected && selected.provider === "custom";
+    $("modelProviderName").textContent = customSelected ? t("modelCustom") + " · " + selected.name : "Agnes AI";
+    providerDot.classList.toggle("ready", customSelected ? selected.linked : state.agnesConfigured === true);
+    providerDot.classList.toggle("missing", customSelected ? !selected.linked : state.agnesConfigured === false);
+    if (customSelected) {
+      var endpoint = selected.config && selected.config.baseUrl ? selected.config.baseUrl : t("modelNeedsSetup");
+      providerState.textContent = (selected.linked ? t("modelConnected") : t("modelNeedsSetup")) + " · " + endpoint;
+      $("modelHealthLabel").textContent = t("modelManage");
+    } else {
+      providerState.textContent = state.agnesConfigured === true ? t("modelConfigured") : state.agnesConfigured === false ? t("modelMissing") : t("modelChecking");
+      $("modelHealthLabel").textContent = t("modelCheck");
+    }
     $("modelTrigger").setAttribute("aria-label", t("modelPickerAria"));
+  }
+  function refreshSynchronizedModelSurfaces() {
+    var selected = reconcileSelectedModel(true);
+    renderModelPicker();
+    if (currentAccountSurface === "settings" && settingsSection === "general") renderSettingsGeneral();
+    return selected;
   }
 
   function refreshAgnesConfig() {
@@ -3005,6 +3092,48 @@
   }, 2600);
 
   /* 创作器 */
+  function openSelectedCustomModelSettings(entry) {
+    if (!entry || entry.provider !== "custom") return;
+    settingsSection = "models";
+    openAccountSurface("settings");
+    requestAnimationFrame(function () {
+      var current = modelEntryBySelectionId(entry.selectionId);
+      if (!current || current.provider !== "custom") return;
+      var edit = $("settingsContent") && $("settingsContent").querySelector('[data-model-edit="' + current.customIndex + '"]');
+      openCustomModelModal(current.customIndex, edit || $("settingsAddModel"));
+    });
+  }
+  async function ensureGenerationModelReady(entry) {
+    entry = entry || reconcileSelectedModel(false);
+    if (!entry) return false;
+    if (entry.provider === "custom") {
+      var config = entry.config || {};
+      var serverCredential = config.credentialSource === "server";
+      if (config.protocol === "custom" || (config.capabilities && config.capabilities.customProtocol)) {
+        toast(t("modelCustomProtocolUnsupported").replace("{name}", entry.name));
+        openSelectedCustomModelSettings(entry);
+        return false;
+      }
+      if (!config.baseUrl || !config.model || (!serverCredential && !config.apiKey)) {
+        toast(t("modelCustomInvalid").replace("{name}", entry.name));
+        openSelectedCustomModelSettings(entry);
+        return false;
+      }
+      if (!entry.linked) {
+        toast(t("modelCustomRequired").replace("{name}", entry.name));
+        openSelectedCustomModelSettings(entry);
+        return false;
+      }
+      return true;
+    }
+    var configured = state.agnesConfigured === true ? true : await refreshAgnesConfig();
+    if (!configured) {
+      toast(t("modelRequired"));
+      setModelMenu(true);
+      return false;
+    }
+    return true;
+  }
   function submitPrompt() {
     var v = $("prompt").value.trim();
     if (!v) { $("prompt").focus(); return; }
@@ -3018,13 +3147,8 @@
         toast(t("examplesSkillUnavailable"));
         return false;
       }
-      var readiness = state.agnesConfigured === true ? Promise.resolve(true) : refreshAgnesConfig();
-      return readiness.then(function (configured) {
-        if (!configured) {
-          toast(t("modelRequired"));
-          setModelMenu(true);
-          return false;
-        }
+      return ensureGenerationModelReady().then(function (ready) {
+        if (!ready) return false;
         return createRealProject(v);
       });
     }).finally(function () {
@@ -3197,6 +3321,295 @@
       if (signal) signal.removeEventListener("abort", cancelJob);
     }
   }
+  function customModelBrowserFailure(code, message, status) {
+    var error = new Error(message);
+    error.code = code;
+    error.status = Number(status) || 0;
+    return error;
+  }
+  function customModelBrowserContent(payload) {
+    var choices = payload && Array.isArray(payload.choices) ? payload.choices : [];
+    var message = choices[0] && choices[0].message;
+    var content = message && message.content;
+    if (typeof content === "string") return content;
+    if (!Array.isArray(content)) return "";
+    return content.map(function (part) {
+      if (typeof part === "string") return part;
+      if (!part || typeof part !== "object") return "";
+      if (typeof part.text === "string") return part.text;
+      return part.text && typeof part.text.value === "string" ? part.text.value : "";
+    }).join("");
+  }
+  async function readCustomModelBrowserResponse(response, limit) {
+    var announced = Number(response.headers && response.headers.get("content-length"));
+    if (Number.isFinite(announced) && announced > limit) {
+      throw customModelBrowserFailure(
+        "CUSTOM_MODEL_RESPONSE_TOO_LARGE",
+        accountL("自定义模型响应过大。", "The custom-model response is too large."),
+        502
+      );
+    }
+    if (!response.body || typeof response.body.getReader !== "function") {
+      var fallbackText = await response.text();
+      var fallbackBytes = typeof TextEncoder === "function"
+        ? new TextEncoder().encode(fallbackText).byteLength
+        : fallbackText.length * 2;
+      if (fallbackBytes > limit) {
+        throw customModelBrowserFailure(
+          "CUSTOM_MODEL_RESPONSE_TOO_LARGE",
+          accountL("自定义模型响应过大。", "The custom-model response is too large."),
+          502
+        );
+      }
+      return fallbackText;
+    }
+    var reader = response.body.getReader();
+    var decoder = new TextDecoder();
+    var chunks = "";
+    var total = 0;
+    while (true) {
+      var next = await reader.read();
+      if (next.done) break;
+      total += next.value.byteLength;
+      if (total > limit) {
+        try { await reader.cancel(); } catch (error) {}
+        throw customModelBrowserFailure(
+          "CUSTOM_MODEL_RESPONSE_TOO_LARGE",
+          accountL("自定义模型响应过大。", "The custom-model response is too large."),
+          502
+        );
+      }
+      chunks += decoder.decode(next.value, { stream: true });
+    }
+    return chunks + decoder.decode();
+  }
+  function customModelBrowserMessages(prompt) {
+    var system = "You are the design generation engine inside DesignBuddy. Create one polished, production-quality visual artifact as a complete standalone HTML document. Return HTML only: no Markdown fence, explanation, preamble, or trailing commentary. Use semantic HTML and embedded CSS. Do not use scripts, remote URLs, iframes, forms that submit, or external assets. The artifact must be responsive with intentional spacing, accessible contrast, and realistic copy matching the user's language. Never include secrets or API configuration.";
+    var previous = latestTextArtifactHtml();
+    var context = [
+      "User language: " + (state.lang === "en" ? "English" : "Simplified Chinese") + ".",
+      "Artifact type: " + generationModeLabel().slice(0, 80) + ".",
+      state.gen.name ? "Existing project label (context only): " + state.gen.name.slice(0, 120) + "." : "",
+      "Current user request (authoritative):\n" + prompt,
+      previous ? "Revise this existing artifact while applying the current request:\n" + previous.slice(0, 80000) : ""
+    ].filter(Boolean).join("\n\n");
+    return [{ role: "system", content: system }, { role: "user", content: context }];
+  }
+  async function invokeCustomModelInBrowser(prompt, kind, version, entry, signal) {
+    var config = entry && entry.config || {};
+    if (!config.apiKey || config.credentialSource === "server") {
+      throw customModelBrowserFailure(
+        "CUSTOM_MODEL_BROWSER_KEY_REQUIRED",
+        accountL(
+          "Daemon 的 TLS 连接被上游重置，且服务端托管密钥不能暴露给浏览器。请在模型设置中输入浏览器侧密钥，或为 Daemon 配置可用的 HTTPS_PROXY。",
+          "The upstream reset the daemon TLS connection, and a daemon-managed key cannot be exposed to the browser. Enter a browser-side key in model settings or configure a working HTTPS_PROXY for the daemon."
+        ),
+        502
+      );
+    }
+    var startedAt = Date.now();
+    var outputLimit = Math.max(1, Math.min(24000, Math.round(Number(config.outputLimit) || 12000)));
+    var tokenField = /^(?:gpt-5|o1|o3|o4)(?:[.-]|$)/i.test(String(config.model || ""))
+      ? { max_completion_tokens: outputLimit }
+      : { max_tokens: outputLimit };
+    var response;
+    var raw;
+    var browserController = new AbortController();
+    var timedOut = false;
+    var relayAbort = function () { browserController.abort(); };
+    if (signal) {
+      if (signal.aborted) relayAbort();
+      else signal.addEventListener("abort", relayAbort, { once: true });
+    }
+    var timeout = setTimeout(function () {
+      timedOut = true;
+      browserController.abort();
+    }, 120000);
+    try {
+      response = await fetch(customModelDaemonBaseUrl(config.baseUrl) + "/chat/completions", {
+        method: "POST",
+        mode: "cors",
+        credentials: "omit",
+        cache: "no-store",
+        referrerPolicy: "no-referrer",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + config.apiKey
+        },
+        body: JSON.stringify(Object.assign({
+          model: config.model,
+          messages: customModelBrowserMessages(prompt),
+          stream: false
+        }, tokenField)),
+        signal: browserController.signal
+      });
+      raw = await readCustomModelBrowserResponse(response, 1024 * 1024);
+    } catch (error) {
+      if (signal && signal.aborted) throw error;
+      if (error && error.code === "CUSTOM_MODEL_RESPONSE_TOO_LARGE") throw error;
+      if (timedOut) {
+        throw customModelBrowserFailure(
+          "CUSTOM_MODEL_BROWSER_TIMEOUT",
+          accountL("浏览器直连自定义模型超时。", "The direct browser request to the custom model timed out."),
+          504
+        );
+      }
+      throw customModelBrowserFailure(
+        "CUSTOM_MODEL_BROWSER_BLOCKED",
+        accountL(
+          "Daemon 的 TLS 连接失败，浏览器直连也被网络或提供商 CORS 策略阻止。请检查网关的地区/IP 策略，或为 Daemon 配置 HTTPS_PROXY。",
+          "The daemon TLS connection failed, and direct browser access was also blocked by the network or provider CORS policy. Check the gateway region/IP policy or configure HTTPS_PROXY for the daemon."
+        ),
+        502
+      );
+    } finally {
+      clearTimeout(timeout);
+      if (signal) signal.removeEventListener("abort", relayAbort);
+    }
+    var payload = null;
+    try { payload = raw ? JSON.parse(raw) : null; } catch (error) {}
+    if (!response.ok) {
+      var detail = payload && payload.error && (payload.error.message || payload.error.code)
+        ? String(payload.error.message || payload.error.code)
+        : "HTTP " + response.status;
+      detail = detail.split(config.apiKey).join("[REDACTED]");
+      if (isHtmlGatewayErrorText(detail) || isHtmlGatewayErrorText(raw)) detail = htmlGatewayErrorMessage();
+      var code = response.status === 401 ? "CUSTOM_MODEL_AUTH_FAILED" : response.status === 403 ? "CUSTOM_MODEL_FORBIDDEN" : response.status === 429 ? "CUSTOM_MODEL_RATE_LIMITED" : response.status === 404 ? "CUSTOM_MODEL_NOT_FOUND" : "CUSTOM_MODEL_UPSTREAM_ERROR";
+      throw customModelBrowserFailure(code, detail, response.status);
+    }
+    if (!payload) {
+      throw customModelBrowserFailure("CUSTOM_MODEL_INVALID_RESPONSE", accountL("自定义模型返回了无效 JSON。", "The custom model returned invalid JSON."), 502);
+    }
+    var content = customModelBrowserContent(payload);
+    if (!content.trim()) {
+      throw customModelBrowserFailure("CUSTOM_MODEL_EMPTY_RESPONSE", accountL("自定义模型返回了空响应。", "The custom model returned an empty response."), 502);
+    }
+    content = content.split(config.apiKey).join("[REDACTED]");
+    var constrained;
+    try {
+      constrained = await apiSend("/api/db/custom-model/constrain-html", "POST", { content: content }, { signal: signal });
+    } catch (error) {
+      if (error && error.name === "AbortError") throw error;
+      if (error && error.code === "PAYLOAD_TOO_LARGE") {
+        throw customModelBrowserFailure("CUSTOM_MODEL_HTML_TOO_LARGE", accountL("生成的设计文件过大，无法安全保存。", "The generated design is too large to save safely."), 413);
+      }
+      if (error && (error.code === "VALIDATION_FAILED" || error.code === "BAD_REQUEST")) {
+        throw customModelBrowserFailure("CUSTOM_MODEL_INVALID_HTML", accountL("自定义模型没有返回完整 HTML。", "The custom model did not return complete HTML."), 422);
+      }
+      throw error;
+    }
+    if (!constrained || typeof constrained.html !== "string") {
+      throw customModelBrowserFailure("CUSTOM_MODEL_INVALID_HTML", accountL("自定义模型没有返回完整 HTML。", "The custom model did not return complete HTML."), 422);
+    }
+    return {
+      name: state.gen.name,
+      version: version,
+      kind: kind,
+      surface: "text",
+      model: entry.model,
+      html: constrained.html,
+      latencyMs: Date.now() - startedAt,
+      transport: "browser"
+    };
+  }
+  async function invokeCustomModelText(prompt, kind, version, entry, signal) {
+    if (window.StudioWorkbench && typeof window.StudioWorkbench.promptWithContext === "function") {
+      prompt = await window.StudioWorkbench.promptWithContext(prompt);
+    }
+    var config = entry && entry.config || {};
+    try {
+      var provider = {
+        protocol: "openai",
+        baseUrl: customModelDaemonBaseUrl(config.baseUrl),
+        model: config.model,
+        credentialSource: config.credentialSource === "server" ? "designbuddy_custom_model" : "manual",
+        outputLimit: config.outputLimit || undefined
+      };
+      if (provider.credentialSource === "manual") provider.apiKey = config.apiKey;
+      var submitted = await apiSend("/api/db/custom-model/generation-jobs", "POST", {
+        prompt: prompt,
+        locale: state.lang,
+        mode: generationModeLabel(),
+        projectName: state.gen.name,
+        previousHtml: latestTextArtifactHtml(),
+        provider: provider
+      }, { signal: signal });
+      if (!submitted || !submitted.jobId) throw new Error("Custom model generation job was not created");
+      var jobId = String(submitted.jobId);
+      var cancelJob = function () {
+        if (typeof fetch !== "function") return;
+        fetch("/api/db/custom-model/generation-jobs/" + encodeURIComponent(jobId), {
+          method: "DELETE",
+          keepalive: true
+        }).catch(function () {});
+      };
+      if (signal) signal.addEventListener("abort", cancelJob, { once: true });
+      try {
+        var deadline = Date.now() + 3 * 60 * 1000;
+        while (Date.now() < deadline) {
+          var snapshot = await apiGet(
+            "/api/db/custom-model/generation-jobs/" + encodeURIComponent(jobId),
+            { signal: signal, cache: "no-store" }
+          );
+          if (snapshot && snapshot.status === "succeeded") {
+            var result = snapshot.result || {};
+            if (typeof result.html !== "string" || result.html.length < 40) throw new Error("The custom model returned no HTML artifact");
+            return {
+              name: state.gen.name,
+              version: version,
+              kind: kind,
+              surface: "text",
+              model: result.model || entry.model,
+              html: result.html,
+              latencyMs: Number(result.latencyMs) || null
+            };
+          }
+          if (snapshot && (snapshot.status === "failed" || snapshot.status === "canceled")) {
+            var failure = snapshot.error && typeof snapshot.error === "object" ? snapshot.error : {};
+            var jobError = new Error(apiErrorMessage(snapshot.error, "Custom model generation failed"));
+            jobError.status = Number(failure.status) || 0;
+            jobError.code = typeof failure.code === "string" ? failure.code : "";
+            throw jobError;
+          }
+          await waitForAgnesPoll(1200, signal);
+        }
+        cancelJob();
+        var timeoutError = new Error("Custom model generation timed out");
+        timeoutError.code = "CUSTOM_MODEL_TIMEOUT";
+        timeoutError.status = 504;
+        throw timeoutError;
+      } finally {
+        if (signal) signal.removeEventListener("abort", cancelJob);
+      }
+    } catch (error) {
+      if (error && error.name === "AbortError") throw error;
+      var code = error && error.code ? String(error.code) : "";
+      if (code === "CUSTOM_MODEL_NETWORK_ERROR" || code === "CUSTOM_MODEL_TIMEOUT") {
+        if (config.apiKey && config.credentialSource !== "server") {
+          genPersist("step", {
+            text: accountL(
+              "Daemon 网络不可达，正在通过浏览器安全直连自定义模型…",
+              "The daemon network is unavailable. Retrying the custom model directly from your browser…"
+            ),
+            model: entry.model,
+            transport: "browser"
+          });
+          renderGen();
+          return invokeCustomModelInBrowser(prompt, kind, version, entry, signal);
+        }
+        throw customModelBrowserFailure(
+          "CUSTOM_MODEL_BROWSER_KEY_REQUIRED",
+          accountL(
+            "Daemon 无法建立到自定义模型的 TLS 连接；当前密钥仅由服务端托管，不能暴露到浏览器。请为 Daemon 配置 HTTPS_PROXY，或在模型设置中输入浏览器侧密钥后重试。",
+            "The daemon could not establish TLS to the custom model. Its key is daemon-managed and cannot be exposed to the browser. Configure HTTPS_PROXY for the daemon or enter a browser-side key in model settings."
+          ),
+          502
+        );
+      }
+      throw error;
+    }
+  }
   async function invokeAgnesMedia(prompt, kind, version, model, surface, signal, runId) {
     if (window.StudioWorkbench && typeof window.StudioWorkbench.promptWithContext === "function") {
       prompt = await window.StudioWorkbench.promptWithContext(prompt);
@@ -3280,13 +3693,10 @@
   async function startGenTurn(prompt) {
     var requestPrompt = String(prompt || "").trim();
     if (!state.gen.pid || !requestPrompt || state.gen.status === "run") return;
-    var configured = state.agnesConfigured === true ? true : await refreshAgnesConfig();
-    if (!configured) {
-      toast(t("modelRequired"));
-      setModelMenu(true);
-      return;
-    }
-    if (state.gen.status === "run") return;
+    var modelEntry = reconcileSelectedModel(false);
+    if (!await ensureGenerationModelReady(modelEntry)) return;
+    modelEntry = reconcileSelectedModel(false);
+    if (!modelEntry || state.gen.status === "run") return;
     if (state.gen.abort) state.gen.abort.abort();
     var controller = new AbortController();
     state.gen.abort = controller;
@@ -3296,8 +3706,8 @@
     state.gen.status = "run";
     state.gen.welcome = false;
     var hadArtifact = state.gen.events.some(function (e) { return e.type === "artifact"; });
-    var model = state.model;
-    var surface = selectedModelSurface(model);
+    var model = modelEntry.model;
+    var surface = modelEntry.surface;
     var kind = modeKind(state.genMode) || genKindOf(requestPrompt + " " + state.gen.name);
     var version = genNextVersion();
     genPersist("user", { text: requestPrompt, model: model, surface: surface });
@@ -3312,9 +3722,11 @@
     try {
       await genDelay(160);
       if (!genAlive(runId)) return;
-      var artifact = surface === "text"
-        ? await invokeAgnesText(requestPrompt, kind, version, model, controller.signal)
-        : await invokeAgnesMedia(requestPrompt, kind, version, model, surface, controller.signal, runId);
+      var artifact = modelEntry.provider === "custom"
+        ? await invokeCustomModelText(requestPrompt, kind, version, modelEntry, controller.signal)
+        : surface === "text"
+          ? await invokeAgnesText(requestPrompt, kind, version, model, controller.signal)
+          : await invokeAgnesMedia(requestPrompt, kind, version, model, surface, controller.signal, runId);
       if (!genAlive(runId)) return;
       genPersist("step", { text: t("genStepCheck") });
       genPersist("artifact", artifact);
@@ -5347,6 +5759,65 @@
     if (code === "PREVIEW_ONLY") {
       return state.lang === "zh" ? "当前仅启动了静态预览，请启动完整 Daemon 后重试。" : "Only the static preview is running. Start the full daemon and try again.";
     }
+    if (code === "CUSTOM_MODEL_NETWORK_ERROR") {
+      return state.lang === "zh"
+        ? "Daemon 无法建立到自定义模型的安全连接。请为 Daemon 检查出站 TLS 或 HTTPS_PROXY；也可在“设置 → 自定义模型”中输入浏览器侧密钥后重试。"
+        : "The daemon could not establish a secure connection to the custom model. Check outbound TLS or HTTPS_PROXY, or enter a browser-side key in Settings → Custom models and retry.";
+    }
+    if (code === "CUSTOM_MODEL_TIMEOUT" || code === "CUSTOM_MODEL_BROWSER_TIMEOUT") {
+      return state.lang === "zh" ? "自定义模型生成超时，请稍后重试。" : "Custom-model generation timed out. Please try again later.";
+    }
+    if (code === "CUSTOM_MODEL_BROWSER_KEY_REQUIRED") {
+      return state.lang === "zh"
+        ? "Daemon 无法连接自定义模型；服务端托管密钥不会暴露给浏览器。请为 Daemon 配置 HTTPS_PROXY，或在“设置 → 自定义模型”中输入浏览器侧密钥后重试。"
+        : "The daemon could not reach the custom model. A daemon-managed key will never be exposed to the browser. Configure HTTPS_PROXY or enter a browser-side key in Settings → Custom models and retry.";
+    }
+    if (code === "CUSTOM_MODEL_BROWSER_BLOCKED") {
+      return state.lang === "zh"
+        ? "Daemon 连接失败，浏览器直连也被网络或提供商 CORS 策略阻止。请检查网关的地区/IP/CORS 策略，或为 Daemon 配置 HTTPS_PROXY。"
+        : "The daemon connection failed, and direct browser access was blocked by the network or provider CORS policy. Check the gateway region/IP/CORS policy or configure HTTPS_PROXY for the daemon.";
+    }
+    if (code === "CUSTOM_MODEL_AUTH_FAILED") {
+      return state.lang === "zh" ? "自定义模型拒绝了 API Key。请在“设置 → 自定义模型”中更新密钥。" : "The custom model rejected the API key. Update it in Settings → Custom models.";
+    }
+    if (code === "CUSTOM_MODEL_FORBIDDEN") {
+      return state.lang === "zh" ? "自定义模型拒绝访问。请检查密钥和模型权限。" : "The custom-model provider denied access. Check the key and model permissions.";
+    }
+    if (code === "CUSTOM_MODEL_NOT_FOUND") {
+      return state.lang === "zh" ? "找不到自定义模型或接口。请检查模型名称和接口地址。" : "The custom model or endpoint was not found. Check the model name and endpoint URL.";
+    }
+    if (code === "CUSTOM_MODEL_RATE_LIMITED") {
+      return state.lang === "zh" ? "自定义模型已触发速率或配额限制，请稍后重试。" : "The custom model hit a rate or quota limit. Please try again later.";
+    }
+    if (code === "CUSTOM_MODEL_NOT_CONFIGURED") {
+      return state.lang === "zh"
+        ? "服务端托管的自定义模型尚未配置。请设置 OD_CUSTOM_MODEL_BASE_URL、OD_CUSTOM_MODEL_API_KEY 和 OD_CUSTOM_MODEL_NAME 后重启 Daemon。"
+        : "The server-managed custom model is not configured. Set OD_CUSTOM_MODEL_BASE_URL, OD_CUSTOM_MODEL_API_KEY, and OD_CUSTOM_MODEL_NAME, then restart the daemon.";
+    }
+    if (code === "CUSTOM_MODEL_INVALID_CONFIG" || code === "CUSTOM_MODEL_PROTOCOL_UNSUPPORTED") {
+      return state.lang === "zh" ? "自定义模型配置无效或协议不受支持，请在设置中修正。" : "The custom-model configuration is invalid or unsupported. Fix it in Settings.";
+    }
+    if (code === "CUSTOM_MODEL_RESPONSE_TOO_LARGE" || code === "CUSTOM_MODEL_HTML_TOO_LARGE") {
+      return state.lang === "zh" ? "自定义模型返回的设计文件过大，无法安全保存。" : "The custom model returned a design that is too large to save safely.";
+    }
+    if (code === "CUSTOM_MODEL_INVALID_RESPONSE" || code === "CUSTOM_MODEL_EMPTY_RESPONSE") {
+      return state.lang === "zh" ? "自定义模型返回了空响应或无法解析的响应，请稍后重试。" : "The custom model returned an empty or unreadable response. Please try again later.";
+    }
+    if (code === "CUSTOM_MODEL_INVALID_HTML") {
+      return state.lang === "zh" ? "自定义模型没有返回完整的 HTML 设计文件，请重试或调整提示词。" : "The custom model did not return a complete HTML design. Retry or adjust the prompt.";
+    }
+    if (code === "CUSTOM_MODEL_UPSTREAM_ERROR" || code === "CUSTOM_MODEL_UNAVAILABLE") {
+      var customStatus = Number(error && error.status) || 0;
+      return state.lang === "zh"
+        ? "自定义模型服务暂时不可用" + (customStatus ? "（HTTP " + customStatus + "）" : "") + "，请稍后重试。"
+        : "The custom-model provider is temporarily unavailable" + (customStatus ? " (HTTP " + customStatus + ")" : "") + ". Please try again later.";
+    }
+    if (code === "CUSTOM_MODEL_CANCELED") {
+      return state.lang === "zh" ? "自定义模型生成已取消。" : "Custom-model generation was canceled.";
+    }
+    if (/^CUSTOM_MODEL_/.test(code)) {
+      return state.lang === "zh" ? "自定义模型请求失败，请检查设置后重试。" : "The custom-model request failed. Check its settings and try again.";
+    }
     if (code === "AGNES_NETWORK_ERROR") {
       return state.lang === "zh" ? "Daemon 无法建立到 Agnes 的安全连接。请检查服务器出站网络/TLS 或 HTTPS_PROXY 后重试。" : "The daemon could not establish a secure connection to Agnes. Check outbound TLS access or HTTPS_PROXY, then retry.";
     }
@@ -6390,6 +6861,9 @@
     return fetch(url, {
       method: "POST",
       mode: "cors",
+      credentials: "omit",
+      cache: "no-store",
+      referrerPolicy: "no-referrer",
       headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer " + config.apiKey
@@ -6403,7 +6877,7 @@
       }),
       signal: signal
     }).then(function (response) {
-      return response.text().then(function (raw) {
+      return readCustomModelBrowserResponse(response, 64 * 1024).then(function (raw) {
         var latencyMs = Date.now() - startedAt;
         var payload = null;
         try { payload = raw ? JSON.parse(raw) : null; } catch (e) {}
@@ -6411,14 +6885,14 @@
           var providerMessage = payload && payload.error && (payload.error.message || payload.error.code)
             ? String(payload.error.message || payload.error.code)
             : "HTTP " + response.status;
-          providerMessage = providerMessage.replace(config.apiKey, "[REDACTED]");
+          providerMessage = providerMessage.split(config.apiKey).join("[REDACTED]");
           var kind = response.status === 401 ? "auth_failed" : response.status === 403 ? "forbidden" : response.status === 429 ? "rate_limited" : response.status === 404 ? "not_found_model" : "upstream_unavailable";
           return { ok: false, kind: kind, status: response.status, latencyMs: latencyMs, model: config.model, detail: providerMessage, viaBrowser: true };
         }
         var sample = payload && payload.choices && payload.choices[0] && payload.choices[0].message
           ? String(payload.choices[0].message.content || "")
           : "OK";
-        sample = sample.replace(config.apiKey, "[REDACTED]");
+        sample = sample.split(config.apiKey).join("[REDACTED]");
         return { ok: true, kind: "success", latencyMs: latencyMs, model: config.model, sample: sample.slice(0, 120), viaBrowser: true };
       });
     }).catch(function (error) {
@@ -6522,9 +6996,19 @@
       if (result.ok) {
         customModelTestFingerprint = fingerprint;
         customModelSetStatus("success", customModelResultMessage(result, config.model));
+        if (customModelEditIndex >= 0 && fingerprint === customModelOriginalFingerprint && state.account.customModels[customModelEditIndex]) {
+          state.account.customModels[customModelEditIndex].linked = true;
+          saveAccountState();
+          refreshSynchronizedModelSurfaces();
+        }
       } else {
         customModelTestFingerprint = "";
         customModelSetStatus("error", customModelResultMessage(result, config.model));
+        if (customModelEditIndex >= 0 && fingerprint === customModelOriginalFingerprint && state.account.customModels[customModelEditIndex] && state.account.customModels[customModelEditIndex].linked) {
+          state.account.customModels[customModelEditIndex].linked = false;
+          saveAccountState();
+          refreshSynchronizedModelSurfaces();
+        }
       }
     }).catch(function (error) {
       if (error && error.name === "AbortError") return;
@@ -6546,6 +7030,7 @@
       return;
     }
     var previous = customModelEditIndex >= 0 ? state.account.customModels[customModelEditIndex] : null;
+    var previousSelectionId = previous ? customModelSelectionId(previous) : "";
     var fingerprint = customModelConnectionFingerprint(config);
     var linked = fingerprint === customModelTestFingerprint || !!(previous && previous.linked && fingerprint === customModelOriginalFingerprint);
     var saved = Object.assign({}, previous || {}, config, {
@@ -6555,7 +7040,9 @@
     });
     if (customModelEditIndex >= 0) state.account.customModels[customModelEditIndex] = saved;
     else state.account.customModels.push(saved);
+    if (previousSelectionId && state.model === previousSelectionId) state.model = customModelSelectionId(saved);
     saveAccountState();
+    refreshSynchronizedModelSurfaces();
     closeCustomModelModal(false);
     renderSettingsModels();
     toast(previous ? accountL("模型配置已保存", "Model settings saved") : accountL("模型已添加", "Model added"));
@@ -6595,6 +7082,7 @@
         if (!model || !window.confirm(accountL("删除模型 “", "Delete model ‘") + String(model.model || model.id) + accountL("”？", "’?"))) return;
         state.account.customModels.splice(index, 1);
         saveAccountState();
+        refreshSynchronizedModelSurfaces();
         renderSettingsModels();
         toast(accountL("模型已删除", "Model deleted"));
       });
@@ -6637,8 +7125,13 @@
     var roleOptions = ["designer", "pm", "dev", "admin"].map(function (id) {
       return '<option value="' + id + '"' + (state.role === id ? ' selected' : '') + '>' + esc(ROLES[id][state.lang].name) + '</option>';
     }).join("");
-    var models = ["agnes-3.0-flash", "agnes-image-2.5-flash", "agnes-video-2.5-flash"];
-    var modelOptions = models.map(function (id) { return '<option value="' + id + '"' + (state.model === id ? ' selected' : '') + '>' + id + '</option>'; }).join("");
+    reconcileSelectedModel(false);
+    var modelOptions = sharedModelRegistry().map(function (entry) {
+      var suffix = entry.provider === "custom"
+        ? " · " + t("modelCustom") + (entry.linked ? " · " + t("modelConnected") : " · " + t("modelNeedsSetup"))
+        : " · Agnes AI";
+      return '<option value="' + accountEscapeAttr(entry.selectionId) + '"' + (state.model === entry.selectionId ? ' selected' : '') + '>' + esc(entry.name + suffix) + '</option>';
+    }).join("");
     $("settingsContent").innerHTML = '<section class="settings-panel">' + settingsPanelHead(accountL("通用", "General"), accountL("管理工作区角色、语言、默认模型与通知。", "Manage workspace role, language, default model, and notifications.")) + '<form class="acc-stack" id="accountSettingsForm"><div class="settings-card" style="padding:16px"><div class="acc-grid"><label class="acc-field"><span>' + accountL("显示名称", "Display name") + '</span><input id="accountSettingsName" maxlength="60" value="' + accountEscapeAttr(state.userName || accountL("用户", "User")) + '"></label><label class="acc-field"><span>' + accountL("注册角色", "Workspace role") + '</span><select id="accountSettingsRole">' + roleOptions + '</select></label><label class="acc-field"><span>' + accountL("界面语言", "Language") + '</span><select id="accountSettingsLang"><option value="zh"' + (state.lang === "zh" ? ' selected' : '') + '>简体中文</option><option value="en"' + (state.lang === "en" ? ' selected' : '') + '>English</option></select></label><label class="acc-field"><span>' + accountL("默认大模型", "Default model") + '</span><select id="accountSettingsModel">' + modelOptions + '</select></label></div></div><div class="settings-card" style="padding:5px 16px"><div class="acc-setting"><span><b>' + accountL("任务完成通知", "Completion notifications") + '</b><small>' + accountL("生成或导出结束时提醒我", "Notify me when generations or exports finish") + '</small></span><label class="acc-switch"><input type="checkbox" id="accountSettingsNotify"' + (state.account.notifications ? ' checked' : '') + '><i></i></label></div><div class="acc-setting"><span><b>' + accountL("产品更新通知", "Product update notifications") + '</b><small>' + accountL("收到版本更新与新功能提示", "Receive release and feature announcements") + '</small></span><label class="acc-switch"><input type="checkbox" id="accountSettingsProduct"' + (state.account.productUpdates ? ' checked' : '') + '><i></i></label></div></div><div class="acc-actions" style="justify-content:flex-end"><button type="button" class="acc-btn" id="accountSettingsReset">' + accountL("恢复默认", "Reset defaults") + '</button><button type="submit" class="acc-btn primary">' + accountL("保存设置", "Save settings") + '</button></div></form></section>';
     $("accountSettingsForm").addEventListener("submit", function (e) {
       e.preventDefault();
@@ -6649,6 +7142,8 @@
       var roleChanged = nextRole !== state.role;
       var nextLang = $("accountSettingsLang").value === "en" ? "en" : "zh";
       var nextModel = $("accountSettingsModel").value;
+      var nextModelEntry = modelEntryBySelectionId(nextModel);
+      if (!nextModelEntry) { toast(accountL("所选模型已不可用，请重新选择", "The selected model is no longer available. Choose another model.")); renderSettingsGeneral(); return; }
       var submit = e.currentTarget.querySelector('button[type="submit"]');
       if (submit) submit.disabled = true;
       var writes = [apiSend("/api/db/profile", "PUT", { displayName: name })];
@@ -6744,7 +7239,7 @@
       var content = JSON.stringify({ exportedAt: new Date().toISOString(), userName: state.userName, role: state.role, language: state.lang, account: state.account }, null, 2);
       try { var blob = new Blob([content], { type: "application/json" }); var url = URL.createObjectURL(blob), link = document.createElement("a"); link.href = url; link.download = "designbuddy-settings.json"; document.body.appendChild(link); link.click(); link.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 1000); toast(accountL("设置文件已导出", "Settings exported")); } catch (e) { copyText(content, function () { toast(accountL("设置 JSON 已复制", "Settings JSON copied")); }); }
     });
-    $("settingsResetData").addEventListener("click", function () { if (!window.confirm(accountL("恢复账户与界面偏好的默认值？", "Reset account and interface preferences?"))) return; state.account = accountDefaults(); saveAccountState(); applyAccountAppearance(); renderAccountSettings(); toast(accountL("本地偏好已恢复默认", "Local preferences reset")); });
+    $("settingsResetData").addEventListener("click", function () { if (!window.confirm(accountL("恢复账户与界面偏好的默认值？", "Reset account and interface preferences?"))) return; state.account = accountDefaults(); saveAccountState(); refreshSynchronizedModelSurfaces(); applyAccountAppearance(); renderAccountSettings(); toast(accountL("本地偏好已恢复默认", "Local preferences reset")); });
   }
   function renderSettingsSecurity() {
     $("settingsContent").innerHTML = '<section class="settings-panel">' + settingsPanelHead(accountL("安全中心", "Security center"), accountL("查看当前本地会话并管理登录状态。", "Review the current local session and manage sign-in state.")) + '<div class="acc-stack"><div class="settings-card"><div class="acc-list-row"><span class="settings-status-dot"></span><span><b>' + accountL("本地工作区会话", "Local workspace session") + '</b><small>' + esc(state.userName || accountL("当前用户", "Current user")) + ' · ' + esc(ROLES[state.role][state.lang].name) + '</small></span><span class="amount plus">' + accountL("当前", "Current") + '</span></div></div><div class="acc-actions"><button type="button" class="acc-btn" id="settingsSecurityRefresh">' + accountL("重新检查会话", "Recheck session") + '</button><button type="button" class="acc-btn danger" id="settingsSecuritySignout">' + accountL("退出当前账号", "Sign out") + '</button></div></div></section>';
@@ -6996,6 +7491,7 @@
     if (open) {
       closePicker();
       closePlus();
+      renderModelPicker();
     }
     var menu = $("modelMenu");
     var inTopLayer = false;
@@ -7024,18 +7520,30 @@
     setModelMenu(!modelMenuIsOpen());
   });
   $("modelMenu").addEventListener("click", function (e) { e.stopPropagation(); });
-  Array.prototype.forEach.call($("modelOptions").querySelectorAll(".model-option"), function (button) {
-    button.addEventListener("click", function (e) {
-      e.stopPropagation();
-      state.model = button.getAttribute("data-model") || "agnes-3.0-flash";
-      try { localStorage.setItem("db-model", state.model); } catch (err) {}
-      renderModelPicker();
-      closeModelMenu();
-      toast(t("modelSelected").replace("{name}", $("selectedModelName").textContent));
-    });
+  $("modelOptions").addEventListener("click", function (e) {
+    var button = e.target && e.target.closest ? e.target.closest(".model-option") : null;
+    if (!button || !$("modelOptions").contains(button) || button.disabled) return;
+    e.stopPropagation();
+    var selectionId = button.getAttribute("data-selection-id") || "";
+    var entry = modelEntryBySelectionId(selectionId);
+    if (!entry) {
+      refreshSynchronizedModelSurfaces();
+      return;
+    }
+    state.model = entry.selectionId;
+    reconcileSelectedModel(true);
+    renderModelPicker();
+    closeModelMenu();
+    toast(t("modelSelected").replace("{name}", entry.name));
   });
   $("modelHealth").addEventListener("click", function (e) {
     e.stopPropagation();
+    var selected = reconcileSelectedModel(false);
+    if (selected && selected.provider === "custom") {
+      closeModelMenu();
+      openSelectedCustomModelSettings(selected);
+      return;
+    }
     var button = $("modelHealth");
     if (button.disabled) return;
     button.disabled = true;

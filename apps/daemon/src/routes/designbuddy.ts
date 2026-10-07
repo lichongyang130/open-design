@@ -19,13 +19,19 @@
 //   POST /api/db/agnes/test        -> daemon-side Agnes connectivity check
 //   POST /api/db/agnes/generation-jobs -> start proxy-safe background HTML generation
 //   GET/DELETE /api/db/agnes/generation-jobs/:id -> poll or cancel generation
+//   POST /api/db/custom-model/generation-jobs -> generate through the selected custom config
+//   GET/DELETE /api/db/custom-model/generation-jobs/:id -> poll or cancel custom generation
+//   POST /api/db/custom-model/constrain-html -> harden browser-fallback model output
 //   POST /api/db/agnes/generate    -> bounded synchronous compatibility endpoint
 
 import type { Express } from 'express';
 import { randomUUID } from 'node:crypto';
 import type { RouteDeps } from '../server-context.js';
 import { sendApiError } from '../http/api-errors.js';
-import { proxyDispatcherRequestInit } from '../connectionTest.js';
+import {
+  proxyDispatcherRequestInit,
+  validateUserProviderBaseUrl,
+} from '../connectionTest.js';
 import {
   AGNES_BASE_URL,
   AGNES_IMAGE_MODEL,
@@ -36,6 +42,12 @@ import {
   isAgnesConfigured,
   testAgnesConnection,
 } from '../integrations/agnes.js';
+import {
+  OpenAiCompatibleDesignError,
+  constrainOpenAiCompatibleDesignHtml,
+  generateOpenAiCompatibleDesign,
+  type OpenAiCompatibleDesignConfig,
+} from '../integrations/openai-compatible-design.js';
 import {
   DESIGNBUDDY_GEN_EVENT_TYPES,
   DESIGNBUDDY_GEN_PAYLOAD_LIMIT,
@@ -89,6 +101,84 @@ function normalizeAgnesError(error: unknown): AgnesIntegrationError {
   return error instanceof AgnesIntegrationError
     ? error
     : new AgnesIntegrationError('AGNES_UNAVAILABLE', 'Agnes is currently unavailable.');
+}
+
+type CustomModelGenerationJob = {
+  id: string;
+  status: 'running' | 'succeeded' | 'failed' | 'canceled';
+  createdAt: number;
+  updatedAt: number;
+  controller: AbortController;
+  result?: {
+    html: string;
+    model: string;
+    usage: Record<string, unknown> | null;
+    latencyMs: number;
+  };
+  error?: { code: string; message: string; status: number };
+};
+
+const CUSTOM_MODEL_GENERATION_JOB_TTL_MS = 15 * 60_000;
+const CUSTOM_MODEL_GENERATION_JOB_LIMIT = 4;
+const customModelGenerationJobs = new Map<string, CustomModelGenerationJob>();
+
+function pruneCustomModelGenerationJobs(now = Date.now()): void {
+  for (const [id, job] of customModelGenerationJobs) {
+    if (job.status !== 'running' && now - job.updatedAt > CUSTOM_MODEL_GENERATION_JOB_TTL_MS) {
+      customModelGenerationJobs.delete(id);
+    }
+  }
+}
+
+function resolveCustomModelGenerationConfig(value: unknown): OpenAiCompatibleDesignConfig {
+  const provider = value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+  if (provider.protocol !== 'openai') {
+    throw new OpenAiCompatibleDesignError(
+      'CUSTOM_MODEL_PROTOCOL_UNSUPPORTED',
+      'Custom-model generation currently requires the OpenAI-compatible protocol. Change it in Settings.',
+      422,
+    );
+  }
+  const serverManaged = provider.credentialSource === 'designbuddy_custom_model';
+  if (serverManaged) {
+    const baseUrl = process.env.OD_CUSTOM_MODEL_BASE_URL?.trim() || '';
+    const apiKey = process.env.OD_CUSTOM_MODEL_API_KEY?.trim() || '';
+    const model = process.env.OD_CUSTOM_MODEL_NAME?.trim() || '';
+    if (!baseUrl || !apiKey || !model) {
+      throw new OpenAiCompatibleDesignError(
+        'CUSTOM_MODEL_NOT_CONFIGURED',
+        'The server-managed custom model is not configured. Set OD_CUSTOM_MODEL_BASE_URL, OD_CUSTOM_MODEL_API_KEY, and OD_CUSTOM_MODEL_NAME, then restart the daemon.',
+        503,
+      );
+    }
+    return {
+      baseUrl,
+      apiKey,
+      model,
+      ...(typeof provider.outputLimit === 'number'
+        ? { outputLimit: provider.outputLimit }
+        : {}),
+    };
+  }
+  return {
+    baseUrl: typeof provider.baseUrl === 'string' ? provider.baseUrl : '',
+    apiKey: typeof provider.apiKey === 'string' ? provider.apiKey : '',
+    model: typeof provider.model === 'string' ? provider.model : '',
+    ...(typeof provider.outputLimit === 'number'
+      ? { outputLimit: provider.outputLimit }
+      : {}),
+  };
+}
+
+function normalizeCustomModelError(error: unknown): OpenAiCompatibleDesignError {
+  return error instanceof OpenAiCompatibleDesignError
+    ? error
+    : new OpenAiCompatibleDesignError(
+        'CUSTOM_MODEL_UNAVAILABLE',
+        'The custom model is currently unavailable. Check its connection in Settings.',
+      );
 }
 
 export function registerDesignBuddyRoutes(app: Express, ctx: RegisterDesignBuddyRoutesDeps): void {
@@ -223,6 +313,168 @@ export function registerDesignBuddyRoutes(app: Express, ctx: RegisterDesignBuddy
 
   app.delete('/api/db/agnes/generation-jobs/:jobId', (req, res) => {
     const job = agnesGenerationJobs.get(req.params.jobId);
+    if (!job) return res.status(204).end();
+    if (job.status === 'running') {
+      job.status = 'canceled';
+      job.updatedAt = Date.now();
+      job.controller.abort();
+    }
+    return res.status(204).end();
+  });
+
+  // Browser fallback is allowed only when the user already holds a manual key.
+  // Keep model output untrusted: send it back through the daemon's exact same
+  // HTML constraint before Studio renders it in an artifact frame.
+  app.post('/api/db/custom-model/constrain-html', (req, res) => {
+    const content = req.body?.content;
+    if (typeof content !== 'string' || !content.trim()) {
+      return sendApiError(res, 400, 'BAD_REQUEST', 'content is required');
+    }
+    if (Buffer.byteLength(content, 'utf8') > 1024 * 1024) {
+      return sendApiError(res, 413, 'PAYLOAD_TOO_LARGE', 'content is too large');
+    }
+    try {
+      return res.json({ html: constrainOpenAiCompatibleDesignHtml(content) });
+    } catch (error) {
+      const normalized = normalizeCustomModelError(error);
+      const code = normalized.code === 'CUSTOM_MODEL_HTML_TOO_LARGE'
+        ? 'CUSTOM_MODEL_HTML_TOO_LARGE'
+        : 'CUSTOM_MODEL_INVALID_HTML';
+      return sendApiError(
+        res,
+        normalized.status === 413 ? 413 : 422,
+        code,
+        normalized.message,
+      );
+    }
+  });
+
+  app.post('/api/db/custom-model/generation-jobs', async (req, res) => {
+    pruneCustomModelGenerationJobs();
+    const prompt = req.body?.prompt;
+    const previousHtml = req.body?.previousHtml;
+    if (typeof prompt !== 'string' || !prompt.trim()) {
+      return sendApiError(res, 400, 'BAD_REQUEST', 'prompt is required');
+    }
+    if (prompt.length > 12_000) {
+      return sendApiError(res, 413, 'PAYLOAD_TOO_LARGE', 'prompt is too long');
+    }
+    if (previousHtml !== undefined && typeof previousHtml !== 'string') {
+      return sendApiError(res, 400, 'BAD_REQUEST', 'previousHtml must be a string');
+    }
+    if (typeof previousHtml === 'string' && previousHtml.length > 120_000) {
+      return sendApiError(res, 413, 'PAYLOAD_TOO_LARGE', 'previousHtml is too large');
+    }
+    let config: OpenAiCompatibleDesignConfig;
+    try {
+      config = resolveCustomModelGenerationConfig(req.body?.provider);
+    } catch (error) {
+      const normalized = normalizeCustomModelError(error);
+      const code = normalized.code === 'CUSTOM_MODEL_NOT_CONFIGURED'
+        ? 'CUSTOM_MODEL_NOT_CONFIGURED'
+        : normalized.code === 'CUSTOM_MODEL_PROTOCOL_UNSUPPORTED'
+          ? 'CUSTOM_MODEL_PROTOCOL_UNSUPPORTED'
+          : 'CUSTOM_MODEL_INVALID_CONFIG';
+      return sendApiError(res, normalized.status, code, normalized.message);
+    }
+    const validatedEndpoint = await validateUserProviderBaseUrl(config.baseUrl);
+    if (validatedEndpoint.error || !validatedEndpoint.parsed) {
+      return sendApiError(
+        res,
+        validatedEndpoint.forbidden ? 403 : 400,
+        validatedEndpoint.forbidden ? 'FORBIDDEN' : 'BAD_REQUEST',
+        validatedEndpoint.forbidden
+          ? 'The custom model endpoint is blocked by the daemon network policy.'
+          : 'The custom model endpoint is invalid. Fix it in Settings.',
+      );
+    }
+    const activeJobs = Array.from(customModelGenerationJobs.values())
+      .filter((job) => job.status === 'running').length;
+    if (activeJobs >= CUSTOM_MODEL_GENERATION_JOB_LIMIT) {
+      return sendApiError(
+        res,
+        429,
+        'RATE_LIMITED',
+        'Too many custom-model generations are already running',
+      );
+    }
+
+    const now = Date.now();
+    const job: CustomModelGenerationJob = {
+      id: randomUUID(),
+      status: 'running',
+      createdAt: now,
+      updatedAt: now,
+      controller: new AbortController(),
+    };
+    customModelGenerationJobs.set(job.id, job);
+    res.status(202).json({ jobId: job.id, status: job.status });
+
+    const proxyDispatcher = proxyDispatcherRequestInit(process.env);
+    void (async () => {
+      const startedAt = Date.now();
+      try {
+        const result = await generateOpenAiCompatibleDesign({
+          config,
+          prompt,
+          locale: req.body?.locale === 'en' ? 'en' : 'zh',
+          ...(typeof req.body?.mode === 'string' ? { mode: req.body.mode } : {}),
+          ...(typeof req.body?.projectName === 'string'
+            ? { projectName: req.body.projectName }
+            : {}),
+          ...(typeof previousHtml === 'string' ? { previousHtml } : {}),
+          signal: job.controller.signal,
+          requestInit: proxyDispatcher.requestInit,
+        });
+        if (job.status === 'canceled') return;
+        job.status = 'succeeded';
+        job.updatedAt = Date.now();
+        job.result = {
+          html: result.html,
+          model: result.model,
+          usage: result.usage,
+          latencyMs: Date.now() - startedAt,
+        };
+      } catch (error) {
+        if (job.status === 'canceled') return;
+        const normalized = normalizeCustomModelError(error);
+        job.status = 'failed';
+        job.updatedAt = Date.now();
+        job.error = {
+          code: normalized.code,
+          message: normalized.message,
+          status: normalized.status,
+        };
+      } finally {
+        await proxyDispatcher.close();
+      }
+    })();
+  });
+
+  app.get('/api/db/custom-model/generation-jobs/:jobId', (req, res) => {
+    pruneCustomModelGenerationJobs();
+    const job = customModelGenerationJobs.get(req.params.jobId);
+    if (!job) {
+      return sendApiError(res, 404, 'NOT_FOUND', 'Custom-model generation job not found');
+    }
+    if (job.status === 'succeeded') {
+      return res.json({ status: job.status, result: job.result });
+    }
+    if (job.status === 'failed' || job.status === 'canceled') {
+      return res.json({
+        status: job.status,
+        error: job.error || {
+          code: 'CUSTOM_MODEL_CANCELED',
+          message: 'Custom-model generation was canceled.',
+          status: 499,
+        },
+      });
+    }
+    return res.json({ status: job.status, createdAt: job.createdAt });
+  });
+
+  app.delete('/api/db/custom-model/generation-jobs/:jobId', (req, res) => {
+    const job = customModelGenerationJobs.get(req.params.jobId);
     if (!job) return res.status(204).end();
     if (job.status === 'running') {
       job.status = 'canceled';

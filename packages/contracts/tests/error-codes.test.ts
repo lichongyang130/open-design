@@ -23,4 +23,14 @@ describe('shared API error codes', () => {
     const code: ApiErrorCode = 'AGENT_RUNTIME_DEF_INVALID';
     expect(code).toBe('AGENT_RUNTIME_DEF_INVALID');
   });
+
+  it('exposes provider-specific custom-model failures for localized clients', () => {
+    const codes: ApiErrorCode[] = [
+      'CUSTOM_MODEL_NETWORK_ERROR',
+      'CUSTOM_MODEL_NOT_CONFIGURED',
+      'CUSTOM_MODEL_INVALID_HTML',
+      'CUSTOM_MODEL_HTML_TOO_LARGE',
+    ];
+    expect(API_ERROR_CODES).toEqual(expect.arrayContaining(codes));
+  });
 });
