@@ -9,9 +9,12 @@ import {
   listDesignBuddyGenEvents,
   listDesignBuddyGenSummaries,
   migrateDesignBuddy,
+  readDesignBuddyProfile,
   readDesignBuddyStarterStatus,
+  setDesignBuddyProfile,
 } from '../src/designbuddy-store.js';
 import { DESIGNER_COMMERCIAL_STARTERS } from '../src/designbuddy-commercial-projects.js';
+import { DESIGNBUDDY_ROLE_STARTERS } from '../src/designbuddy-role-projects.js';
 
 function fixtureDb() {
   const db = new Database(':memory:');
@@ -32,6 +35,22 @@ function fixtureDb() {
 }
 
 describe('DesignBuddy real starter projects', () => {
+  it('persists an explicit local-workspace profile in SQLite', () => {
+    const db = fixtureDb();
+    expect(readDesignBuddyProfile(db)).toEqual({
+      displayName: null,
+      hasProfile: false,
+      mode: 'local-workspace',
+    });
+    expect(setDesignBuddyProfile(db, '  小鹿   Studio  ')).toEqual({
+      displayName: '小鹿 Studio',
+      hasProfile: true,
+      mode: 'local-workspace',
+    });
+    expect(readDesignBuddyProfile(db).displayName).toBe('小鹿 Studio');
+    db.close();
+  });
+
   it('ships 50 distinct long-form commercial pages across ten real product systems', () => {
     expect(DESIGNER_COMMERCIAL_STARTERS).toHaveLength(50);
     expect(new Set(DESIGNER_COMMERCIAL_STARTERS.map((starter) => starter.key)).size).toBe(50);
@@ -89,6 +108,74 @@ describe('DesignBuddy real starter projects', () => {
     expect(document.querySelector('#actionDrawer')?.classList.contains('open')).toBe(false);
     expect(document.querySelector('#toast')?.textContent).toContain('方案已确认');
     dom.window.close();
+  });
+
+  it('ships and persists six real, interactive workspaces for every operational role', () => {
+    const roles = ['pm', 'dev', 'admin'] as const;
+    const allBlueprints = roles.flatMap((role) => [...DESIGNBUDDY_ROLE_STARTERS[role]]);
+    expect(allBlueprints).toHaveLength(18);
+    expect(new Set(allBlueprints.map((starter) => starter.key)).size).toBe(18);
+    expect(new Set(allBlueprints.map((starter) => starter.html)).size).toBe(18);
+
+    for (const role of roles) {
+      expect(DESIGNBUDDY_ROLE_STARTERS[role]).toHaveLength(6);
+      for (const starter of DESIGNBUDDY_ROLE_STARTERS[role]) {
+        expect(starter.role).toBe(role);
+        expect(starter.html).toContain(`data-role-starter="${role}"`);
+        expect(starter.html).toContain('data-stage');
+        expect(starter.html).toContain('data-record');
+        expect(starter.html).toContain("addEventListener('click'");
+        expect(starter.interactive).toBe(true);
+      }
+    }
+
+    for (const starter of allBlueprints) {
+      const dom = new JSDOM(starter.html, {
+        runScripts: 'dangerously',
+        pretendToBeVisual: true,
+        url: `https://preview.example/project/${starter.key}`,
+      });
+      const document = dom.window.document;
+      const metrics = document.querySelectorAll<HTMLElement>('[data-select]');
+      metrics[1]!.click();
+      expect(metrics[1]!.classList.contains('active')).toBe(true);
+      document.getElementById('openAction')!.click();
+      expect(document.getElementById('drawer')!.classList.contains('open')).toBe(true);
+      document.getElementById('confirmAction')!.click();
+      expect(document.getElementById('drawer')!.classList.contains('open')).toBe(false);
+      expect(document.getElementById('toast')!.textContent).toContain('状态已更新');
+      dom.window.close();
+    }
+
+    const db = fixtureDb();
+    for (const role of roles) {
+      expect(readDesignBuddyStarterStatus(db, role).initialized).toBe(false);
+      const initialized = initializeDesignBuddyStarterProjects(db, role);
+      expect(initialized).toMatchObject({ role, initialized: true, version: 1 });
+      expect(initialized.createdProjectIds).toHaveLength(6);
+      expect(new Set(initialized.projectIds).size).toBe(6);
+    }
+    const rows = db.prepare('SELECT id, metadata_json AS metadataJson FROM projects').all() as Array<{
+      id: string;
+      metadataJson: string;
+    }>;
+    expect(rows).toHaveLength(18);
+    const metadata = rows.map((row) => ({ id: row.id, ...JSON.parse(row.metadataJson) }));
+    for (const role of roles) {
+      const roleRows = metadata.filter((item) => item.designBuddyRole === role);
+      expect(roleRows).toHaveLength(6);
+      expect(roleRows.every((item) => item.source === 'starter-project')).toBe(true);
+      expect(new Set(roleRows.map((item) => item.designBuddyMode)).size).toBe(6);
+      expect(roleRows.every((item) => String(item.starterKey).startsWith(`${role}.`))).toBe(true);
+    }
+    expect(listDesignBuddyGenSummaries(db)).toHaveLength(18);
+
+    const pmBefore = readDesignBuddyStarterStatus(db, 'pm');
+    db.prepare('DELETE FROM projects WHERE id = ?').run(pmBefore.projectIds[0]);
+    const pmAgain = initializeDesignBuddyStarterProjects(db, 'pm');
+    expect(pmAgain.createdProjectIds).toEqual([]);
+    expect((db.prepare('SELECT COUNT(*) AS count FROM projects').get() as { count: number }).count).toBe(17);
+    db.close();
   });
 
   it('materializes 56 persisted Designer projects, including 50 commercial interactive experiences', () => {

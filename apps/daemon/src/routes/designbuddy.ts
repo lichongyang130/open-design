@@ -2,6 +2,8 @@
 // with same-origin relative URLs; the web dev server (and the packaged sidecar)
 // proxy /api/* to this daemon, so no CORS setup is needed on the client.
 //
+//   GET  /api/db/profile           -> persisted local-workspace display name
+//   PUT  /api/db/profile           <- { displayName }
 //   GET  /api/db/role              -> { role }
 //   PUT  /api/db/role              <- { role }  (designer | pm | dev | admin)
 //   GET  /api/db/reviews           -> { reviews: [...] }
@@ -43,8 +45,10 @@ import {
   listDesignBuddyGenEvents,
   listDesignBuddyGenSummaries,
   listDesignBuddyReviews,
+  readDesignBuddyProfile,
   readDesignBuddyRole,
   readDesignBuddyStarterStatus,
+  setDesignBuddyProfile,
   setDesignBuddyReviewStatus,
   setDesignBuddyRole,
 } from '../designbuddy-store.js';
@@ -141,8 +145,22 @@ export function registerDesignBuddyRoutes(app: Express, ctx: RegisterDesignBuddy
     }
   });
 
+  app.get('/api/db/profile', (_req, res) => {
+    res.json(readDesignBuddyProfile(db));
+  });
+
+  app.put('/api/db/profile', (req, res) => {
+    const displayName = typeof req.body?.displayName === 'string'
+      ? req.body.displayName.trim().replace(/\s+/g, ' ')
+      : '';
+    if (!displayName || displayName.length > 60) {
+      return sendApiError(res, 400, 'BAD_REQUEST', 'displayName required (max 60 chars)');
+    }
+    res.json(setDesignBuddyProfile(db, displayName));
+  });
+
   app.get('/api/db/role', (_req, res) => {
-    // hasRole=false 表示从未选择过 —— 登录端据此决定是否先去选角页。
+    // hasRole=false means this local workspace has not completed onboarding.
     res.json(readDesignBuddyRole(db));
   });
 
@@ -153,9 +171,7 @@ export function registerDesignBuddyRoutes(app: Express, ctx: RegisterDesignBuddy
     }
     const selectedRole = role as (typeof DESIGNBUDDY_ROLES)[number];
     setDesignBuddyRole(db, selectedRole);
-    const starterProjects = selectedRole === 'designer'
-      ? initializeDesignBuddyStarterProjects(db, selectedRole)
-      : null;
+    const starterProjects = initializeDesignBuddyStarterProjects(db, selectedRole);
     res.json({ role, hasRole: true, starterProjects });
   });
 

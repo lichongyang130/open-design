@@ -375,6 +375,7 @@
   .model-options { min-height: 0; overflow-y: auto; padding: 6px 7px; scrollbar-width: thin; scrollbar-color: rgba(32,38,30,0.26) transparent; }
   .model-option { min-height: 48px; display: grid; grid-template-columns: 21px minmax(0,1fr) 40px 15px; align-items: center; gap: 7px; padding: 6px 7px; border-radius: 9px; text-align: left; }
   .model-option.selected { background: rgba(135,234,92,0.12); }
+  .model-option.unavailable { opacity: .46; cursor: not-allowed; }
   .model-option-main { min-width: 0; display: flex; align-items: center; gap: 6px; }
   .model-option-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
   .model-option.selected .model-option-name { font-weight: 750; }
@@ -546,6 +547,8 @@
   .comm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
   .ccard { border-radius: 18px; overflow: hidden; background: var(--glass); border: 1px solid var(--glass-border); backdrop-filter: blur(16px); box-shadow: 0 8px 22px rgba(58,70,52,0.07); cursor: pointer; transition: transform 0.18s, box-shadow 0.2s; }
   .ccard:hover { transform: translateY(-3px); box-shadow: 0 16px 36px rgba(58,70,52,0.13); }
+  .ccard.readonly { cursor: default; }
+  .ccard.readonly:hover { transform: none; box-shadow: 0 8px 22px rgba(58,70,52,0.07); }
   .ccard .thumb { height: 130px; display: flex; align-items: center; justify-content: center; font-size: 36px; }
   .ccard .body { padding: 11px 13px 12px; border-top: 1px solid var(--hairline); }
   .ccard .body b { font-size: 13px; display: block; }
@@ -1061,7 +1064,7 @@
           </div>
         
         </section>
-        <div class="cp-dir">
+        <div class="cp-dir" hidden>
           <button type="button" class="chip" id="chipDir">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6.5a1.5 1.5 0 0 1 1.5-1.5h4l2 2.5h8a1.5 1.5 0 0 1 1.5 1.5v8.5a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5z"/></svg>
             <span data-i18n="chipDir">工作目录</span>
@@ -1077,24 +1080,6 @@
         <section class="section" style="animation-delay:.16s" id="homeRecent">
           <h2><span class="spark-ico">◍</span><span data-i18n="recentTitle">最近项目</span></h2>
           <div class="projects" id="homeProjGrid">
-            <div class="proj">
-              <div class="thumb" style="background:linear-gradient(140deg,#cdeec2,#8fd4f2)">
-                <svg width="54" height="40" viewBox="0 0 54 40" fill="none"><rect x="1.5" y="1.5" width="51" height="37" rx="6" stroke="#fff" stroke-width="3"/><path d="M10 28 20 16l8 8 6-6 10 12z" fill="#fff" opacity="0.9"/><circle cx="38" cy="11" r="4" fill="#fff" opacity="0.9"/></svg>
-              </div>
-              <div class="meta"><span><b data-i18n="p1">品牌官网改版</b><span data-i18n="t1">2 小时前</span></span><span class="st" data-i18n="stDone">已完成</span></div>
-            </div>
-            <div class="proj">
-              <div class="thumb" style="background:linear-gradient(140deg,#ffe3c4,#ffb3a0)">
-                <svg width="34" height="42" viewBox="0 0 34 42" fill="none"><rect x="1.5" y="1.5" width="31" height="39" rx="7" stroke="#fff" stroke-width="3"/><rect x="7" y="17" width="20" height="4" rx="2" fill="#fff" opacity="0.9"/><rect x="7" y="25" width="13" height="4" rx="2" fill="#fff" opacity="0.7"/><rect x="7" y="8" width="13" height="4" rx="2" fill="#fff" opacity="0.9"/></svg>
-              </div>
-              <div class="meta"><span><b data-i18n="p2">移动端注册流</b><span data-i18n="t2">昨天</span></span><span class="st" data-i18n="stDone">已完成</span></div>
-            </div>
-            <div class="proj">
-              <div class="thumb" style="background:linear-gradient(140deg,#d9d2f5,#b1a5ec)">
-                <svg width="48" height="38" viewBox="0 0 48 38" fill="none"><rect x="1.5" y="1.5" width="45" height="35" rx="6" stroke="#fff" stroke-width="3"/><rect x="8" y="9" width="12" height="20" rx="2" fill="#fff" opacity="0.85"/><rect x="24" y="9" width="16" height="8" rx="2" fill="#fff" opacity="0.9"/><rect x="24" y="21" width="16" height="8" rx="2" fill="#fff" opacity="0.65"/></svg>
-              </div>
-              <div class="meta"><span><b data-i18n="p3">Q3 汇报幻灯片</b><span data-i18n="t3">3 天前</span></span><span class="st" data-i18n="stRun">生成中</span></div>
-            </div>
           </div>
         </section>
 
@@ -1319,7 +1304,7 @@
   var I18N = {
     zh: {
       title: "DesignBuddy · 工作台",
-      navHome: "首页", navProjects: "项目", navTemplates: "模板", navSystems: "设计系统", navCommunity: "社区", navBrain: "第二大脑",
+      navHome: "首页", navProjects: "项目", navTemplates: "模板", navSystems: "设计系统", navCommunity: "示例画廊", navBrain: "第二大脑",
       accountTrial: "体验版", accountUpgrade: "升级套餐", accountPoints: "积分余额", accountFuel: "Buddy加油站",
       accountInvite: "去邀约", accountInviteMeta: "最高得 650 积分/人", accountGrowth: "成长计划", accountGrowthMeta: "连登抽取 Buddy 周边",
       accountSettings: "设置", accountMemory: "记忆与进化", accountAppearance: "外观", accountAppearanceMeta: "外观上新",
@@ -1329,6 +1314,8 @@
       modelChecking: "正在检查服务端配置…", modelConfigured: "服务端密钥已配置", modelMissing: "服务端未配置密钥",
       modelReal: "真实 API", modelText: "文本", modelImage: "图片", modelVideo: "视频", modelCheck: "验证 Agnes 连接",
       modelCheckOk: "Agnes 连接正常（{ms}ms）", modelCheckFailed: "Agnes 连接失败：{message}",
+      modelRequired: "Agnes 尚未配置，无法开始生成。请在 Daemon 中设置 OD_AGNES_API_KEY 并重启服务。",
+      projectCreateFailed: "项目创建失败：{message}", actionFailed: "操作失败：{message}",
       greetPre: "让我们创建", greetSub: "好的作品，从这里开始 —— ", greetSig: "和你的 AI 设计搭子一起。",
       phPrompt: "描述你想生成的内容…",
       chipTemplate: "从模板开始", chipSkill: "技能", chipPlugin: "添加插件", chipDs: "设计系统",
@@ -1368,7 +1355,7 @@
       rsQuota: "剩余额度", rsQuotaSub: "共 {total} 次 · 已用 {used}",
       rsPending: "待评审", rsPendingSub: "来自团队评审队列",
       pkSkill: "选择技能", pkPlugin: "添加插件", pkDs: "选择设计系统",
-      pkSearch: "搜索…", pkClear: "清除选择", pkEmpty: "没有匹配项",
+      pkSearch: "搜索…", pkClear: "清除选择", pkEmpty: "没有匹配项", resourceEmpty: "本地服务当前没有可用资源。",
       toastPicked: "✦ 已选择：{name}",
       sysMore: "显示更多（{n}）",
       /* 生成过程视图 */
@@ -1415,7 +1402,7 @@
       genDefaultDs: "默认视觉规范",
       sfWeb: "网页", sfImage: "图像", sfVideo: "视频", sfAudio: "音频",
       navReview: "评审", navArtifacts: "交付物", navMembers: "成员", navApprovals: "审批",
-      rvHome: "待你评审", rvTitle: "评审中心", rvSub: "集中处理团队提交的设计稿，一键通过或退回。",
+      rvHome: "待你评审", rvTitle: "评审中心", rvSub: "集中处理团队提交的设计稿，一键通过或退回。", rvEmpty: "当前没有来自本地服务的待评审项目。",
       rvWait: "待评审", rvPass: "已通过", rvApprove: "通过", rvReject: "退回", toastRvPass: "✦ 已通过「{name}」并通知提交人",
       atHome: "最新交付物", atTitle: "交付物", atSub: "设计生成的前端资产，代码随时可取用。", atPreview: "预览", atCopy: "复制代码", toastCopied: "✦ 代码已复制（演示）",
       mbTitle: "团队成员", mbSub: "邀请伙伴，看看谁最活跃。", mbInvite: "邀请成员", toastInvite: "✦ 邀请链接已复制（演示）",
@@ -1475,7 +1462,7 @@
       pjRename: "重命名", pjDelete: "删除", pjDeleteConfirm: "确定删除「{name}」吗？删除后不会自动恢复。", pjRenamePrompt: "输入新的项目名称", pjDeleted: "已删除「{name}」", pjRenamed: "已重命名为「{name}」", pjActionFailed: "项目操作失败，请重试", pjVersion: "版本 {v}",
       tpTitle: "模板", tpSub: "从模板开始，事半功倍。", tpFeaturedK: "本周主推", tpUse: "使用模板", tpUses: "次使用",
       syTitle: "设计系统", sySub: "为你的作品选择一种视觉语言。", syApply: "套用",
-      cmTitle: "社区", cmSub: "看看大家用 DesignBuddy 做了什么。", cmPick: "本周精选",
+      cmTitle: "示例画廊", cmSub: "静态策展示例，仅用于浏览风格；当前不提供社区互动。", cmPick: "策展示例",
       bnTitle: "第二大脑", bnSub: "灵感、决策与素材在这里自动沉淀，随时取用。",
       bnAll: "全部", bnIns: "灵感", bnDec: "决策", bnMat: "素材", bnPref: "偏好",
       bnEmpty: "还没有记忆，创作过程会自动沉淀到这里。",
@@ -1543,7 +1530,7 @@
     },
     en: {
       title: "DesignBuddy · Studio",
-      navHome: "Home", navProjects: "Projects", navTemplates: "Templates", navSystems: "Design systems", navCommunity: "Community", navBrain: "Second brain",
+      navHome: "Home", navProjects: "Projects", navTemplates: "Templates", navSystems: "Design systems", navCommunity: "Example gallery", navBrain: "Second brain",
       accountTrial: "Trial", accountUpgrade: "Upgrade", accountPoints: "Points", accountFuel: "Buddy Fuel Station",
       accountInvite: "Invite friends", accountInviteMeta: "Earn up to 650 points each", accountGrowth: "Growth plan", accountGrowthMeta: "Sign in to win Buddy gifts",
       accountSettings: "Settings", accountMemory: "Memory & evolution", accountAppearance: "Appearance", accountAppearanceMeta: "New looks",
@@ -1553,6 +1540,8 @@
       modelChecking: "Checking daemon configuration…", modelConfigured: "Daemon credential configured", modelMissing: "Daemon credential is not configured",
       modelReal: "Live API", modelText: "Text", modelImage: "Image", modelVideo: "Video", modelCheck: "Verify Agnes connection",
       modelCheckOk: "Agnes connection verified ({ms}ms)", modelCheckFailed: "Agnes connection failed: {message}",
+      modelRequired: "Agnes is not configured, so generation cannot start. Set OD_AGNES_API_KEY in the daemon and restart it.",
+      projectCreateFailed: "Could not create the project: {message}", actionFailed: "Action failed: {message}",
       greetPre: "Let's create a ", greetSub: "Great work starts here — ", greetSig: "with your AI design buddy.",
       phPrompt: "Describe what you want to make…",
       chipTemplate: "Start from template", chipSkill: "Skills", chipPlugin: "Add plugin", chipDs: "Design system",
@@ -1592,7 +1581,7 @@
       rsQuota: "Quota left", rsQuotaSub: "{total} total · {used} used",
       rsPending: "Pending reviews", rsPendingSub: "From the team review queue",
       pkSkill: "Pick a skill", pkPlugin: "Add a plugin", pkDs: "Pick a design system",
-      pkSearch: "Search…", pkClear: "Clear selection", pkEmpty: "No matches",
+      pkSearch: "Search…", pkClear: "Clear selection", pkEmpty: "No matches", resourceEmpty: "No resources are currently available from the local service.",
       toastPicked: "✦ Selected: {name}",
       sysMore: "Show more ({n})",
       /* Generation view */
@@ -1639,7 +1628,7 @@
       genDefaultDs: "default visual system",
       sfWeb: "Web", sfImage: "Image", sfVideo: "Video", sfAudio: "Audio",
       navReview: "Review", navArtifacts: "Artifacts", navMembers: "Members", navApprovals: "Approvals",
-      rvHome: "Awaiting your review", rvTitle: "Review center", rvSub: "Review everything your team submits — approve or send back in one click.",
+      rvHome: "Awaiting your review", rvTitle: "Review center", rvSub: "Review everything your team submits — approve or send back in one click.", rvEmpty: "There are no review items from the local service right now.",
       rvWait: "Pending", rvPass: "Approved", rvApprove: "Approve", rvReject: "Send back", toastRvPass: "✦ Approved “{name}” — requester notified",
       atHome: "Latest artifacts", atTitle: "Artifacts", atSub: "Frontend assets generated from designs — code ready to use.", atPreview: "Preview", atCopy: "Copy code", toastCopied: "✦ Code copied (demo)",
       mbTitle: "Team members", mbSub: "Invite teammates and see who's most active.", mbInvite: "Invite members", toastInvite: "✦ Invite link copied (demo)",
@@ -1699,7 +1688,7 @@
       pjRename: "Rename", pjDelete: "Delete", pjDeleteConfirm: "Delete “{name}”? It will not be restored automatically.", pjRenamePrompt: "Enter a new project name", pjDeleted: "Deleted “{name}”", pjRenamed: "Renamed to “{name}”", pjActionFailed: "Project action failed. Please retry.", pjVersion: "Version {v}",
       tpTitle: "Templates", tpSub: "Start from a template, move faster.", tpFeaturedK: "FEATURED", tpUse: "Use template", tpUses: "uses",
       syTitle: "Design systems", sySub: "Pick a visual language for your work.", syApply: "Apply",
-      cmTitle: "Community", cmSub: "See what people are making with DesignBuddy.", cmPick: "PICK OF THE WEEK",
+      cmTitle: "Example gallery", cmSub: "A read-only style showcase; community interactions are not currently available.", cmPick: "CURATED EXAMPLE",
       bnTitle: "Second brain", bnSub: "Ideas, decisions and assets settle here automatically.",
       bnAll: "All", bnIns: "Ideas", bnDec: "Decisions", bnMat: "Assets", bnPref: "Preferences",
       bnEmpty: "No memories yet — they settle here as you create.",
@@ -2247,7 +2236,8 @@
     sysShown: 24,
     selDS: null,
     selSkill: null,
-    selPlugin: null
+    selPlugin: null,
+    templateRouteKey: null
   };
   var $ = function (id) { return document.getElementById(id); };
   function t(k) { return I18N[state.lang][k]; }
@@ -2286,7 +2276,11 @@
     var selected = null;
     Array.prototype.forEach.call($("modelOptions").querySelectorAll(".model-option"), function (button) {
       var on = button.getAttribute("data-model") === state.model;
+      var unavailable = state.agnesConfigured === false;
       button.classList.toggle("selected", on);
+      button.classList.toggle("unavailable", unavailable);
+      button.disabled = unavailable;
+      button.setAttribute("aria-disabled", unavailable ? "true" : "false");
       button.setAttribute("aria-checked", on ? "true" : "false");
       if (on) selected = button;
     });
@@ -2354,11 +2348,23 @@
     var v = $("prompt").value.trim();
     if (!v) { $("prompt").focus(); return; }
     var btn = $("send");
+    if (btn.classList.contains("loading")) return;
     btn.classList.add("loading");
-    setTimeout(function () {
+    btn.disabled = true;
+    btn.setAttribute("aria-busy", "true");
+    var readiness = state.agnesConfigured === true ? Promise.resolve(true) : refreshAgnesConfig();
+    readiness.then(function (configured) {
+      if (!configured) {
+        toast(t("modelRequired"));
+        setModelMenu(true);
+        return false;
+      }
+      return createRealProject(v);
+    }).finally(function () {
       btn.classList.remove("loading");
-      createRealProject(v);
-    }, 900);
+      btn.disabled = false;
+      btn.removeAttribute("aria-busy");
+    });
   }
   /* ── AI 生成过程视图 ─────────────────────────────
      左：对话（发需求 → 引擎分步生成 → 继续修改丰富）
@@ -2367,6 +2373,13 @@
   var GEN_SPEED = +(window.__DB_GEN_SPEED || 1);
   function esc(x) {
     return String(x == null ? "" : x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function escAttr(x) {
+    return esc(x).replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+  function safeCssColor(value, fallback) {
+    var color = String(value == null ? "" : value).trim();
+    return /^(?:#[0-9a-f]{3,8}|rgba?\([0-9.,%\s]+\)|hsla?\([0-9.,%\s]+\))$/i.test(color) ? color : fallback;
   }
   var GEN_KIND_KEY = { signup: "gkSignup", landing: "gkLanding", app: "gkApp", poster: "gkPoster", deck: "gkDeck", dashboard: "gkDashboard", "design-system": "gkDesignSystem", storyboard: "gkStoryboard", page: "gkPage" };
   var CHECK_SM_SVG = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 12.5 5 5L19.5 7"/></svg>';
@@ -2543,6 +2556,13 @@
 
   async function startGenTurn(prompt) {
     if (!state.gen.pid || state.gen.status === "run") return;
+    var configured = state.agnesConfigured === true ? true : await refreshAgnesConfig();
+    if (!configured) {
+      toast(t("modelRequired"));
+      setModelMenu(true);
+      return;
+    }
+    if (state.gen.status === "run") return;
     if (state.gen.abort) state.gen.abort.abort();
     var controller = new AbortController();
     state.gen.abort = controller;
@@ -3006,7 +3026,7 @@
       }
       var blob = new Blob([genPreviewArt.html || ""], { type: "text/html" });
       window.open(URL.createObjectURL(blob), "_blank", "noopener,noreferrer");
-    } catch (e) { toast(t("toastDemo")); }
+    } catch (e) { toast(t("actionFailed").replace("{message}", cleanErrorMessage(e && e.message ? e.message : e))); }
   });
 
   function createRealProject(prompt) {
@@ -3029,23 +3049,26 @@
     if (state.selPlugin) { extras.pluginId = state.selPlugin.id; extras.pluginSource = state.selPlugin.source; }
     var attempt = function (body) { return apiSend("/api/projects", "POST", body); };
     var withExtras = Object.keys(extras).length > 0;
-    attempt(withExtras ? Object.assign({}, base, extras) : base)
+    return attempt(withExtras ? Object.assign({}, base, extras) : base)
       .catch(function (err) {
-        // 参数被校验拒绝时，退回基础创建（不带资源绑定）
-        return withExtras ? attempt(base) : Promise.reject(err);
+        // A resource binding can be rejected by an older daemon. Retry only a
+        // validation response—not a network/server failure that may have
+        // committed already—so a single click cannot create duplicates.
+        var validationFailure = err && (err.status === 400 || err.status === 422);
+        return withExtras && validationFailure ? attempt(base) : Promise.reject(err);
       })
       .then(function (r) {
         toast(t("toastCreated").replace("{name}", name));
         loadProjects();
         showBubble(0);
         var proj = r && r.project;
-        openGen({ id: (proj && proj.id) || id, t: (proj && proj.name) || name }, prompt);
+        return openGen({ id: (proj && proj.id) || id, t: (proj && proj.name) || name }, prompt);
       })
-      .catch(function () {
-        toast(t("toastSent"));
-        showBubble(0);
-        /* 离线演示：照样进入生成视图（事件只在本地，不持久化） */
-        openGen({ id: id, t: name }, prompt);
+      .catch(function (error) {
+        var message = cleanErrorMessage(error && error.message ? error.message : error);
+        toast(t("projectCreateFailed").replace("{message}", message));
+        $("prompt").focus();
+        return null;
       });
   }
   $("send").addEventListener("click", submitPrompt);
@@ -3054,9 +3077,23 @@
   });
 
   /* ── 视图路由 ── */
-  var VIEWS = ["home", "projects", "gen", "brain", "templates", "systems", "community", "review", "artifacts", "members", "approvals"];
+  /* Unbacked artifact/member/approval demos stay out of routing until their
+     daemon contracts exist. Keeping their dormant markup avoids pretending a
+     local toast is a persisted workflow. */
+  var VIEWS = ["home", "projects", "gen", "brain", "templates", "systems", "community", "review"];
+  function currentTemplateRoute() {
+    var hash = (location.hash || "").replace(/^#\/?/, "");
+    var match = /^templates\/([^/]+)(?:\/(\d+))?$/.exec(hash);
+    if (!match) return null;
+    try {
+      return { id: decodeURIComponent(match[1]), page: Math.max(0, (Number(match[2]) || 1) - 1) };
+    } catch (error) {
+      return null;
+    }
+  }
   function currentView() {
     var h = (location.hash || "").replace(/^#\/?/, "");
+    if (currentTemplateRoute()) return "templates";
     return VIEWS.indexOf(h) >= 0 ? h : "home";
   }
   function go(v) {
@@ -3075,6 +3112,16 @@
     var items = document.querySelectorAll(".nav-item");
     for (var j = 0; j < items.length; j++) items[j].classList.toggle("on", items[j].getAttribute("data-nav") === navV);
     window.scrollTo(0, 0);
+    var templateRoute = currentTemplateRoute();
+    if (templateRoute) {
+      var routeKey = templateRoute.id + ":" + templateRoute.page;
+      if (state.templateRouteKey !== routeKey) {
+        state.templateRouteKey = routeKey;
+        requestAnimationFrame(function () { openTemplatePreview(templateRoute.id, templateRoute.page, true); });
+      }
+    } else {
+      state.templateRouteKey = null;
+    }
   }
   window.addEventListener("hashchange", applyView);
   (function wireNav() {
@@ -3092,7 +3139,8 @@
     [$("plusPanel"), $("pkPanel")].forEach(function (pn) {
       if (pn) pn.addEventListener("click", function (e) { e.stopPropagation(); });
     });
-    $("chipDir").addEventListener("click", function (e) { e.stopPropagation(); toast(t("toastDemo")); });
+    /* Working-folder attachment is hidden until a real directory grant can be
+       represented in this static Studio shell. Never expose a demo-only row. */
     $("chipDs").addEventListener("click", function (e) { e.stopPropagation(); openPicker("ds"); });
   })();
 
@@ -3163,7 +3211,7 @@
     if ($("pkPanel").classList.contains("show") && pkCfg && pkCfg.kind === kind) { closePicker(); return; }
     closePlus();
     var items = pickerItems(kind);
-    if (!items.length) { toast(t("toastDemo")); return; }
+    if (!items.length) { toast(t("resourceEmpty")); return; }
     pkCfg = { kind: kind, items: items };
     var panel = $("pkPanel");
     /* Portal 到 body 最外层：脱离 composer 的层叠上下文，压过页面所有内容 */
@@ -3206,10 +3254,13 @@
       var b = document.createElement("button");
       b.type = "button";
       b.className = "pk-item" + (on ? " on" : "");
-      var ic = it.sw && it.sw.length
-        ? '<span class="ic"><i style="background:linear-gradient(135deg,' + it.sw.slice(0, 2).join(",") + ')"></i></span>'
-        : '<span class="ic">' + it.name.slice(0, 2).toUpperCase() + "</span>";
-      b.innerHTML = ic + '<span class="tx"><b>' + it.name + "</b><small>" + (it.desc || it.tag || it.id) + "</small></span>" + '<span class="ck">' + CHECK_SVG + "</span>";
+      var swatches = it.sw && it.sw.length
+        ? it.sw.slice(0, 2).map(function (color, colorIndex) { return safeCssColor(color, colorIndex ? "#b8b8b8" : "#e8e8e8"); })
+        : [];
+      var ic = swatches.length
+        ? '<span class="ic"><i style="background:linear-gradient(135deg,' + swatches.join(",") + ')"></i></span>'
+        : '<span class="ic">' + esc(it.name.slice(0, 2).toUpperCase()) + "</span>";
+      b.innerHTML = ic + '<span class="tx"><b>' + esc(it.name) + "</b><small>" + esc(it.desc || it.tag || it.id) + "</small></span>" + '<span class="ck">' + CHECK_SVG + "</span>";
       b.addEventListener("click", function () {
         if (pkCfg.kind === "skill") state.selSkill = { id: it.id, name: it.name };
         else if (pkCfg.kind === "plugin") state.selPlugin = { id: it.id, name: it.name, source: it.source };
@@ -3255,15 +3306,13 @@
     conn: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7.5V4.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 4.5v3M9 16.5v3a1.5 1.5 0 0 0 1.5 1.5h3a1.5 1.5 0 0 0 1.5-1.5v-3M6.5 9a2.5 2.5 0 0 0-2.5 2.5V13h16v-1.5A2.5 2.5 0 0 0 17.5 9z"/></svg>',
     mcp: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="6" rx="2"/><rect x="3.5" y="13.5" width="17" height="6" rx="2"/><path d="M7.5 7.5h.01M7.5 16.5h.01"/></svg>'
   };
+  /* Only advertise resources that are backed by live daemon data. File,
+     local-folder, Figma, connector, and MCP rows return when their grant or
+     authorization flows are available in this Studio shell. */
   var PLUS_MENU = [
-    { k: "attach", label: "pmAttach" },
     { k: "ref", label: "pmRef" },
-    { k: "link", label: "pmLink" },
     { k: "skill", label: "pmSkill" },
-    { k: "plugin", label: "pmPlugin" },
-    { k: "figma", label: "pmFigma" },
-    { k: "conn", label: "pmConn" },
-    { k: "mcp", label: "pmMcp" }
+    { k: "plugin", label: "pmPlugin" }
   ];
   var plusCfg = { tab: "plugin", q: "", sel: null, selRef: null };
 
@@ -3300,8 +3349,7 @@
     if (plusCfg.tab === "ref") {
       return (state.realProjects || []).map(function (pj) { return { id: pj.id, name: pj.t, desc: pj.kind || pj.time || "" }; });
     }
-    var itemsKey = { attach: "pmAttachItems", figma: "pmFigmaItems", conn: "pmConnItems", mcp: "pmMcpItems", link: "pmLinkItems" }[plusCfg.tab];
-    return (t(itemsKey) || "").split(",").filter(Boolean).map(function (x, i) { return { id: "demo-" + i, name: x, desc: "" }; });
+    return [];
   }
   function plusRowsHtml(rows) {
     return rows.length
@@ -3450,8 +3498,6 @@
         } else if (plusCfg.tab === "ref") {
           plusCfg.selRef = id;
           renderPlusListOnly();
-        } else {
-          toast(t("toastDemo"));
         }
       });
     });
@@ -3580,12 +3626,11 @@
     var cfg = roleProjectContent();
     if (state.realProjectRows) state.realProjects = state.realProjectRows.map(mapRealProject);
     var real = state.realProjects || [];
-    /* 设计师项目只渲染数据库真数据；其他角色暂保留下一阶段的静态蓝图。 */
-    var samples = state.role === "designer" ? [] : cfg.items.map(function (p) {
-      var mode = roleModeById(p.mode, state.role, state.lang);
-      return Object.assign({ role: state.role, k: mode ? mode.label : p.mode }, p);
+    /* Role scope is authoritative: every role now owns persisted starters and
+       user projects. Legacy unscoped rows stay visible only to Designer. */
+    var data = real.filter(function (project) {
+      return project.role === state.role || (!project.role && state.role === "designer");
     });
-    var data = real.concat(samples);
     var filters = [{ id: "all", label: cfg.all }].concat(roleModeOptions().map(function (m) {
       return { id: m.id, label: m.label };
     }));
@@ -3593,10 +3638,12 @@
 
     var title = $("pjTitle") || document.querySelector("#view-projects h1");
     if (title) title.textContent = cfg.title;
-    var projectCountNote = state.role === "designer" && data.length
-      ? (state.lang === "zh" ? " · " + data.length + " 个商业项目 · 点击缩略图打开互动预览" : " · " + data.length + " commercial projects · Click a thumbnail for live preview")
+    var projectCountNote = data.length
+      ? (state.lang === "zh"
+          ? " · " + data.length + (state.role === "designer" ? " 个商业项目" : " 个角色项目") + " · 点击缩略图打开互动预览"
+          : " · " + data.length + (state.role === "designer" ? " commercial projects" : " role projects") + " · Click a thumbnail for live preview")
       : "";
-    $("pjSub").textContent = cfg.sub + projectCountNote + (real.length ? "  " + d.pjLive : "");
+    $("pjSub").textContent = cfg.sub + projectCountNote + (data.length ? "  " + d.pjLive : "");
     $("pjSearch").setAttribute("placeholder", cfg.search);
     var newLabel = $("pjNew").querySelector("span");
     if (newLabel) newLabel.textContent = cfg.newLabel;
@@ -3619,11 +3666,11 @@
     var selectedFilter = filters[state.pjFilter];
     var grid = $("pjGrid");
     grid.innerHTML = "";
-    if (state.role === "designer" && state.projectsLoading && state.realProjectRows === null) {
+    if (state.projectsLoading && state.realProjectRows === null) {
       grid.innerHTML = '<div class="project-state"><div><div class="spin"></div><b>' + esc(t("pjRealLoading")) + '</b><p>' + esc(t("pjRealLoadingSub")) + "</p></div></div>";
       return;
     }
-    if (state.role === "designer" && state.starterInitError) {
+    if (state.starterInitError) {
       var errorState = document.createElement("div");
       errorState.className = "project-state";
       errorState.innerHTML = '<div><b>' + esc(t("pjRealError")) + '</b><p>' + esc(t("pjRealErrorSub")) + '</p><button type="button" class="btn-new">' + esc(t("pjRetry")) + "</button></div>";
@@ -3725,16 +3772,17 @@
     grid.appendChild(draft);
   }
 
-  /* 设计师首页「最近项目」：有真实项目时替换静态演示卡 */
+  /* 首页「最近项目」始终来自当前角色的持久化数据。 */
   function renderHomeRecent() {
     var box = $("homeProjGrid");
     if (!box) return;
-    /* Designer never falls back to the hard-coded cards while persistence loads or fails. */
     if (!state.realProjects) {
-      if (state.role === "designer") box.innerHTML = "";
+      box.innerHTML = "";
       return;
     }
-    var recent = state.realProjects.filter(function (p) { return !p.role || p.role === "designer"; }).slice(0, 3);
+    var recent = state.realProjects.filter(function (p) {
+      return p.role === state.role || (!p.role && state.role === "designer");
+    }).slice(0, 3);
     box.innerHTML = "";
     if (!recent.length) return;
     recent.forEach(function (p, i) {
@@ -3757,7 +3805,7 @@
         thumb.innerHTML = ICONS[p.ic] || ICONS.doc;
       }
       card.addEventListener("click", function () {
-        if (p.mode && roleModeById(p.mode, "designer", state.lang)) state.genMode = p.mode;
+        if (p.mode && roleModeById(p.mode, state.role, state.lang)) state.genMode = p.mode;
         openGen({ id: p.id, t: p.t });
       });
       box.appendChild(card);
@@ -3799,12 +3847,23 @@
     return map[item.category] || "landing";
   }
 
-  function openTemplatePreview(item, page) {
+  function openTemplatePreview(item, page, fromRoute) {
     var library = window.StudioTemplates;
-    if (!library || !item) return;
-    library.open(item.id, {
+    if (!library || !item) return false;
+    var template = typeof item === "string" ? library.byId(item) : item;
+    if (!template) {
+      if (fromRoute) {
+        toast(state.lang === "zh" ? "模板链接无效或模板已下架" : "This template link is invalid or no longer available");
+        location.hash = "/templates";
+      }
+      return false;
+    }
+    return library.open(template.id, {
       lang: state.lang,
       page: page || 0,
+      onClose: fromRoute ? function () {
+        if (currentTemplateRoute()) location.hash = "/templates";
+      } : null,
       onUse: function (selected, intent) {
         var info = library.localized(selected, state.lang);
         state.genMode = templateGenerationMode(selected);
@@ -3900,8 +3959,8 @@
         c.className = "scard";
         var colors = (s.swatches && s.swatches.length ? s.swatches : ["#e8e8e8", "#b8b8b8", "#7a7a7a", "#161616"]).slice(0, 5);
         var sw = "";
-        for (var i = 0; i < colors.length; i++) sw += '<i style="background:' + colors[i] + '"></i>';
-        c.innerHTML = '<div class="sw">' + sw + "</div><h3>" + s.title + "</h3><p>" + (s.summary || s.category || "") + '</p><span class="apply">' + t("syApply") + "</span>";
+        for (var i = 0; i < colors.length; i++) sw += '<i style="background:' + safeCssColor(colors[i], "#e8e8e8") + '"></i>';
+        c.innerHTML = '<div class="sw">' + sw + "</div><h3>" + esc(s.title || s.id || "") + "</h3><p>" + esc(s.summary || s.category || "") + '</p><span class="apply">' + esc(t("syApply")) + "</span>";
         c.addEventListener("click", function () {
           state.selDS = { id: s.id, name: s.title };
           updateChips();
@@ -3921,15 +3980,7 @@
       return;
     }
     $("sySub").textContent = d.sySub;
-    d.systems.forEach(function (s) {
-      var c = document.createElement("div");
-      c.className = "scard";
-      var sw = "";
-      for (var i = 0; i < s.c.length; i++) sw += '<i style="background:' + s.c[i] + '"></i>';
-      c.innerHTML = '<div class="sw">' + sw + "</div><h3>" + s.t + "</h3><p>" + s.d + '</p><span class="apply">' + t("syApply") + "</span>";
-      c.addEventListener("click", function () { toast(t("toastApplied").replace("{name}", s.t)); });
-      grid.appendChild(c);
-    });
+    grid.innerHTML = '<div class="bn-empty">' + esc(t("resourceEmpty")) + "</div>";
   }
 
   function renderCommunity() {
@@ -3942,11 +3993,10 @@
     grid.innerHTML = "";
     d.community.forEach(function (w) {
       var c = document.createElement("div");
-      c.className = "ccard";
+      c.className = "ccard readonly";
       c.innerHTML =
         '<div class="thumb" style="background:linear-gradient(140deg,' + w.g + ')">' + w.e + "</div>" +
         '<div class="body"><b>' + w.t + '</b><div class="row"><span class="author"><span class="av" style="background:' + w.avc + '">' + w.author.charAt(0) + "</span>" + w.author + '</span><span class="stats">❤ <b>' + w.likes + "</b> ⟳ <b>" + w.remix + "</b></span></div></div>";
-      c.addEventListener("click", function () { toast(t("toastDemo")); });
       grid.appendChild(c);
     });
   }
@@ -4101,6 +4151,16 @@
       real: true
     };
   }
+  function loadProfile() {
+    return apiGet("/api/db/profile").then(function (profile) {
+      var name = profile && profile.hasProfile ? String(profile.displayName || "").trim().replace(/\s+/g, " ").slice(0, 60) : "";
+      if (!name || name === state.userName) return profile;
+      state.userName = name;
+      try { localStorage.setItem("db-user-name", name); } catch (error) {}
+      applyRole();
+      return profile;
+    }).catch(function () { return null; });
+  }
   function syncRoleFromServer() {
     apiGet("/api/db/role").then(function (d) {
       var r = d && d.role;
@@ -4110,6 +4170,8 @@
         state.role = r;
         state.starterInitialized = false;
         state.starterInitPromise = null;
+        state.realProjectRows = null;
+        state.realProjects = null;
         persistRole(r);
         applyRole();
         loadProjects();
@@ -4119,21 +4181,22 @@
       }
     }).catch(function () {});
   }
-  function ensureDesignerStarterProjects(force) {
-    if (state.role !== "designer") return Promise.resolve(null);
+  function ensureRoleStarterProjects(force) {
     if (state.starterInitialized && !force) return Promise.resolve(null);
     if (state.starterInitPromise && !force) return state.starterInitPromise;
+    var requestedRole = state.role;
     state.starterInitError = false;
     state.projectsLoading = true;
     renderProjects();
-    var request = apiSend("/api/db/starter-projects/initialize", "POST", { role: "designer" })
+    var request = apiSend("/api/db/starter-projects/initialize", "POST", { role: requestedRole })
       .then(function (result) {
+        if (state.role !== requestedRole) return result;
         state.starterInitialized = !!(result && result.initialized);
         state.starterInitError = !state.starterInitialized;
         return result;
       })
       .catch(function () {
-        state.starterInitError = true;
+        if (state.role === requestedRole) state.starterInitError = true;
         return null;
       })
       .then(function (result) {
@@ -4146,7 +4209,7 @@
   function loadProjects(forceStarter) {
     state.projectsLoading = true;
     renderProjects();
-    ensureDesignerStarterProjects(!!forceStarter).then(function () {
+    ensureRoleStarterProjects(!!forceStarter).then(function () {
       return Promise.all([
         apiGet("/api/projects"),
         apiGet("/api/db/projects/gen-summaries").catch(function () { return { summaries: [] }; })
@@ -4165,7 +4228,7 @@
       renderHomeRecent();
     }).catch(function () {
       state.projectsLoading = false;
-      if (state.role === "designer") state.starterInitError = true;
+      state.starterInitError = true;
       renderProjects();
     });
   }
@@ -4270,6 +4333,7 @@
     var nav = $("railNav");
     nav.innerHTML = "";
     L.nav.forEach(function (v) {
+      if (VIEWS.indexOf(v) < 0) return;
       var b = document.createElement("button");
       b.type = "button";
       b.className = "nav-item";
@@ -4304,9 +4368,10 @@
     $("prompt").placeholder = L.ph;
     document.querySelector(".composer").classList.toggle("delegate", state.role === "admin");
     $("homeRecent").hidden = state.role !== "designer";
-    $("homeReview").hidden = state.role !== "pm";
-    $("homeArtifacts").hidden = state.role !== "dev";
-    $("homeAdmin").hidden = state.role !== "admin";
+    $("homeReview").hidden = state.role !== "pm" || !state.realReviews || !state.realReviews.length;
+    $("homeArtifacts").hidden = true;
+    $("homeAdmin").hidden = state.role !== "admin" || !state.realStats;
+    $("homeMbList").hidden = true;
     $("secTiles").hidden = L.tiles.length === 0;
     renderNav();
     buildGreet();
@@ -4704,31 +4769,45 @@
       var name = $("accountSettingsName").value.trim().replace(/\s+/g, " ").slice(0, 60);
       if (!name) { $("accountSettingsName").focus(); toast(accountL("显示名称不能为空", "Display name is required")); return; }
       var nextRole = $("accountSettingsRole").value;
+      if (["designer", "pm", "dev", "admin"].indexOf(nextRole) < 0) return;
       var roleChanged = nextRole !== state.role;
-      state.userName = name;
-      state.lang = $("accountSettingsLang").value === "en" ? "en" : "zh";
-      state.model = $("accountSettingsModel").value;
-      state.account.notifications = $("accountSettingsNotify").checked;
-      state.account.productUpdates = $("accountSettingsProduct").checked;
-      try {
-        localStorage.setItem("db-user-name", name);
-        localStorage.setItem("db-lang", state.lang);
-        localStorage.setItem("db-model", state.model);
-      } catch (err) {}
-      if (roleChanged && ["designer", "pm", "dev", "admin"].indexOf(nextRole) >= 0) {
-        state.role = nextRole;
-        state.starterInitialized = false;
-        state.starterInitPromise = null;
-        persistRole(nextRole);
-        apiSend("/api/db/role", "PUT", { role: nextRole }).then(function () { loadProjects(); }).catch(function () {
-          toast(accountL("角色已在本地切换，服务同步失败", "Role changed locally; server sync failed"));
-        });
-      }
-      saveAccountState();
-      applyLang();
-      renderModelPicker();
-      renderAccountSurface("settings");
-      toast(accountL("设置已保存", "Settings saved"));
+      var nextLang = $("accountSettingsLang").value === "en" ? "en" : "zh";
+      var nextModel = $("accountSettingsModel").value;
+      var nextNotifications = $("accountSettingsNotify").checked;
+      var nextProductUpdates = $("accountSettingsProduct").checked;
+      var submit = e.currentTarget.querySelector('button[type="submit"]');
+      if (submit) { submit.disabled = true; submit.setAttribute("aria-busy", "true"); }
+      var writes = [apiSend("/api/db/profile", "PUT", { displayName: name })];
+      if (roleChanged) writes.push(apiSend("/api/db/role", "PUT", { role: nextRole }));
+      Promise.all(writes).then(function () {
+        state.userName = name;
+        state.lang = nextLang;
+        state.model = nextModel;
+        state.account.notifications = nextNotifications;
+        state.account.productUpdates = nextProductUpdates;
+        try {
+          localStorage.setItem("db-user-name", name);
+          localStorage.setItem("db-lang", state.lang);
+          localStorage.setItem("db-model", state.model);
+        } catch (err) {}
+        if (roleChanged) {
+          state.role = nextRole;
+          state.starterInitialized = true;
+          state.starterInitPromise = null;
+          state.realProjectRows = null;
+          state.realProjects = null;
+          persistRole(nextRole);
+        }
+        saveAccountState();
+        applyLang();
+        renderModelPicker();
+        renderAccountSurface("settings");
+        if (roleChanged) loadProjects();
+        toast(accountL("设置已保存到本地服务", "Settings saved to the local service"));
+      }).catch(function (error) {
+        if (submit) { submit.disabled = false; submit.removeAttribute("aria-busy"); }
+        toast(accountL("设置保存失败，请重试", "Could not save settings. Try again") + (error && error.message ? " · " + cleanErrorMessage(error.message) : ""));
+      });
     });
     $("accountSettingsReset").addEventListener("click", function () {
       state.account.notifications = true;
@@ -5035,45 +5114,54 @@
     list.slice(0, limit || list.length).forEach(function (r, i) {
       var g = GRADS[i % GRADS.length].split(",");
       var card = document.createElement("div");
+      var reviewStatus = ["wait", "pass", "reject"].indexOf(r.st) >= 0 ? r.st : "wait";
+      var reviewTitle = String(r.t || "");
+      var reviewAuthor = String(r.who || "");
+      r.st = reviewStatus;
       card.className = "rvcard";
       card.innerHTML =
-        '<div class="thumb" style="background:linear-gradient(140deg,' + g[0] + "," + g[1] + ')">' + ICONS[hashPick(r.t, PJ_ICONS)] + "</div>" +
-        '<div class="body"><b>' + r.t + "</b>" +
-        '<div class="meta"><span class="av" style="background:' + r.avc + '">' + r.who.charAt(0) + "</span><span>" + r.who + '</span><span class="st ' + r.st + '">' + (r.st === "wait" ? t("rvWait") : t("rvPass")) + "</span></div>" +
-        (r.st === "wait"
-          ? '<div class="acts"><button type="button" class="rvbtn" data-a="rej">' + t("rvReject") + '</button><button type="button" class="rvbtn ok" data-a="ok">' + t("rvApprove") + "</button></div>"
+        '<div class="thumb" style="background:linear-gradient(140deg,' + g[0] + "," + g[1] + ')">' + ICONS[hashPick(reviewTitle, PJ_ICONS)] + "</div>" +
+        '<div class="body"><b>' + esc(reviewTitle) + "</b>" +
+        '<div class="meta"><span class="av" style="background:' + safeCssColor(r.avc, "#7ccbb8") + '">' + esc(reviewAuthor.charAt(0)) + "</span><span>" + esc(reviewAuthor) + '</span><span class="st ' + reviewStatus + '">' + esc(reviewStatus === "wait" ? t("rvWait") : t("rvPass")) + "</span></div>" +
+        (reviewStatus === "wait"
+          ? '<div class="acts"><button type="button" class="rvbtn" data-a="rej">' + esc(t("rvReject")) + '</button><button type="button" class="rvbtn ok" data-a="ok">' + esc(t("rvApprove")) + "</button></div>"
           : "") +
         "</div>";
       var ok = card.querySelector('[data-a="ok"]');
       if (ok) ok.addEventListener("click", function (e) {
         e.stopPropagation();
-        r.st = "pass";
-        if (r.id) apiSend("/api/db/reviews/" + encodeURIComponent(r.id) + "/status", "POST", { status: "pass" }).catch(function () {});
-        renderReview();
-        toast(t("toastRvPass").replace("{name}", r.t));
+        if (!r.id) return;
+        ok.disabled = true;
+        apiSend("/api/db/reviews/" + encodeURIComponent(r.id) + "/status", "POST", { status: "pass" }).then(function () {
+          r.st = "pass";
+          renderReview();
+          toast(t("toastRvPass").replace("{name}", r.t));
+        }).catch(function (error) {
+          ok.disabled = false;
+          toast(t("actionFailed").replace("{message}", cleanErrorMessage(error && error.message ? error.message : error)));
+        });
       });
       var rej = card.querySelector('[data-a="rej"]');
       if (rej) rej.addEventListener("click", function (e) {
         e.stopPropagation();
-        if (r.id) {
-          apiSend("/api/db/reviews/" + encodeURIComponent(r.id) + "/status", "POST", { status: "reject" }).catch(function () {});
+        if (!r.id) return;
+        apiSend("/api/db/reviews/" + encodeURIComponent(r.id) + "/status", "POST", { status: "reject" }).then(function () {
           if (state.realReviews) state.realReviews = state.realReviews.filter(function (x) { return x.id !== r.id; });
           renderReview();
           toast(t("toastRvReject").replace("{name}", r.t));
-        } else {
-          toast(t("toastDemo"));
-        }
+        }).catch(function (error) {
+          toast(t("actionFailed").replace("{message}", cleanErrorMessage(error && error.message ? error.message : error)));
+        });
       });
       box.appendChild(card);
     });
   }
   function renderReview() {
-    var live = state.realReviews != null;
-    var list = live
-      ? state.realReviews.filter(function (r) { return r.st !== "reject"; })
-      : I18N[state.lang].review;
+    var list = (state.realReviews || []).filter(function (r) { return r.st !== "reject"; });
+    $("homeReview").hidden = state.role !== "pm" || !list.length;
     drawReview($("rvGrid"), list, 0);
     drawReview($("homeRvGrid"), list, 3);
+    if (!list.length) $("rvGrid").innerHTML = '<div class="bn-empty">' + esc(t("rvEmpty")) + "</div>";
   }
 
   /* ── 交付物 ── */
@@ -5091,7 +5179,7 @@
         '<div class="acts"><button type="button" class="rvbtn">' + t("atPreview") + '</button><button type="button" class="rvbtn ok" data-a="copy">' + t("atCopy") + "</button></div></div>";
       var cp = card.querySelector('[data-a="copy"]');
       if (cp) cp.addEventListener("click", function (e) { e.stopPropagation(); toast(t("toastCopied")); });
-      card.addEventListener("click", function () { toast(t("toastDemo")); });
+      /* Dormant until artifact records are backed by the daemon. */
       box.appendChild(card);
     });
   }
@@ -5147,13 +5235,12 @@
           ? '<div class="acts"><button type="button" class="rvbtn" data-a="rej">' + t("apReject") + '</button><button type="button" class="rvbtn ok" data-a="ok">' + t("apApprove") + "</button></div>"
           : "");
       var ok = card.querySelector('[data-a="ok"]');
-      if (ok) ok.addEventListener("click", function () {
-        a.st = "done";
-        renderApprovals();
-        toast(t("toastApOk"));
-      });
       var rej = card.querySelector('[data-a="rej"]');
-      if (rej) rej.addEventListener("click", function () { toast(t("toastDemo")); });
+      [ok, rej].forEach(function (button) {
+        if (!button) return;
+        button.disabled = true;
+        button.title = t("resourceEmpty");
+      });
       grid.appendChild(card);
     });
   }
@@ -5179,6 +5266,7 @@
   function renderAdmin() {
     var d = I18N[state.lang];
     if (state.realStats) {
+      $("homeAdmin").hidden = state.role !== "admin";
       var s = state.realStats;
       var pct = Math.max(0, Math.min(100, Math.round((1 - s.quotaUsed / s.quotaTotal) * 100)));
       var today = s.trend && s.trend.length ? s.trend[s.trend.length - 1] : 0;
@@ -5193,15 +5281,15 @@
       drawTrendChart((s.trend && s.trend.length ? s.trend : [0, 0]).slice());
       return;
     }
-    $("adStats").innerHTML = d.adminStats.map(function (s) {
-      return '<div class="stat"><div class="k">' + s.k + '</div><div class="v">' + s.v + (s.d ? "<small>" + s.d + "</small>" : "") + '</div><div class="sub">' + s.sub + "</div></div>";
-    }).join("");
-    drawTrendChart([18, 26, 21, 36, 30, 46, 40, 58, 52, 68, 76, 64]);
+    $("homeAdmin").hidden = true;
+    $("adStats").innerHTML = "";
+    $("adChart").innerHTML = "";
   }
 
   $("pjSearch").addEventListener("input", function () { state.pjQuery = this.value; renderProjects(); });
   $("pjNew").addEventListener("click", function () { go("home"); setTimeout(function () { $("prompt").focus(); }, 60); });
-  $("mbInvite").addEventListener("click", function () { toast(t("toastInvite")); });
+  $("mbInvite").disabled = true;
+  $("mbInvite").title = t("resourceEmpty");
 
   $("lang-zh").addEventListener("click", function () { state.lang = "zh"; applyLang(); });
   $("lang-en").addEventListener("click", function () { state.lang = "en"; applyLang(); });
@@ -5267,7 +5355,8 @@
   applyView();
   refreshAgnesConfig();
 
-  /* 真实数据：角色同步 + 项目/评审/统计拉取（失败静默回退演示数据） */
+  /* Persisted local-workspace profile and role are authoritative. */
+  loadProfile();
   syncRoleFromServer();
   loadProjects();
   loadReviews();

@@ -302,6 +302,14 @@
 
   .legal { margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.07); text-align: center; font-size: 11px; color: var(--faint); }
   .legal .sep { margin: 0 7px; }
+  .local-mode { display: flex; align-items: center; gap: 11px; margin: -6px 0 16px; padding: 11px 12px; border: 1px solid rgba(135, 234, 92, 0.22); border-radius: 13px; background: rgba(135, 234, 92, 0.07); }
+  .local-mode-icon { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; flex: none; color: var(--brand); background: rgba(135, 234, 92, 0.12); }
+  .local-mode b, .local-mode small { display: block; }
+  .local-mode b { font-size: 12px; }
+  .local-mode small { margin-top: 2px; color: var(--muted); font-size: 10.5px; line-height: 1.45; }
+  .workspace-status { min-height: 18px; margin: 9px 2px -5px; color: var(--muted); font-size: 11px; text-align: center; }
+  .workspace-status.error { color: var(--danger); }
+  .rcard:focus-visible, .primary:focus-visible, .lang button:focus-visible, .linkish:focus-visible { outline: 3px solid rgba(135, 234, 92, 0.72); outline-offset: 3px; }
 
   /* 成功态 */
   .done { display: none; text-align: center; padding: 14px 0 6px; }
@@ -425,16 +433,21 @@
         <h1 id="headline" data-i18n="headline">让灵感即刻成形</h1>
         <p class="sub" data-i18n-html="sub">和你的 <b>AI 设计搭子</b> 一起，从一句话到高保真。</p>
 
+        <div class="local-mode" role="note">
+          <span class="local-mode-icon" aria-hidden="true">⌂</span>
+          <span><b data-i18n="localTitle">本地工作区</b><small data-i18n="localSub">资料保存在当前 OpenDesign Daemon，不会创建云端账号。</small></span>
+        </div>
+
         <form id="form" novalidate>
-          <div class="field" id="f-name" hidden>
+          <div class="field" id="f-name">
             <label class="visually-hidden" for="name" data-i18n="labelName">你的名字</label>
             <span class="lead"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c1.6-3.4 4.3-5 7.5-5s5.9 1.6 7.5 5"/></svg></span>
-            <input id="name" name="name" type="text" autocomplete="name" data-i18n-ph="phName" placeholder="你的名字" />
+            <input id="name" name="name" type="text" autocomplete="name" maxlength="60" data-i18n-ph="phName" placeholder="你的名字" />
             <p class="err" role="alert" data-i18n="errName">请填写你的名字</p>
           </div>
 
-          <div class="field" id="f-role" hidden>
-            <span class="role-label" data-i18n="labelRole">选择角色</span>
+          <div class="field" id="f-role">
+            <span class="role-label" data-i18n="labelRole">选择工作角色</span>
             <div class="role-cards" id="roleCards">
               <button type="button" class="rcard sel" data-role="designer">
                 <span class="ric" style="background:linear-gradient(140deg,#d9f2c9,#8fd483)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5a8.5 8.5 0 0 0 0 17c1.4 0 2-.9 2-1.8 0-1.6-1.8-1.9-1.8-3.2 0-1 .8-1.7 2-1.7h1.3a5 5 0 0 0 5-5C20.5 6 16.7 3.5 12 3.5z"/><circle cx="7.5" cy="10.5" r="1" fill="currentColor" stroke="none"/><circle cx="10.5" cy="7" r="1" fill="currentColor" stroke="none"/><circle cx="14.5" cy="7" r="1" fill="currentColor" stroke="none"/></svg></span>
@@ -455,55 +468,12 @@
             </div>
           </div>
 
-          <div class="field" id="f-email">
-            <label class="visually-hidden" for="email" data-i18n="labelEmail">邮箱</label>
-            <span class="lead"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="3"/><path d="m4.5 7.5 7.5 6 7.5-6"/></svg></span>
-            <input id="email" name="email" type="email" autocomplete="email" inputmode="email" data-i18n-ph="phEmail" placeholder="邮箱" />
-            <p class="err" role="alert" data-i18n="errEmail">请输入有效的邮箱地址</p>
-          </div>
-
-          <div class="field" id="f-pass">
-            <label class="visually-hidden" for="password" data-i18n="labelPass">密码</label>
-            <span class="lead"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="3"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg></span>
-            <input id="password" name="password" type="password" autocomplete="current-password" data-i18n-ph="phPass" placeholder="密码" />
-            <span class="tail">
-              <button type="button" id="eye" aria-label="show password">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>
-              </button>
-            </span>
-            <p class="err" role="alert" data-i18n="errPass">密码至少 6 位</p>
-          </div>
-
-          <div class="row-aux">
-            <label><input type="checkbox" id="remember" checked /><span data-i18n="remember">记住我</span></label>
-            <button type="button" class="linkish" id="forgot" data-i18n="forgot">忘记密码？</button>
-          </div>
-
-          <button class="primary" type="submit" id="submit"><span data-i18n="signin">登录</span></button>
+          <button class="primary" type="submit" id="submit"><span data-i18n="enterLocal">进入本地工作区</span></button>
+          <p class="workspace-status" id="workspaceStatus" role="status" aria-live="polite"></p>
         </form>
 
-        <div class="divider"><span data-i18n="or">或</span></div>
-
-        <div class="social">
-          <button type="button" class="ghost" id="google">
-            <svg width="17" height="17" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A8.99 8.99 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.72a5.4 5.4 0 0 1 0-3.44V4.95H.96a9 9 0 0 0 0 8.1l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.59C13.46.9 11.42 0 9 0A8.99 8.99 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
-            <span data-i18n="google">使用 Google 继续</span>
-          </button>
-          <button type="button" class="ghost" id="github">
-            <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.99 8.99 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
-            <span data-i18n="github">使用 GitHub 继续</span>
-          </button>
-        </div>
-
-        <p class="switch">
-          <span id="switchText" data-i18n="noAccount">还没有账号？</span>
-          <button type="button" class="linkish" id="switchMode" data-i18n="createLink">创建账号</button>
-        </p>
-
         <footer class="legal">
-          <span>© 2026 DesignBuddy</span><span class="sep">·</span>
-          <button type="button" class="linkish" style="font-size:11px" data-i18n="terms">服务条款</button><span class="sep">·</span>
-          <button type="button" class="linkish" style="font-size:11px" data-i18n="privacy">隐私政策</button>
+          <span>© 2026 DesignBuddy</span><span class="sep">·</span><span data-i18n="localPrivacy">本地优先 · 不上传登录凭据</span>
         </footer>
       </div>
 
@@ -530,311 +500,227 @@
   "use strict";
   var I18N = {
     zh: {
-      title: "DesignBuddy · 登录",
-      tagline: "AI DESIGN STUDIO",
-      headline: "让灵感即刻成形",
-      sub: "和你的 <b>AI 设计搭子</b> 一起，从一句话到高保真。",
+      title: "DesignBuddy · 本地工作区", tagline: "LOCAL AI DESIGN STUDIO",
+      headline: "让灵感即刻成形", sub: "和你的 <b>AI 设计搭子</b> 一起，从一句话到高保真。",
+      localTitle: "本地工作区", localSub: "资料保存在当前 OpenDesign Daemon，不会创建云端账号。",
       labelName: "你的名字", phName: "你的名字", errName: "请填写你的名字",
-      labelRole: "选择角色",
+      labelRole: "选择工作角色",
       roleDesigner: "设计师", roleDesignerD: "视觉与原型创作",
       rolePM: "产品经理", rolePMD: "需求与团队评审",
       roleDev: "开发者", roleDevD: "代码与交付",
       roleAdmin: "管理者", roleAdminD: "团队与用量",
-      labelEmail: "邮箱", phEmail: "邮箱", errEmail: "请输入有效的邮箱地址",
-      labelPass: "密码", phPass: "密码（至少 6 位）", errPass: "密码至少 6 位",
-      remember: "记住我", forgot: "忘记密码？",
-      signin: "登录", signup: "创建账号", or: "或",
-      google: "使用 Google 继续", github: "使用 GitHub 继续",
-      noAccount: "还没有账号？", createLink: "创建账号",
-      hasAccount: "已有账号？", signinLink: "直接登录",
-      terms: "服务条款", privacy: "隐私政策",
-      doneTitleIn: "欢迎回来！", doneTitleUp: "搭子已就位！",
-      doneSub: "你的设计工作台正在打开…",
-      enter: "进入工作台", otherAccount: "使用其他账号",
-      toastDemo: "设计演示页 · 该流程未接入后端",
+      enterLocal: "进入本地工作区", saving: "正在连接本地服务并保存资料…",
+      saveError: "无法连接 OpenDesign Daemon。请确认本地服务已启动后重试。",
+      localPrivacy: "本地优先 · 不上传登录凭据",
+      doneTitleIn: "本地工作区已就绪！", doneSub: "资料已保存到当前 OpenDesign Daemon。",
+      enter: "进入工作台", otherAccount: "修改工作区资料",
       tagDeer: "小鹿", tagBuddy: "Buddy ✦"
     },
     en: {
-      title: "DesignBuddy · Sign in",
-      tagline: "AI DESIGN STUDIO",
-      headline: "Design at the speed of thought",
-      sub: "With your <b>AI design buddy</b> — from one prompt to hi-fi.",
+      title: "DesignBuddy · Local workspace", tagline: "LOCAL AI DESIGN STUDIO",
+      headline: "Design at the speed of thought", sub: "With your <b>AI design buddy</b> — from one prompt to hi-fi.",
+      localTitle: "Local workspace", localSub: "Your profile is stored in this OpenDesign daemon. No cloud account is created.",
       labelName: "Your name", phName: "Your name", errName: "Please enter your name",
-      labelRole: "Choose your role",
+      labelRole: "Choose a workspace role",
       roleDesigner: "Designer", roleDesignerD: "Visuals & prototypes",
       rolePM: "Product Manager", rolePMD: "Briefs & team reviews",
       roleDev: "Developer", roleDevD: "Code & delivery",
       roleAdmin: "Admin", roleAdminD: "Team & usage",
-      labelEmail: "Email", phEmail: "Email", errEmail: "Please enter a valid email address",
-      labelPass: "Password", phPass: "Password (min. 6 characters)", errPass: "Password must be at least 6 characters",
-      remember: "Remember me", forgot: "Forgot password?",
-      signin: "Sign in", signup: "Create account", or: "or",
-      google: "Continue with Google", github: "Continue with GitHub",
-      noAccount: "No account yet?", createLink: "Create one",
-      hasAccount: "Already have an account?", signinLink: "Sign in",
-      terms: "Terms", privacy: "Privacy",
-      doneTitleIn: "Welcome back!", doneTitleUp: "Your buddy is ready!",
-      doneSub: "Opening your design studio…",
-      enter: "Enter the studio", otherAccount: "Use another account",
-      toastDemo: "Design demo · this flow is not wired to a backend",
+      enterLocal: "Enter local workspace", saving: "Connecting to the local service and saving your profile…",
+      saveError: "OpenDesign daemon is unavailable. Start the local service, then try again.",
+      localPrivacy: "Local-first · no sign-in credentials uploaded",
+      doneTitleIn: "Your local workspace is ready!", doneSub: "Your profile is stored in this OpenDesign daemon.",
+      enter: "Enter the studio", otherAccount: "Edit workspace profile",
       tagDeer: "Lu", tagBuddy: "Buddy ✦"
     }
   };
+  var roles = ["designer", "pm", "dev", "admin"];
   var state = {
-    mode: "signin",
-    role: "designer",
+    role: (function () {
+      try { var value = localStorage.getItem("db-role"); if (roles.indexOf(value) >= 0) return value; } catch (e) {}
+      return "designer";
+    })(),
     lang: (function () {
-      try {
-        var saved = localStorage.getItem("db-lang");
-        if (saved === "zh" || saved === "en") return saved;
-      } catch (e) {}
+      try { var saved = localStorage.getItem("db-lang"); if (saved === "zh" || saved === "en") return saved; } catch (e) {}
       return (navigator.language || "en").toLowerCase().indexOf("zh") === 0 ? "zh" : "en";
-    })()
+    })(),
+    busy: false
   };
   var $ = function (id) { return document.getElementById(id); };
+  function t(key) { return I18N[state.lang][key] || key; }
+  function cleanName(value) { return String(value == null ? "" : value).trim().replace(/\s+/g, " ").slice(0, 60); }
 
-  function t(key) { return I18N[state.lang][key]; }
-
-  function cleanUserName(value) {
-    return String(value == null ? "" : value).trim().replace(/\s+/g, " ").slice(0, 60);
-  }
-
-  function userNameForEmail(email) {
-    var normalizedEmail = String(email || "").trim().toLowerCase();
-    try {
-      var savedEmail = String(localStorage.getItem("db-user-email") || "").trim().toLowerCase();
-      var savedName = cleanUserName(localStorage.getItem("db-user-name"));
-      if (savedName && savedEmail === normalizedEmail) return savedName;
-    } catch (e) {}
-    return cleanUserName(normalizedEmail.split("@")[0]);
-  }
-
-  function persistIdentity(userName, email) {
-    var cleanName = cleanUserName(userName);
-    if (!cleanName) return;
-    try {
-      localStorage.setItem("db-user-name", cleanName);
-      if (email) localStorage.setItem("db-user-email", String(email).trim().toLowerCase());
-      else localStorage.removeItem("db-user-email");
-    } catch (e) {}
+  function selectRole(role) {
+    if (roles.indexOf(role) < 0) return;
+    state.role = role;
+    Array.prototype.forEach.call(document.querySelectorAll("#roleCards .rcard"), function (button) {
+      var selected = button.getAttribute("data-role") === role;
+      button.classList.toggle("sel", selected);
+      button.setAttribute("aria-pressed", selected ? "true" : "false");
+    });
   }
 
   function applyLang() {
     var d = I18N[state.lang];
     document.documentElement.lang = state.lang === "zh" ? "zh-CN" : "en";
     document.title = d.title;
-    var nodes = document.querySelectorAll("[data-i18n]");
-    for (var i = 0; i < nodes.length; i++) nodes[i].textContent = d[nodes[i].getAttribute("data-i18n")];
-    var htmls = document.querySelectorAll("[data-i18n-html]");
-    for (var j = 0; j < htmls.length; j++) htmls[j].innerHTML = d[htmls[j].getAttribute("data-i18n-html")];
-    var phs = document.querySelectorAll("[data-i18n-ph]");
-    for (var k = 0; k < phs.length; k++) phs[k].setAttribute("placeholder", d[phs[k].getAttribute("data-i18n-ph")]);
-    var tags = document.querySelectorAll("[data-i18n-tag]");
-    for (var m = 0; m < tags.length; m++) {
-      var key = tags[m].getAttribute("data-i18n-tag");
-      tags[m].textContent = key === "deer" ? d.tagDeer : d.tagBuddy;
-    }
+    Array.prototype.forEach.call(document.querySelectorAll("[data-i18n]"), function (node) {
+      node.textContent = d[node.getAttribute("data-i18n")] || "";
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-i18n-html]"), function (node) {
+      node.innerHTML = d[node.getAttribute("data-i18n-html")] || "";
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-i18n-ph]"), function (node) {
+      node.setAttribute("placeholder", d[node.getAttribute("data-i18n-ph")] || "");
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-i18n-tag]"), function (node) {
+      node.textContent = node.getAttribute("data-i18n-tag") === "deer" ? d.tagDeer : d.tagBuddy;
+    });
     $("lang-zh").classList.toggle("on", state.lang === "zh");
     $("lang-en").classList.toggle("on", state.lang === "en");
-    applyMode();
     try { localStorage.setItem("db-lang", state.lang); } catch (e) {}
   }
 
-  function applyMode() {
-    var signup = state.mode === "signup";
-    $("f-name").hidden = !signup;
-    $("f-role").hidden = !signup;
-    if (signup) { $("f-name").classList.add("grow"); $("f-role").classList.add("grow"); $("name").setAttribute("autocomplete", "name"); }
-    $("password").setAttribute("autocomplete", signup ? "new-password" : "current-password");
-    $("submit").lastElementChild.textContent = signup ? t("signup") : t("signin");
-    $("switchText").textContent = signup ? t("hasAccount") : t("noAccount");
-    $("switchMode").textContent = signup ? t("signinLink") : t("createLink");
+  function setBusy(busy) {
+    state.busy = busy;
+    $("submit").disabled = busy;
+    $("submit").classList.toggle("loading", busy);
+    $("submit").setAttribute("aria-busy", busy ? "true" : "false");
+    var status = $("workspaceStatus");
+    status.classList.remove("error");
+    status.textContent = busy ? t("saving") : "";
   }
 
-  function setBad(field, bad) { $(field).classList.toggle("bad", bad); }
+  function request(url, method, body) {
+    return fetch(url, {
+      method: method,
+      headers: { "Content-Type": "application/json" },
+      body: body == null ? undefined : JSON.stringify(body)
+    }).then(function (response) {
+      return response.text().then(function (text) {
+        var payload = null;
+        try { payload = text ? JSON.parse(text) : null; } catch (e) {}
+        if (!response.ok) {
+          var message = payload && payload.error && payload.error.message;
+          throw new Error(message || ("HTTP " + response.status));
+        }
+        return payload;
+      });
+    });
+  }
 
-  function toast(msg) {
-    var el = $("toast");
-    el.textContent = msg;
-    el.classList.add("show");
-    clearTimeout(toast._t);
-    toast._t = setTimeout(function () { el.classList.remove("show"); }, 2600);
+  function persistBrowserState(name) {
+    try {
+      localStorage.setItem("db-user-name", name);
+      localStorage.setItem("db-role", state.role);
+    } catch (e) {}
+    document.cookie = "db-role=" + state.role + "; path=/; max-age=31536000; SameSite=Lax";
+    document.cookie = "db-role=" + state.role + "; path=/; max-age=31536000; SameSite=None; Secure; Partitioned";
+    document.cookie = "db-auth=local-workspace; path=/; max-age=31536000; SameSite=Lax";
+    document.cookie = "db-auth=local-workspace; path=/; max-age=31536000; SameSite=None; Secure; Partitioned";
   }
 
   function showDone() {
-    $("doneTitle").textContent = state.mode === "signup" ? t("doneTitleUp") : t("doneTitleIn");
     var card = $("card");
     card.classList.add("leaving");
     setTimeout(function () {
       $("authView").style.display = "none";
       card.classList.remove("leaving");
       $("doneView").classList.add("show");
+      $("enterBtn").focus();
     }, 260);
   }
 
-  function fakeAsync(btn, cb) {
-    btn.classList.add("loading");
-    btn.setAttribute("aria-busy", "true");
-    setTimeout(function () {
-      btn.classList.remove("loading");
-      btn.removeAttribute("aria-busy");
-      cb();
-    }, 950);
-  }
-
-  $("form").addEventListener("submit", function (e) {
-    e.preventDefault();
-    var ok = true;
-    var email = $("email").value.trim();
-    var pass = $("password").value;
-    if (state.mode === "signup" && !$("name").value.trim()) { setBad("f-name", true); ok = false; } else setBad("f-name", false);
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setBad("f-email", true); ok = false; } else setBad("f-email", false);
-    if (pass.length < 6) { setBad("f-pass", true); ok = false; } else setBad("f-pass", false);
-    if (!ok) return;
-    persistIdentity(state.mode === "signup" ? $("name").value : userNameForEmail(email), email);
-    if (state.mode === "signup") persistRole();
-    fakeAsync($("submit"), showDone);
-  });
-
-  ["name", "email", "password"].forEach(function (id) {
-    $(id).addEventListener("input", function () {
-      this.closest(".field").classList.remove("bad");
+  $("form").addEventListener("submit", function (event) {
+    event.preventDefault();
+    if (state.busy) return;
+    var name = cleanName($("name").value);
+    $("f-name").classList.toggle("bad", !name);
+    if (!name) { $("name").focus(); return; }
+    setBusy(true);
+    Promise.all([
+      request("/api/db/profile", "PUT", { displayName: name }),
+      request("/api/db/role", "PUT", { role: state.role })
+    ]).then(function () {
+      persistBrowserState(name);
+      setBusy(false);
+      showDone();
+    }).catch(function (error) {
+      setBusy(false);
+      var status = $("workspaceStatus");
+      status.classList.add("error");
+      status.textContent = t("saveError") + (error && error.message ? " · " + error.message : "");
     });
   });
 
-  /* 注册角色选择 */
-  var rcards = document.querySelectorAll("#roleCards .rcard");
-  for (var ri = 0; ri < rcards.length; ri++) {
-    (function (btn) {
-      btn.addEventListener("click", function () {
-        state.role = btn.getAttribute("data-role");
-        for (var k = 0; k < rcards.length; k++) rcards[k].classList.toggle("sel", rcards[k] === btn);
-      });
-    })(rcards[ri]);
-  }
-  function persistRole() {
-    try { localStorage.setItem("db-role", state.role); } catch (e) {}
-    document.cookie = "db-role=" + state.role + "; path=/; max-age=31536000; SameSite=Lax";
-    document.cookie = "db-role=" + state.role + "; path=/; max-age=31536000; SameSite=None; Secure; Partitioned";
-    // 同步到 daemon 数据库（同源 /api 经 Next 代理）
-    try {
-      fetch("/api/db/role", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: state.role }),
-        keepalive: true
-      }).catch(function () {});
-    } catch (e) {}
-  }
-
-  $("eye").addEventListener("click", function () {
-    var p = $("password");
-    p.type = p.type === "password" ? "text" : "password";
+  $("name").addEventListener("input", function () { $("f-name").classList.remove("bad"); });
+  Array.prototype.forEach.call(document.querySelectorAll("#roleCards .rcard"), function (button) {
+    button.setAttribute("aria-pressed", "false");
+    button.addEventListener("click", function () { selectRole(button.getAttribute("data-role")); });
   });
-
-  $("switchMode").addEventListener("click", function () {
-    state.mode = state.mode === "signin" ? "signup" : "signin";
-    applyMode();
+  $("enterBtn").addEventListener("click", function (event) {
+    event.preventDefault();
+    window.location.href = "/studio.html";
   });
-
-  $("forgot").addEventListener("click", function () { toast(t("toastDemo")); });
-  document.querySelector(".legal").addEventListener("click", function (e) {
-    if (e.target.classList.contains("linkish")) toast(t("toastDemo"));
-  });
-
-  $("google").addEventListener("click", function () {
-    persistIdentity("Google", "");
-    fakeAsync($("google"), showDone);
-  });
-  $("github").addEventListener("click", function () {
-    persistIdentity("GitHub", "");
-    fakeAsync($("github"), showDone);
-  });
-
-  $("enterBtn").addEventListener("click", function (e) {
-    e.preventDefault();
-    // Cookie writes: in a third-party preview iframe only a Partitioned
-    // (CHIPS) cookie survives; in a normal top-level tab the Lax one does.
-    // Write both so either context keeps the session across refreshes.
-    document.cookie = "db-auth=demo; path=/; max-age=604800; SameSite=None; Secure; Partitioned";
-    document.cookie = "db-auth=demo; path=/; max-age=604800; SameSite=Lax";
-    // 注册：角色已在表单里选好，直接进入工作台。
-    if (state.mode === "signup") { goEnter("/studio.html"); return; }
-    // 登录：只有「第一次」（本地与服务端都没有角色记录）才先进选角页。
-    decideEntry();
-  });
-  function goEnter(target) {
-    try { window.__dbEntry = target; } catch (err) {}
-    window.location.href = target;
-  }
-  function hasLocalRole() {
-    try {
-      var r = localStorage.getItem("db-role");
-      if (r === "designer" || r === "pm" || r === "dev" || r === "admin") return true;
-    } catch (e) {}
-    return /(?:^|;\s*)db-role=(designer|pm|dev|admin)(?:;|$)/.test(document.cookie || "");
-  }
-  function decideEntry() {
-    var fallback = function () { goEnter(hasLocalRole() ? "/studio.html" : "/role.html"); };
-    if (typeof fetch !== "function") { fallback(); return; }
-    fetch("/api/db/role").then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
-      var serverHasRole = !!(d && d.hasRole);
-      goEnter(!serverHasRole && !hasLocalRole() ? "/role.html" : "/studio.html");
-    }).catch(fallback);
-  }
-
   $("back").addEventListener("click", function () {
-    document.cookie = "db-auth=; path=/; max-age=0; SameSite=Lax";
     $("doneView").classList.remove("show");
     $("authView").style.display = "";
     $("card").classList.add("grow");
-    setTimeout(function () { $("card").classList.remove("grow"); }, 400);
+    setTimeout(function () { $("card").classList.remove("grow"); $("name").focus(); }, 320);
   });
-
   $("lang-zh").addEventListener("click", function () { state.lang = "zh"; applyLang(); });
   $("lang-en").addEventListener("click", function () { state.lang = "en"; applyLang(); });
 
-  /* 星点 */
+  function loadPersistedWorkspace() {
+    var localName = "";
+    try { localName = cleanName(localStorage.getItem("db-user-name")); } catch (e) {}
+    if (localName) $("name").value = localName;
+    Promise.all([
+      fetch("/api/db/profile").then(function (response) { return response.ok ? response.json() : null; }).catch(function () { return null; }),
+      fetch("/api/db/role").then(function (response) { return response.ok ? response.json() : null; }).catch(function () { return null; })
+    ]).then(function (values) {
+      var profile = values[0], role = values[1];
+      if (profile && profile.hasProfile && cleanName(profile.displayName)) $("name").value = cleanName(profile.displayName);
+      if (role && role.hasRole && roles.indexOf(role.role) >= 0) selectRole(role.role);
+    });
+  }
+
   (function stars() {
     var box = $("stars"), frag = document.createDocumentFragment();
     var n = Math.min(70, Math.round(window.innerWidth / 22));
     for (var i = 0; i < n; i++) {
-      var s = document.createElement("i");
-      s.className = "star";
+      var star = document.createElement("i");
+      star.className = "star";
       var size = Math.random() < 0.82 ? 1 : 2;
-      s.style.cssText =
-        "left:" + (Math.random() * 100).toFixed(2) + "%;top:" + (Math.random() * 100).toFixed(2) + "%" +
-        ";width:" + size + "px;height:" + size + "px" +
-        ";--d:" + (2.4 + Math.random() * 4).toFixed(2) + "s;--delay:" + (-Math.random() * 6).toFixed(2) + "s";
-      frag.appendChild(s);
+      star.style.cssText = "left:" + (Math.random() * 100).toFixed(2) + "%;top:" + (Math.random() * 100).toFixed(2) + "%;width:" + size + "px;height:" + size + "px;--d:" + (2.4 + Math.random() * 4).toFixed(2) + "s;--delay:" + (-Math.random() * 6).toFixed(2) + "s";
+      frag.appendChild(star);
     }
     box.appendChild(frag);
   })();
 
-  /* 视差（指针设备 + 未开启减少动效时） */
-  var mq = function (q) { return window.matchMedia ? window.matchMedia(q).matches : false; };
   (function parallax() {
-    var reduce = mq("(prefers-reduced-motion: reduce)");
-    if (reduce || mq("(pointer: coarse)")) return;
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+    if (reduce || coarse) return;
     var tx = 0, ty = 0, cx = 0, cy = 0;
-    window.addEventListener("pointermove", function (e) {
-      tx = e.clientX / window.innerWidth - 0.5;
-      ty = e.clientY / window.innerHeight - 0.5;
+    window.addEventListener("pointermove", function (event) {
+      tx = event.clientX / window.innerWidth - 0.5;
+      ty = event.clientY / window.innerHeight - 0.5;
     });
     (function loop() {
-      cx += (tx - cx) * 0.045;
-      cy += (ty - cy) * 0.045;
+      cx += (tx - cx) * 0.045; cy += (ty - cy) * 0.045;
       $("artifacts").style.transform = "translate(" + (cx * 20).toFixed(1) + "px," + (cy * 14).toFixed(1) + "px)";
-      var auroras = document.querySelectorAll(".aurora");
-      for (var i = 0; i < auroras.length; i++) {
-        auroras[i].style.marginLeft = (cx * -26).toFixed(1) + "px";
-        auroras[i].style.marginTop = (cy * -18).toFixed(1) + "px";
-      }
+      Array.prototype.forEach.call(document.querySelectorAll(".aurora"), function (node) {
+        node.style.marginLeft = (cx * -26).toFixed(1) + "px";
+        node.style.marginTop = (cy * -18).toFixed(1) + "px";
+      });
       requestAnimationFrame(loop);
     })();
   })();
 
+  selectRole(state.role);
   applyLang();
+  loadPersistedWorkspace();
 })();
 </script>
 </body>

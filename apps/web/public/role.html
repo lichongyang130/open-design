@@ -98,7 +98,10 @@
   }
   .go:hover { filter: brightness(1.05); }
   .go:active { transform: translateY(1px); }
+  .go:disabled { cursor: wait; filter: saturate(.5); opacity: .72; }
   .note { margin-top: 14px; font-size: 12px; color: var(--faint); }
+  .note.error { color: #a83d35; }
+  .rcard:focus-visible, .go:focus-visible, .lang button:focus-visible { outline: 3px solid rgba(63,156,34,.55); outline-offset: 3px; }
 
   @media (max-width: 560px) {
     .roles { grid-template-columns: 1fr; }
@@ -131,7 +134,7 @@
       <p class="sub" data-i18n="sub">选择你的角色，我们会为你定制工作台。</p>
       <div class="roles" id="roles"></div>
       <button type="button" class="go" id="go" data-i18n="go">开始工作</button>
-      <p class="note" data-i18n="note">稍后在左侧栏也可以随时切换角色。</p>
+      <p class="note" id="roleStatus" role="status" aria-live="polite" data-i18n="note">选择会保存到当前本地工作区。</p>
     </section>
   </main>
 
@@ -141,7 +144,7 @@
   var I18N = {
     zh: {
       title: "你是谁？", sub: "选择你的角色，我们会为你定制工作台。",
-      go: "开始工作", note: "稍后在左侧栏也可以随时切换角色。",
+      go: "开始工作", note: "选择会保存到当前本地工作区。", saving: "正在保存角色并准备项目…", error: "保存失败，请确认 OpenDesign Daemon 已启动后重试。",
       roles: [
         { id: "designer", name: "设计师", desc: "从灵感到高保真", grad: "#d9f2c9,#8fd483" },
         { id: "pm", name: "产品经理", desc: "写 Brief、评审制品", grad: "#d6ecff,#7cb8ee" },
@@ -151,7 +154,7 @@
     },
     en: {
       title: "Who are you?", sub: "Pick your role — we'll tailor the studio for you.",
-      go: "Start working", note: "You can switch roles anytime from the left rail.",
+      go: "Start working", note: "Your choice is saved to this local workspace.", saving: "Saving your role and preparing projects…", error: "Could not save. Start the OpenDesign daemon, then try again.",
       roles: [
         { id: "designer", name: "Designer", desc: "From idea to hi-fi", grad: "#d9f2c9,#8fd483" },
         { id: "pm", name: "Product Manager", desc: "Briefs & artifact reviews", grad: "#d6ecff,#7cb8ee" },
@@ -184,18 +187,20 @@
   };
   function t(k) { return I18N[state.lang][k]; }
   function saveRole() {
-    try { localStorage.setItem("db-role", state.role); } catch (e) {}
-    document.cookie = "db-role=" + state.role + "; path=/; max-age=604800; SameSite=Lax";
-    document.cookie = "db-role=" + state.role + "; path=/; max-age=604800; SameSite=None; Secure; Partitioned";
-    // 同步到 daemon 数据库（同源 /api 经 Next 代理；跳转前尽力送达）
-    try {
-      fetch("/api/db/role", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: state.role }),
-        keepalive: true
-      }).catch(function () {});
-    } catch (e) {}
+    return fetch("/api/db/role", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role: state.role })
+    }).then(function (response) {
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      return response.json();
+    }).then(function (result) {
+      if (!result || result.role !== state.role) throw new Error("role was not persisted");
+      try { localStorage.setItem("db-role", state.role); } catch (e) {}
+      document.cookie = "db-role=" + state.role + "; path=/; max-age=31536000; SameSite=Lax";
+      document.cookie = "db-role=" + state.role + "; path=/; max-age=31536000; SameSite=None; Secure; Partitioned";
+      return result;
+    });
   }
   function render() {
     document.documentElement.lang = state.lang === "zh" ? "zh-CN" : "en";
@@ -209,6 +214,7 @@
       var b = document.createElement("button");
       b.type = "button";
       b.className = "rcard" + (r.id === state.role ? " on" : "");
+      b.setAttribute("aria-pressed", r.id === state.role ? "true" : "false");
       var g = r.grad.split(",");
       b.innerHTML =
         '<span class="ic" style="background:linear-gradient(140deg,' + g[0] + "," + g[1] + ')">' + ICONS[r.id] + "</span>" +
@@ -222,8 +228,17 @@
   $("lang-zh").addEventListener("click", function () { state.lang = "zh"; render(); try { localStorage.setItem("db-lang", state.lang); } catch (e) {} });
   $("lang-en").addEventListener("click", function () { state.lang = "en"; render(); try { localStorage.setItem("db-lang", state.lang); } catch (e) {} });
   $("go").addEventListener("click", function () {
-    saveRole();
-    window.location.href = "/studio.html";
+    var button = $("go"), status = $("roleStatus");
+    button.disabled = true;
+    status.classList.remove("error");
+    status.textContent = t("saving");
+    saveRole().then(function () {
+      window.location.href = "/studio.html";
+    }).catch(function () {
+      button.disabled = false;
+      status.classList.add("error");
+      status.textContent = t("error");
+    });
   });
   (function sparks() {
     var box = $("sparks"), frag = document.createDocumentFragment();

@@ -11,6 +11,11 @@ import {
   DESIGNER_COMMERCIAL_STARTERS,
   enhanceLegacyStarterHtml,
 } from './designbuddy-commercial-projects.js';
+import {
+  DESIGNBUDDY_ROLE_STARTERS,
+  type DesignBuddyOperationalRole,
+  type DesignBuddyRoleStarterBlueprint,
+} from './designbuddy-role-projects.js';
 
 type SqliteDb = Database.Database;
 type DbRow = Record<string, any>;
@@ -40,6 +45,12 @@ export interface DesignBuddyStats {
   quotaTotal: number;
   quotaUsed: number;
   trend: number[];
+}
+
+export interface DesignBuddyProfile {
+  displayName: string | null;
+  hasProfile: boolean;
+  mode: 'local-workspace';
 }
 
 /* ── AI 生成过程事件流（studio.html 生成视图的持久化）──
@@ -90,7 +101,16 @@ export interface DesignBuddyStarterStatus {
 }
 
 const DESIGNER_STARTER_VERSION = 3;
+const ROLE_STARTER_VERSION = 1;
 const DESIGNER_STARTER_PREF = 'starter-projects:designer';
+
+function starterPreferenceKey(role: DesignBuddyRole): string {
+  return `starter-projects:${role}`;
+}
+
+function starterVersionForRole(role: DesignBuddyRole): number {
+  return role === 'designer' ? DESIGNER_STARTER_VERSION : ROLE_STARTER_VERSION;
+}
 
 interface DesignerStarterBlueprint {
   key: string;
@@ -283,6 +303,26 @@ export function setDesignBuddyRole(db: SqliteDb, role: DesignBuddyRole): DesignB
   return role;
 }
 
+export function readDesignBuddyProfile(db: SqliteDb): DesignBuddyProfile {
+  const row = db
+    .prepare(`SELECT value FROM designbuddy_prefs WHERE key = 'profile:display-name'`)
+    .get() as DbRow | undefined;
+  const displayName = typeof row?.value === 'string' && row.value.trim()
+    ? row.value.trim().replace(/\s+/g, ' ').slice(0, 60)
+    : null;
+  return { displayName, hasProfile: displayName !== null, mode: 'local-workspace' };
+}
+
+export function setDesignBuddyProfile(db: SqliteDb, displayName: string): DesignBuddyProfile {
+  const normalized = displayName.trim().replace(/\s+/g, ' ').slice(0, 60);
+  if (!normalized) throw new Error('displayName is required');
+  db.prepare(
+    `INSERT INTO designbuddy_prefs (key, value, updated_at) VALUES ('profile:display-name', ?, ?)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+  ).run(normalized, Date.now());
+  return { displayName: normalized, hasProfile: true, mode: 'local-workspace' };
+}
+
 function parseStarterPreference(value: unknown): {
   version: number;
   projectIds: string[];
@@ -311,39 +351,150 @@ function parseStarterPreference(value: unknown): {
 }
 
 export function readDesignBuddyStarterStatus(db: SqliteDb, role: DesignBuddyRole): DesignBuddyStarterStatus {
-  if (role !== 'designer') {
-    return {
-      role,
-      initialized: false,
-      version: 0,
-      projectIds: [],
-      createdProjectIds: [],
-    };
-  }
-  const row = db.prepare(`SELECT value FROM designbuddy_prefs WHERE key = ?`).get(DESIGNER_STARTER_PREF) as
+  const row = db.prepare(`SELECT value FROM designbuddy_prefs WHERE key = ?`).get(starterPreferenceKey(role)) as
     | DbRow
     | undefined;
   const parsed = parseStarterPreference(row?.value);
   return {
     role,
-    initialized: parsed.version >= DESIGNER_STARTER_VERSION,
+    initialized: parsed.version >= starterVersionForRole(role),
     version: parsed.version,
     projectIds: parsed.projectIds,
     createdProjectIds: [],
   };
 }
 
+function initializeOperationalRoleStarterProjects(
+  db: SqliteDb,
+  role: DesignBuddyOperationalRole,
+): DesignBuddyStarterStatus {
+  const current = readDesignBuddyStarterStatus(db, role);
+  if (current.initialized) return current;
+
+  const starters = DESIGNBUDDY_ROLE_STARTERS[role] as readonly DesignBuddyRoleStarterBlueprint[];
+  const preferenceKey = starterPreferenceKey(role);
+  const preferenceRow = db.prepare(`SELECT value FROM designbuddy_prefs WHERE key = ?`).get(preferenceKey) as
+    | DbRow
+    | undefined;
+  const preference = parseStarterPreference(preferenceRow?.value);
+  const existingStarterByKey = new Map<string, string>();
+  const existingRows = db
+    .prepare(`SELECT id, metadata_json AS metadataJson FROM projects`)
+    .all() as Array<{ id: string; metadataJson: string | null }>;
+  for (const row of existingRows) {
+    try {
+      const metadata = JSON.parse(row.metadataJson || '{}') as Record<string, any>;
+      if (
+        metadata.source === 'starter-project'
+        && metadata.designBuddyRole === role
+        && typeof metadata.starterKey === 'string'
+      ) {
+        existingStarterByKey.set(metadata.starterKey, row.id);
+      }
+    } catch {
+      // Malformed user metadata is never treated as a role starter.
+    }
+  }
+
+  const completedKeys = new Set(preference.starterKeys);
+  existingStarterByKey.forEach((_id, key) => completedKeys.add(key));
+  const projectIds = Array.from(new Set([
+    ...preference.projectIds,
+    ...Array.from(existingStarterByKey.values()),
+  ]));
+  const createdProjectIds: string[] = [];
+  const now = Date.now();
+  const insertProject = db.prepare(
+    `INSERT INTO projects
+       (id, name, skill_id, design_system_id, pending_prompt, metadata_json, created_at, updated_at)
+     VALUES (?, ?, NULL, NULL, NULL, ?, ?, ?)`,
+  );
+  const insertEvent = db.prepare(
+    `INSERT INTO designbuddy_gen (id, project_id, seq, type, payload, created_at)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+  );
+  const writePreference = db.prepare(
+    `INSERT INTO designbuddy_prefs (key, value, updated_at) VALUES (?, ?, ?)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+  );
+
+  db.transaction(() => {
+    starters.forEach((starter, index) => {
+      if (completedKeys.has(starter.key)) return;
+      const projectId = `db-starter-${randomUUID()}`;
+      const projectAt = now - (starters.length - index - 1) * 3_600_000 - 5_000;
+      const metadata = {
+        designBuddyRole: role,
+        designBuddyMode: starter.mode,
+        source: 'starter-project',
+        starterKey: starter.key,
+        starterVersion: ROLE_STARTER_VERSION,
+      };
+      const eventSpecs: Array<{ type: DesignBuddyGenEventType; payload: Record<string, any> }> = [
+        { type: 'user', payload: { text: starter.prompt } },
+        { type: 'ai', payload: { text: `收到，我会把「${starter.name}」整理成可执行、可回放的角色工作区。` } },
+        { type: 'step', payload: { text: '梳理目标、范围、关键记录与验收状态' } },
+        { type: 'step', payload: { text: '建立角色专属信息架构与响应式工作流' } },
+        { type: 'step', payload: { text: '连接导航、指标、记录详情和推进反馈' } },
+        {
+          type: 'artifact',
+          payload: {
+            name: starter.name,
+            version: 1,
+            kind: starter.mode,
+            html: starter.html,
+            interactive: true,
+          },
+        },
+        { type: 'ai', payload: { text: '角色项目已保存。打开设计文件即可滚动查看并操作各项工作流。' } },
+        { type: 'done', payload: { version: 1, kind: starter.mode } },
+      ];
+      const finalAt = projectAt + eventSpecs.length * 1000;
+      insertProject.run(projectId, starter.name, JSON.stringify(metadata), projectAt, finalAt);
+      eventSpecs.forEach((event, seqIndex) => {
+        insertEvent.run(
+          randomUUID(),
+          projectId,
+          seqIndex + 1,
+          event.type,
+          JSON.stringify(event.payload),
+          projectAt + (seqIndex + 1) * 1000,
+        );
+      });
+      completedKeys.add(starter.key);
+      projectIds.push(projectId);
+      createdProjectIds.push(projectId);
+    });
+    writePreference.run(
+      preferenceKey,
+      JSON.stringify({
+        version: ROLE_STARTER_VERSION,
+        projectIds: Array.from(new Set(projectIds)),
+        starterKeys: starters.map((starter) => starter.key),
+      }),
+      now,
+    );
+  })();
+
+  return {
+    role,
+    initialized: true,
+    version: ROLE_STARTER_VERSION,
+    projectIds: Array.from(new Set(projectIds)),
+    createdProjectIds,
+  };
+}
+
 /**
- * Materialize the Designer showcase as persisted projects with replayable v1
- * artifacts. Version 3 replaces the generic showcase skeletons with ten
- * industry-specific, responsive product systems and tailored upgrades for the
- * original six projects. Existing starter artifacts are refreshed in place,
- * while later user-authored versions, user projects, and intentionally deleted
- * starters remain untouched.
+ * Materialize each role's showcase as persisted projects with replayable v1
+ * artifacts. Designer version 3 contains the 56 commercial experiences;
+ * Product, Developer, and Admin each receive six role-specific workspaces.
+ * User projects and intentionally deleted starters remain untouched.
  */
 export function initializeDesignBuddyStarterProjects(db: SqliteDb, role: DesignBuddyRole): DesignBuddyStarterStatus {
+  if (role !== 'designer') return initializeOperationalRoleStarterProjects(db, role);
   const current = readDesignBuddyStarterStatus(db, role);
-  if (role !== 'designer' || current.initialized) return current;
+  if (current.initialized) return current;
 
   const preferenceRow = db.prepare(`SELECT value FROM designbuddy_prefs WHERE key = ?`).get(DESIGNER_STARTER_PREF) as
     | DbRow

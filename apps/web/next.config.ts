@@ -236,11 +236,10 @@ const nextConfig: NextConfig = {
       : !isProd
       ? {
         async redirects() {
-          // DesignBuddy preview entry: visitors without the demo sign-in
-          // cookie land on the DesignBuddy login page (public/login.html)
-          // before entering the workspace. The ?db-auth=1 query is accepted
-          // as a fallback for browsers that block cookies inside the
-          // third-party preview iframe.
+          // DesignBuddy preview entry: visitors without a local-workspace
+          // cookie land on the explicit local profile page (public/login.html)
+          // before entering Studio. The ?db-auth=1 query remains a fallback
+          // for browsers that block cookies inside a third-party preview iframe.
           return [
             {
               source: '/',

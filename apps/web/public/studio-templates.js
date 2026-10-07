@@ -440,7 +440,7 @@
     return '<div class="tpl-featured-art">' + artMarkup(template, 0, lang, true, false) + '</div><div class="tpl-featured-copy"><div class="tpl-featured-kicker"><span>' + text(lang, "featured") + '</span><i>' + text(lang, "commercial") + '</i></div><h3>' + esc(info.name) + '</h3><p>' + text(lang, "featuredDescription") + '</p><div class="tpl-featured-tags">' + info.tags.map(function (tag) { return '<span>' + esc(tag) + '</span>'; }).join("") + '</div><button type="button" class="btn-new tpl-featured-open" id="tpPreviewFeatured">' + text(lang, "previewScreens") + '<span>↗</span></button><small>' + esc(template.uses) + ' ' + text(lang, "uses") + '</small></div>';
   }
 
-  var modalState = { template: null, page: 0, lang: "zh", alternate: false, viewport: "desktop", onUse: null, returnFocus: null };
+  var modalState = { template: null, page: 0, lang: "zh", alternate: false, viewport: "desktop", onUse: null, onClose: null, returnFocus: null };
   var keyHandlerBound = false;
 
   function ensureModal() {
@@ -618,7 +618,7 @@
   }
   function shareTemplate() {
     if (!modalState.template) return;
-    var url = location.origin + location.pathname + "#template=" + encodeURIComponent(modalState.template.id);
+    var url = location.origin + location.pathname + "#/templates/" + encodeURIComponent(modalState.template.id) + "/" + (modalState.page + 1);
     var done = function () {
       var button = document.getElementById("tplShareButton");
       if (!button) return;
@@ -626,8 +626,19 @@
       button.querySelector("b").textContent = text(modalState.lang, "shared");
       setTimeout(function () { if (button && button.querySelector("b")) button.querySelector("b").textContent = old; }, 1600);
     };
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done).catch(done);
-    else done();
+    var fallbackCopy = function () {
+      var input = document.createElement("textarea");
+      input.value = url;
+      input.setAttribute("readonly", "");
+      input.style.cssText = "position:fixed;left:-9999px;top:0";
+      document.body.appendChild(input);
+      input.select();
+      try { document.execCommand("copy"); } catch (error) {}
+      input.remove();
+      done();
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done).catch(fallbackCopy);
+    else fallbackCopy();
   }
   function favoriteIds() {
     try { return JSON.parse(localStorage.getItem("db-template-favorites") || "[]") || []; } catch (e) { return []; }
@@ -651,6 +662,7 @@
     modalState.alternate = false;
     modalState.viewport = "desktop";
     modalState.onUse = options && options.onUse;
+    modalState.onClose = options && options.onClose;
     modalState.returnFocus = document.activeElement;
     renderModal();
     modal.hidden = false;
@@ -665,6 +677,9 @@
     document.body.classList.remove("template-preview-open");
     setTimeout(function () { modal.hidden = true; }, 180);
     if (modalState.returnFocus && typeof modalState.returnFocus.focus === "function") modalState.returnFocus.focus();
+    var onClose = modalState.onClose;
+    modalState.onClose = null;
+    if (typeof onClose === "function") onClose(modalState.template, modalState.page);
   }
 
   global.StudioTemplates = {
