@@ -285,7 +285,33 @@ export function registerChatRoutes(app: Express, ctx: RegisterChatRoutesDeps) {
     const body = req.body || {};
     try {
       if (body.mode === 'provider') {
-        const protocol = body.protocol;
+        const useDesignBuddyCustomModel =
+          body.credentialSource === 'designbuddy_custom_model';
+        const configuredCustomModel = useDesignBuddyCustomModel
+          ? {
+              protocol: 'openai' as const,
+              baseUrl: process.env.OD_CUSTOM_MODEL_BASE_URL?.trim() || '',
+              apiKey: process.env.OD_CUSTOM_MODEL_API_KEY?.trim() || '',
+              model: process.env.OD_CUSTOM_MODEL_NAME?.trim() || '',
+            }
+          : null;
+        if (
+          useDesignBuddyCustomModel &&
+          (!configuredCustomModel?.baseUrl ||
+            !configuredCustomModel.apiKey ||
+            !configuredCustomModel.model)
+        ) {
+          return sendApiError(
+            res,
+            503,
+            'CUSTOM_MODEL_NOT_CONFIGURED',
+            'The server-managed custom model credential is not configured',
+          );
+        }
+        const protocol = configuredCustomModel?.protocol ?? body.protocol;
+        const baseUrl = configuredCustomModel?.baseUrl ?? body.baseUrl;
+        const apiKey = configuredCustomModel?.apiKey ?? body.apiKey;
+        const model = configuredCustomModel?.model ?? body.model;
         if (
           typeof protocol !== 'string' ||
           !['anthropic', 'openai', 'azure', 'google', 'ollama', 'senseaudio', 'aihubmix', 'bedrock'].includes(protocol)
@@ -299,12 +325,12 @@ export function registerChatRoutes(app: Express, ctx: RegisterChatRoutesDeps) {
         }
         const apiKeyRequired = protocol !== 'bedrock';
         if (
-          typeof body.baseUrl !== 'string' ||
-          typeof body.apiKey !== 'string' ||
-          typeof body.model !== 'string' ||
-          !body.baseUrl.trim() ||
-          (apiKeyRequired && !body.apiKey.trim()) ||
-          !body.model.trim()
+          typeof baseUrl !== 'string' ||
+          typeof apiKey !== 'string' ||
+          typeof model !== 'string' ||
+          !baseUrl.trim() ||
+          (apiKeyRequired && !apiKey.trim()) ||
+          !model.trim()
         ) {
           return sendApiError(
             res,
@@ -319,16 +345,16 @@ export function registerChatRoutes(app: Express, ctx: RegisterChatRoutesDeps) {
           policy: body.reasoningExecution,
           routeKind: 'connection_test',
           provider: protocol,
-          resolvedBaseUrl: body.baseUrl,
-          model: body.model,
+          resolvedBaseUrl: baseUrl,
+          model,
         });
         if (reasoningDenial) return sendReasoningEgressDenial(res, reasoningDenial);
         try {
           const result = await testProviderConnection({
             protocol,
-            baseUrl: body.baseUrl,
-            apiKey: body.apiKey,
-            model: body.model,
+            baseUrl,
+            apiKey,
+            model,
             apiVersion:
               typeof body.apiVersion === 'string' ? body.apiVersion : undefined,
             signal: controller.signal,

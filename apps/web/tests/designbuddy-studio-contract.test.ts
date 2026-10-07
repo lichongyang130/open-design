@@ -13,6 +13,8 @@ const workbench = readFileSync(resolve(publicRoot, 'studio-workbench.js'), 'utf8
 const templates = readFileSync(resolve(publicRoot, 'studio-templates.js'), 'utf8');
 const templateStyles = readFileSync(resolve(publicRoot, 'studio-templates.css'), 'utf8');
 const previewScript = readFileSync(resolve(repoRoot, 'scripts/preview-studio.mjs'), 'utf8');
+const daemonChat = readFileSync(resolve(repoRoot, 'apps/daemon/src/routes/chat.ts'), 'utf8');
+const daemonConnectionTest = readFileSync(resolve(repoRoot, 'apps/daemon/src/connectionTest.ts'), 'utf8');
 const rootPackage = JSON.parse(readFileSync(resolve(repoRoot, 'package.json'), 'utf8')) as {
   scripts?: Record<string, string>;
 };
@@ -68,14 +70,38 @@ describe('DesignBuddy Studio reliability contracts', () => {
     expect(create).toContain('projectCreateFailed');
   });
 
-  it('only advertises live plus-menu resources', () => {
+  it('matches the seven-row composer menu and backs every exposed action with a real flow', () => {
     const menuStart = studio.indexOf('var PLUS_MENU = [');
     const menuEnd = studio.indexOf('];', menuStart);
     const menu = studio.slice(menuStart, menuEnd);
-    expect(menu).toContain('k: "ref"');
-    expect(menu).toContain('k: "skill"');
-    expect(menu).toContain('k: "plugin"');
-    expect(menu).not.toMatch(/k: "(?:attach|link|figma|conn|mcp)"/);
+    expect([...menu.matchAll(/k: "([^"]+)"/g)].map((match) => match[1])).toEqual([
+      'attach', 'ref', 'link', 'plugin', 'figma', 'conn', 'mcp',
+    ]);
+    expect(menu).not.toContain('k: "skill"');
+    expect(studio).toContain('pmFigma: "从 Figma 导入"');
+    expect(studio).toContain('class="pm-chevron"');
+    expect(studio).toContain('.pm-menu {');
+    expect(studio).toContain('width: 192px; padding: 8px;');
+    expect(studio).toContain('.pm-flyout {');
+    expect(studio).toContain('left: 192px; top: 96px; width: 468px; height: 328px;');
+    expect(studio).toContain('grid-template-columns: 237px minmax(0, 1fr)');
+    expect(studio).toContain('id="pmAttachInput"');
+    expect(studio).toContain('id="pmFigmaInput"');
+    expect(studio).toContain('id="pmCodeFolderInput"');
+    expect(studio).toContain('id="pmPluginZipInput"');
+    expect(studio).toContain('id="pmPluginFolderInput"');
+    expect(studio).toContain('/api/dialog/open-folder');
+    expect(studio).toContain('/api/plugins/upload-zip');
+    expect(studio).toContain('/api/plugins/upload-folder');
+    expect(studio).toContain('/api/connectors');
+    expect(studio).toContain('/api/mcp/servers');
+    expect(studio).toContain('/figma/import');
+    expect(studio).toContain('/upload');
+    expect(studio).toContain('composerResources');
+    expect(studio).toContain('metadata.linkedDirs');
+    expect(studio).toContain('metadata.connectorIds');
+    expect(studio).toContain('metadata.mcpServerIds');
+    expect(workbench).toContain('addContext: addContext');
     expect(studio).toContain('<div class="cp-dir" hidden>');
   });
 
@@ -184,20 +210,155 @@ describe('DesignBuddy Studio reliability contracts', () => {
     const defaults = Function(`${defaultsSource}; return accountDefaults();`)() as {
       customModels: Array<{ id: string }>;
     };
-    expect(defaults.customModels.map((model) => model.id)).toEqual([
-      'auto',
-      'claude-haiku-4-5',
-      'claude-opus-4-8',
-      'claude-opus-5.5',
-      'deepseek/deepseek-v4.1-flash:free',
-      'stealth/space-bunny-alpha',
-    ]);
+    expect(defaults.customModels.map((model) => model.id)).toEqual(['auto']);
     const models = functionBody(studio, 'renderSettingsModels', 'renderSettingsGeneral');
     expect(models).toContain('id="settingsAddModel"');
     expect(models).toContain('data-model-edit');
     expect(models).toContain('data-model-link');
     expect(models).toContain('data-model-delete');
     expect(models).toContain('saveAccountState()');
+  });
+
+  it('uses one complete add/edit custom-model dialog with real connection testing', () => {
+    const dom = new JSDOM(studio);
+    const document = dom.window.document;
+    const modal = document.getElementById('customModelModal');
+    expect(modal).toBeTruthy();
+    expect(modal!.hasAttribute('hidden')).toBe(true);
+    expect(modal!.querySelector('[role="dialog"][aria-modal="true"]')).toBeTruthy();
+    expect(document.getElementById('customModelTitle')!.textContent).toBe('添加模型');
+    expect(document.getElementById('customModelProviderLabel')!.textContent).toContain(
+      '仅支持 OpenAI 兼容协议 API',
+    );
+    expect(document.querySelector<HTMLSelectElement>('#customModelProvider')!.value).toBe('custom');
+    expect(document.querySelector<HTMLInputElement>('#customModelEndpoint')!.placeholder).toBe(
+      'https://api.example.com/v1/chat/completions',
+    );
+    expect(document.querySelector<HTMLInputElement>('#customModelApiKey')!.type).toBe('password');
+    expect(document.getElementById('customModelTest')!.textContent).toBe('测试连接');
+    expect(document.querySelector<HTMLInputElement>('#customModelTools')!.checked).toBe(true);
+    expect(document.getElementById('customModelImages')).toBeTruthy();
+    expect(document.getElementById('customModelReasoning')).toBeTruthy();
+    expect(document.getElementById('customModelProtocol')).toBeTruthy();
+    expect(document.querySelector<HTMLInputElement>('#customModelInputLimit')!.placeholder).toBe(
+      '使用提供商默认值',
+    );
+    expect(document.querySelector<HTMLInputElement>('#customModelOutputLimit')!.placeholder).toBe(
+      '使用提供商默认值',
+    );
+    expect(document.getElementById('customModelCancel')!.textContent).toBe('取消');
+    expect(document.getElementById('customModelSave')!.textContent).toBe('保存');
+    expect(studio).toContain('width:min(644px, calc(100vw - 24px))');
+    expect(studio).toContain('height:min(580px, calc(100dvh - 24px))');
+    expect(studio).toContain('overflow-y:auto; overscroll-behavior:contain');
+
+    const endpoint = functionBody(studio, 'customModelDaemonBaseUrl', 'customModelResultMessage');
+    const normalizeEndpoint = Function(`${endpoint}; return customModelDaemonBaseUrl;`)() as (
+      value: string,
+    ) => string;
+    expect(normalizeEndpoint('https://api.example.com/v1/chat/completions')).toBe(
+      'https://api.example.com/v1',
+    );
+    expect(normalizeEndpoint('https://api.example.com/v1/')).toBe('https://api.example.com/v1');
+
+    const testConnection = functionBody(studio, 'testCustomModelConnection', 'saveCustomModel');
+    expect(testConnection).toContain('apiSend("/api/test/connection", "POST"');
+    expect(testConnection).toContain('mode: "provider"');
+    expect(testConnection).toContain('protocol: "openai"');
+    expect(testConnection).toContain('customModelDaemonBaseUrl(config.baseUrl)');
+    expect(testConnection).toContain('credentialSource: config.credentialSource === "server"');
+    expect(testConnection).toContain('{ signal: controller.signal }');
+    expect(testConnection).toContain('customModelShouldTryBrowser(result, config)');
+    expect(testConnection).toContain('testCustomModelInBrowser(config, controller.signal)');
+    expect(testConnection).toContain('customModelSetStatus("loading"');
+    expect(testConnection).toContain('customModelSetStatus("success"');
+    expect(testConnection).toContain('customModelSetStatus("error"');
+    const browserTest = functionBody(studio, 'testCustomModelInBrowser', 'setCustomModelTesting');
+    expect(browserTest).toContain('mode: "cors"');
+    expect(browserTest).toContain('"Authorization": "Bearer " + config.apiKey');
+    expect(browserTest).toContain('config.apiKey, "[REDACTED]"');
+    expect(browserTest).toContain('viaBrowser: true');
+    expect(daemonChat).toContain("body.credentialSource === 'designbuddy_custom_model'");
+    expect(daemonChat).toContain('process.env.OD_CUSTOM_MODEL_BASE_URL');
+    expect(daemonChat).toContain('process.env.OD_CUSTOM_MODEL_API_KEY');
+    expect(daemonChat).toContain('process.env.OD_CUSTOM_MODEL_NAME');
+    expect(daemonChat).toContain("'CUSTOM_MODEL_NOT_CONFIGURED'");
+    const transportClassifier = daemonConnectionTest.slice(
+      daemonConnectionTest.indexOf('function networkErrorToKind'),
+      daemonConnectionTest.indexOf('async function validateLocalOpenAiModel'),
+    );
+    expect(transportClassifier).toContain("code === 'ECONNRESET'");
+    expect(transportClassifier).toContain("return 'upstream_unavailable'");
+
+    const saveModel = functionBody(studio, 'saveCustomModel', 'renderSettingsModels');
+    expect(saveModel).toContain('checkDuplicate: true');
+    expect(saveModel).toContain('Object.assign({}, previous || {}, config');
+    expect(saveModel).toContain('fingerprint === customModelTestFingerprint');
+    expect(saveModel).toContain('saveAccountState()');
+    const renderModels = functionBody(studio, 'renderSettingsModels', 'renderSettingsGeneral');
+    expect(renderModels).toContain('openCustomModelModal(Number(button.getAttribute("data-model-edit"))');
+    expect(renderModels).not.toContain('window.prompt');
+
+    const accountStateSource = studio.slice(
+      studio.indexOf('function accountDefaults()'),
+      studio.indexOf('var state = {'),
+    );
+    const restored = Function(
+      'localStorage',
+      `${accountStateSource}; return readAccountState();`,
+    )({
+      getItem: () => JSON.stringify({
+        customModels: [
+          {
+            id: 'auto',
+            model: 'auto',
+            baseUrl: 'https://legacy.example/v1',
+            apiKey: 'sk-test-only',
+            linked: true,
+            retained: 'yes',
+          },
+          { id: 'legacy/model', linked: false },
+        ],
+      }),
+    }) as {
+      customModelsVersion: number;
+      customModels: Array<{
+        id: string;
+        model: string;
+        baseUrl: string;
+        apiKey: string;
+        apiKeyConfigured: boolean;
+        credentialSource: string;
+        protocol: string;
+        capabilities: { tools: boolean; imageInput: boolean; reasoning: boolean; customProtocol: boolean };
+        inputLimit: number | null;
+        outputLimit: number | null;
+        linked: boolean;
+        retained?: string;
+      }>;
+    };
+    expect(restored.customModelsVersion).toBe(2);
+    expect(restored.customModels).toHaveLength(1);
+    expect(restored.customModels[0]).toMatchObject({
+      id: 'auto',
+      model: 'auto',
+      baseUrl: 'https://legacy.example/v1',
+      apiKey: 'sk-test-only',
+      apiKeyConfigured: true,
+      credentialSource: 'manual',
+      protocol: 'openai',
+      capabilities: {
+        tools: true,
+        imageInput: false,
+        reasoning: false,
+        customProtocol: false,
+      },
+      inputLimit: null,
+      outputLimit: null,
+      linked: false,
+      retained: 'yes',
+    });
+    dom.window.close();
   });
 
   it('scopes persisted projects to the active role and initializes all roles', () => {

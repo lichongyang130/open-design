@@ -167,45 +167,128 @@
   .plus-btn { flex: none; width: 34px; height: 34px; border-radius: 11px; border: 1px solid rgba(32,38,30,0.16); background: rgba(255,255,255,0.6); color: var(--ink); cursor: pointer; display: grid; place-items: center; transition: 0.2s; }
   .plus-btn:hover { background: var(--ink); color: var(--lime); border-color: var(--ink); }
 
-  /* ── 「+」添加弹层（三列：菜单 / 列表 / 详情）── */
-  .plus-panel { position: fixed; width: 660px; max-width: calc(100vw - 32px); background: #ffffff; border: 1px solid rgba(32,38,30,0.16); border-radius: 16px; box-shadow: 0 24px 64px rgba(20,26,18,0.24), 0 4px 16px rgba(20,26,18,0.10); display: none; z-index: 300; overflow: hidden; }
-  .plus-panel.show { display: grid; grid-template-columns: 168px minmax(200px, 1fr) 250px; animation: popUp 0.16s ease both; }
-  .pm-menu { border-right: 1px solid #eef0f1; background: #fafbfa; padding: 8px; }
-  .pm-item { display: flex; align-items: center; gap: 9px; width: 100%; padding: 9px 11px; border: 0; border-radius: 10px; background: transparent; cursor: pointer; font: 600 12.5px/1.3 inherit; color: var(--muted); text-align: left; }
-  .pm-item svg { flex: none; opacity: 0.75; }
-  .pm-item:hover { background: rgba(32,38,30,0.05); color: var(--ink); }
-  .pm-item.on { background: rgba(135,234,92,0.18); color: var(--ink); }
-  .pm-item.on svg { opacity: 1; }
-  .pm-mid { display: flex; flex-direction: column; min-width: 0; border-right: 1px solid #eef0f1; }
-  .pm-mid .pm-h { display: flex; align-items: center; gap: 8px; padding: 10px 12px 8px; border-bottom: 1px solid #f0f2f1; }
-  .pm-mid .pm-h b { font-size: 13px; flex: none; }
-  .pm-mid .pm-h input { flex: 1; min-width: 0; height: 28px; border-radius: 8px; border: 1px solid var(--hairline); background: rgba(255,255,255,0.8); padding: 0 9px; font: 600 12px/1 inherit; color: var(--ink); outline: none; }
-  .pm-rows { flex: 1; max-height: 316px; overflow-y: auto; padding: 6px; }
-  .pm-row { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 9px; border: 0; border-radius: 9px; background: transparent; cursor: pointer; text-align: left; }
-  .pm-row:hover { background: rgba(32,38,30,0.05); }
-  .pm-row.on { background: rgba(135,234,92,0.16); }
-  .pm-row .tx { min-width: 0; flex: 1; }
-  .pm-row b { display: block; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .pm-row small { display: block; font-size: 10.5px; color: var(--faint); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .pm-row .ck { flex: none; color: var(--lime-deep); opacity: 0; }
-  .pm-row.on .ck { opacity: 1; }
-  .pm-detail { padding: 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-  .pm-detail .tag { align-self: flex-start; font-size: 10px; font-weight: 800; color: #2c6e49; background: #eef7f0; border: 1px solid #d5e9db; padding: 2px 8px; border-radius: 999px; }
-  .pm-detail h4 { font-size: 13.5px; line-height: 1.4; }
-  .pm-detail p { font-size: 12px; line-height: 1.62; color: var(--muted); white-space: pre-wrap; }
-  .pm-detail .use { margin-top: auto; align-self: flex-start; font: 700 12px/1 inherit; padding: 8px 14px; border-radius: 9px; border: 0; background: var(--ink); color: #f4f8f0; cursor: pointer; }
-  .pm-detail .use:hover { opacity: 0.88; }
-  .pm-detail .hint { margin-top: auto; font-size: 11.5px; color: var(--faint); line-height: 1.6; }
-  .pm-empty { padding: 22px 14px; text-align: center; font-size: 12px; color: var(--faint); }
-  .plus-panel.show.refmode { grid-template-columns: 168px minmax(0, 1fr); }
-  .plus-panel.refmode .pm-mid { border-right: 0; }
-  .pm-foot { display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding: 10px 12px; border-top: 1px solid #f0f2f1; }
-  .pm-foot .ghost { font: 700 12px/1 inherit; padding: 8px 14px; border-radius: 9px; border: 1px solid var(--hairline); background: #ffffff; color: var(--muted); cursor: pointer; }
-  .pm-foot .ghost:hover { color: var(--ink); }
-  .pm-foot .go { font: 700 12px/1 inherit; padding: 8px 16px; border-radius: 9px; border: 0; background: var(--lime-deep); color: #ffffff; cursor: pointer; }
-  .pm-foot .go:hover { opacity: 0.9; }
-  .pm-row .sel { flex: none; font: 800 10px/1 inherit; color: #2c6e49; background: rgba(135,234,92,0.22); padding: 3px 8px; border-radius: 999px; }
-  @media (max-width: 640px) { .plus-panel.show { grid-template-columns: 140px 1fr; } .pm-detail { display: none; } }
+  /* Composer “+” popup: compact action menu with a detached, reference-style flyout. */
+  .plus-panel {
+    position: fixed; z-index: 360; display: none; width: 0; height: 0;
+    color: #282b28; font-size: 13px; line-height: 1.35; pointer-events: none;
+  }
+  .plus-panel.show { display: block; }
+  .pm-menu {
+    position: absolute; z-index: 2; left: 0; top: 0; width: 192px; padding: 8px;
+    border: 1px solid rgba(28,32,28,.05); border-radius: 14px; background: #fff;
+    box-shadow: 0 18px 40px rgba(31,37,31,.14), 0 2px 9px rgba(31,37,31,.07);
+    pointer-events: auto; overflow: hidden;
+  }
+  .pm-item {
+    appearance: none; border: 0; width: 100%; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; gap: 10px; padding: 0 10px; background: transparent;
+    color: #252825; font: 600 13.5px/1 inherit; text-align: left; cursor: pointer;
+    transition: background .14s, color .14s;
+  }
+  .pm-item:hover, .pm-item.on { background: #ededed; color: #171917; }
+  .pm-item:focus-visible { outline: 2px solid rgba(67,145,38,.42); outline-offset: -2px; }
+  .pm-item > svg { width: 15px; height: 15px; flex: none; color: #585d58; }
+  .pm-item > span { min-width: 0; flex: 1; white-space: nowrap; }
+  .pm-item .pm-chevron { width: 12px; height: 12px; color: #8e928e; }
+  .pm-flyout {
+    position: absolute; z-index: 1; left: 192px; top: 96px; width: 468px; height: 328px;
+    display: grid; grid-template-columns: 237px minmax(0, 1fr); border-radius: 14px;
+    border: 1px solid rgba(28,32,28,.06); background: #fff;
+    box-shadow: 0 18px 42px rgba(31,37,31,.14), 0 2px 8px rgba(31,37,31,.06);
+    pointer-events: auto; overflow: hidden; transform-origin: 0 18px;
+    animation: pmFlyIn .15s cubic-bezier(.2,.75,.25,1) both;
+  }
+  @keyframes pmFlyIn { from { opacity: 0; transform: translateX(-3px) scale(.992); } to { opacity: 1; transform: none; } }
+  .pm-catalog { min-width: 0; display: grid; grid-template-rows: 45px minmax(0,1fr) 44px; border-right: 1px solid #dedfdd; }
+  .pm-search-wrap { padding: 10px 8px 5px; }
+  .pm-search {
+    width: 100%; height: 30px; border: 1px solid #d8dad7; border-radius: 8px; background: #fff;
+    display: flex; align-items: center; gap: 8px; padding: 0 9px; color: #8d918d;
+  }
+  .pm-search:focus-within { border-color: #aeb3ae; box-shadow: 0 0 0 2px rgba(61,98,49,.07); }
+  .pm-search svg { width: 14px; height: 14px; flex: none; }
+  .pm-search input { min-width: 0; width: 100%; border: 0; outline: 0; background: transparent; color: #252825; font: 500 12.5px/1 inherit; }
+  .pm-search input::placeholder { color: #aaa; }
+  .pm-rows { overflow: auto; overscroll-behavior: contain; padding: 0 8px 4px; scrollbar-width: thin; scrollbar-color: #c9cbc8 transparent; }
+  .pm-rows::-webkit-scrollbar { width: 5px; }
+  .pm-rows::-webkit-scrollbar-thumb { border-radius: 99px; background: #c9cbc8; }
+  .pm-row {
+    appearance: none; border: 0; width: 100%; min-height: 36px; border-radius: 7px; padding: 6px 8px;
+    display: flex; align-items: center; gap: 8px; background: transparent; color: #2d302d;
+    font: 570 13px/1.25 inherit; text-align: left; cursor: pointer; transition: background .12s;
+  }
+  .pm-row:hover, .pm-row.on { background: #ededed; }
+  .pm-row:focus-visible { outline: 2px solid rgba(67,145,38,.38); outline-offset: -2px; }
+  .pm-row .pm-row-icon { width: 16px; height: 16px; flex: none; color: #747874; display: grid; place-items: center; }
+  .pm-row .pm-row-icon svg { width: 15px; height: 15px; }
+  .pm-row .pm-row-copy { min-width: 0; flex: 1; }
+  .pm-row b { display: block; font-size: 12.8px; font-weight: 570; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pm-row small { display: block; margin-top: 2px; color: #8b8f8b; font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pm-row .pm-status-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; background: #b7bab7; }
+  .pm-row .pm-status-dot.connected { background: #63b642; box-shadow: 0 0 0 3px rgba(99,182,66,.12); }
+  .pm-add {
+    appearance: none; border: 0; border-top: 1px solid #ececea; width: 100%; height: 44px; padding: 0 13px;
+    display: flex; align-items: center; gap: 9px; background: #fff; color: #2d302d;
+    font: 560 12.5px/1 inherit; text-align: left; cursor: pointer;
+  }
+  .pm-add:hover { background: #f7f7f6; }
+  .pm-add svg { width: 14px; height: 14px; }
+  .pm-add span { flex: 1; }
+  .pm-add small { color: #989c98; font-size: 10px; }
+  .pm-detail { min-width: 0; overflow: auto; padding: 17px 14px 15px; scrollbar-width: thin; scrollbar-color: #d0d2cf transparent; }
+  .pm-detail-head { display: flex; align-items: flex-start; gap: 8px; }
+  .pm-detail-head h4 { min-width: 0; flex: 1; margin: 1px 0 0; color: #242724; font-size: 13.5px; line-height: 1.25; font-weight: 700; overflow-wrap: anywhere; }
+  .pm-badges { display: inline-flex; align-items: center; justify-content: flex-end; gap: 5px; flex-wrap: wrap; }
+  .pm-badge { display: inline-flex; align-items: center; height: 21px; padding: 0 8px; border-radius: 999px; background: #f1f1f0; color: #5c605c; font-size: 10px; font-weight: 650; white-space: nowrap; }
+  .pm-badge.official { border: 1px solid #b7cff7; background: #e9f1ff; color: #3371cf; }
+  .pm-badge.official::before { content: ""; width: 5px; height: 5px; border-radius: 50%; margin-right: 4px; background: #4a8df0; }
+  .pm-detail > p, .pm-detail-copy { margin-top: 8px; color: #5d625d; font-size: 11.5px; line-height: 1.55; }
+  .pm-detail-action {
+    appearance: none; border: 1px solid #dadcd9; min-height: 28px; margin-top: 10px; padding: 0 10px;
+    border-radius: 8px; background: #fff; color: #303430; font: 650 11px/1 inherit; cursor: pointer;
+  }
+  .pm-detail-action:hover { background: #f1f2f0; }
+  .pm-detail-action.primary { border-color: #242724; background: #242724; color: #fff; }
+  .pm-detail-action.primary:hover { background: #3b3f3b; }
+  .pm-detail-action:disabled { opacity: .5; cursor: wait; }
+  .pm-preview { position: relative; height: 148px; margin-top: 14px; border-radius: 8px; overflow: hidden; background: #ece8df; border: 1px solid rgba(28,32,28,.06); }
+  .pm-preview img { position: absolute; z-index: 2; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #ece8df; }
+  .pm-preview-art { position: absolute; inset: 0; overflow: hidden; background: linear-gradient(140deg,hsl(var(--pm-hue, 34) 58% 88%),hsl(calc(var(--pm-hue, 34) + 52) 54% 76%)); }
+  .pm-preview-art::before { content: ""; position: absolute; width: 110px; height: 110px; border-radius: 50%; left: 50%; top: -22px; background: rgba(255,255,255,.58); box-shadow: -88px 80px 0 10px rgba(255,255,255,.28), 82px 95px 0 18px rgba(34,42,34,.08); }
+  .pm-preview-window { position: absolute; left: 17px; right: 17px; bottom: 14px; height: 88px; border-radius: 8px; padding: 9px; background: rgba(255,255,255,.86); box-shadow: 0 13px 28px rgba(28,35,27,.18); transform: rotate(-2deg); }
+  .pm-preview-window i { display: block; height: 7px; width: 54%; border-radius: 4px; background: hsl(var(--pm-hue, 34) 42% 38% / .76); margin-bottom: 7px; }
+  .pm-preview-window i:nth-child(2) { width: 88%; height: 37px; background: linear-gradient(90deg,hsl(var(--pm-hue, 34) 62% 68%),hsl(calc(var(--pm-hue, 34) + 76) 55% 73%)); }
+  .pm-preview-window i:nth-child(3) { width: 72%; height: 5px; opacity: .45; }
+  .pm-empty, .pm-loading { min-height: 130px; display: grid; place-items: center; padding: 18px; color: #929692; font-size: 11.5px; text-align: center; }
+  .pm-loading::before { content: ""; width: 16px; height: 16px; margin: 0 auto 8px; border: 2px solid #e1e3e0; border-top-color: #686d68; border-radius: 50%; animation: spin .7s linear infinite; }
+  .pm-empty-action { appearance: none; border: 1px solid #dcdedb; border-radius: 8px; padding: 7px 10px; background: #fff; color: #4b504b; font: 600 11px/1 inherit; cursor: pointer; }
+  .pm-install-options { display: grid; gap: 8px; margin-top: 14px; }
+  .pm-install-card { appearance: none; border: 1px solid #dedfdd; border-radius: 10px; min-height: 62px; padding: 10px; display: flex; align-items: center; gap: 10px; background: #fafaf9; color: #303430; text-align: left; cursor: pointer; }
+  .pm-install-card:hover { border-color: #b9bdb8; background: #f4f5f3; }
+  .pm-install-card svg { width: 19px; height: 19px; flex: none; }
+  .pm-install-card b { display: block; font-size: 11.5px; }
+  .pm-install-card small { display: block; margin-top: 3px; color: #818681; font-size: 10px; }
+  .pm-form { display: grid; gap: 8px; margin-top: 12px; }
+  .pm-field { display: grid; gap: 4px; color: #606560; font-size: 10px; font-weight: 650; }
+  .pm-field input { width: 100%; height: 29px; border: 1px solid #d9dbd8; border-radius: 7px; outline: 0; padding: 0 8px; background: #fff; color: #242724; font: 500 11px/1 inherit; }
+  .pm-field input:focus { border-color: #9ca19b; box-shadow: 0 0 0 2px rgba(40,60,36,.06); }
+  .pm-link-options { display: grid; gap: 9px; margin-top: 13px; }
+  .pm-link-option { appearance: none; border: 1px solid #dedfdd; min-height: 58px; border-radius: 10px; padding: 10px; display: flex; align-items: center; gap: 9px; background: #fafaf9; color: #303430; text-align: left; cursor: pointer; }
+  .pm-link-option:hover { background: #f3f4f2; border-color: #b9bdb8; }
+  .pm-link-option svg { width: 18px; height: 18px; flex: none; }
+  .pm-link-option b { display: block; font-size: 11.5px; }
+  .pm-link-option small { display: block; color: #858a85; font-size: 9.8px; margin-top: 2px; }
+  .pm-note { margin-top: 9px; padding: 7px 8px; border-radius: 7px; background: #f3f5f1; color: #717671; font-size: 9.8px; line-height: 1.45; }
+  .pm-hidden-input { position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  @media (max-width: 720px) {
+    .pm-menu { width: min(192px, calc(100vw - 24px)); }
+    .pm-flyout { left: 0; top: 276px; width: min(468px, calc(100vw - 24px)); height: min(328px, calc(100vh - 310px)); grid-template-columns: minmax(170px, 49%) minmax(0,1fr); border-radius: 14px; }
+  }
+  @media (max-width: 430px) {
+    .pm-flyout { grid-template-columns: minmax(0,1fr); }
+    .pm-detail { display: none; }
+    .pm-catalog { border-right: 0; }
+  }
 
   /* ── 第二大脑视图 ── */
   .bn-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; }
@@ -712,9 +795,14 @@
   .settings-model-row { min-height: 44px; display: grid; grid-template-columns: 22px minmax(0,1fr) auto; align-items: center; gap: 8px; padding: 5px 10px 5px 4px; border-top: 1px solid var(--hairline); }
   .settings-model-row:first-child { border-top: 0; }
   .settings-model-spark { width: 22px; display: grid; place-items: center; color: var(--ink); font-size: 22px; font-weight: 300; }
-  .settings-model-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 570; }
-  .settings-model-name small { margin-left: 6px; color: var(--faint); font-size: 11px; font-weight: 500; }
+  .settings-model-name { min-width: 0; overflow: hidden; font-size: 13px; font-weight: 570; }
+  .settings-model-title { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .settings-model-name small { display:block; margin:2px 0 0; overflow:hidden; color: var(--faint); font-size: 10.5px; font-weight: 500; text-overflow:ellipsis; white-space:nowrap; }
   .settings-model-actions { display: flex; align-items: center; gap: 3px; }
+  .settings-model-connect { height:28px; margin-right:2px; padding:0 10px; border:1px solid var(--hairline); border-radius:8px; color:var(--ink); background:rgba(255,255,255,.7); font:650 11px/1 inherit; cursor:pointer; }
+  .settings-model-connect:hover { background:#fff; border-color:rgba(32,38,30,.18); }
+  .settings-model-connect.linked { border-color:transparent; color:var(--lime-deep); background:var(--lime-wash); cursor:default; }
+  .settings-model-connect:disabled { opacity:1; }
   .settings-icon-button { width: 30px; height: 30px; border: 0; border-radius: 8px; display: grid; place-items: center; background: transparent; color: var(--muted); cursor: pointer; }
   .settings-icon-button:hover, .settings-icon-button.is-linked { color: var(--ink); background: rgba(32,38,30,.07); }
   .settings-icon-button.is-linked { color: var(--lime-deep); }
@@ -827,6 +915,110 @@
   .acc-update-status i { width:8px; height:8px; border-radius:50%; background:currentColor; }
   .acc-spin { width:14px; height:14px; border:2px solid rgba(32,38,30,.18); border-top-color:var(--lime-deep); border-radius:50%; animation:spin .7s linear infinite; }
   .acc-success { padding:12px 14px; border-radius:13px; color:#337524; background:rgba(135,234,92,.18); font-size:11px; font-weight:700; }
+
+  /* 自定义模型：与设置工作区分层的添加 / 编辑对话框 */
+  .custom-model-overlay {
+    position:fixed; inset:0; z-index:30; display:grid; place-items:center; padding:12px;
+    background:rgba(24,26,23,.38); backdrop-filter:blur(2px);
+  }
+  .custom-model-overlay[hidden] { display:none; }
+  .custom-model-dialog {
+    width:min(644px, calc(100vw - 24px)); height:min(580px, calc(100dvh - 24px)); max-height:calc(100dvh - 24px);
+    display:flex; flex-direction:column; overflow:hidden; color:#202020; background:#fff; border:1px solid rgba(22,22,22,.08);
+    border-radius:24px; box-shadow:0 24px 70px rgba(13,18,12,.24); font-family:Inter,"PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  .custom-model-head {
+    min-height:51px; display:flex; align-items:center; justify-content:space-between; flex:none; padding:0 25px 0 26px;
+  }
+  .custom-model-head h2 { margin:0; color:#171717; font-size:16px; line-height:1.2; font-weight:700; letter-spacing:-.01em; }
+  .custom-model-close {
+    width:28px; height:28px; margin-right:-7px; display:grid; place-items:center; border:0; border-radius:8px; color:#777; background:transparent; cursor:pointer;
+  }
+  .custom-model-close:hover { color:#161616; background:#f3f3f3; }
+  .custom-model-close svg { width:14px; height:14px; }
+  .custom-model-form { min-height:0; flex:1; display:flex; flex-direction:column; }
+  .custom-model-scroll {
+    min-height:0; flex:1; overflow-y:auto; overscroll-behavior:contain; padding:0 40px 12px 26px; scrollbar-gutter:stable;
+    scrollbar-width:auto; scrollbar-color:#c8c8c8 transparent;
+  }
+  .custom-model-scroll::-webkit-scrollbar { width:8px; }
+  .custom-model-scroll::-webkit-scrollbar-track { background:transparent; }
+  .custom-model-scroll::-webkit-scrollbar-thumb { background:#c8c8c8; border-radius:999px; }
+  .custom-model-field { min-width:0; margin:0 0 18px; }
+  .custom-model-field > label, .custom-model-advanced legend {
+    display:block; margin:0 0 9px; color:#515151; font-size:14px; line-height:1.25; font-weight:400;
+  }
+  .custom-model-field input, .custom-model-select-wrap select {
+    width:100%; height:32px; border:1px solid #dedede; border-radius:8px; outline:0; color:#242424; background:#fff;
+    font:400 14px/1.2 inherit; transition:border-color .15s, box-shadow .15s, background .15s;
+  }
+  .custom-model-field input { padding:0 9px; }
+  .custom-model-field input::placeholder { color:#b8b8b8; opacity:1; }
+  .custom-model-field input:hover, .custom-model-select-wrap select:hover { border-color:#c9c9c9; }
+  .custom-model-field input:focus, .custom-model-select-wrap select:focus { border-color:#777; box-shadow:0 0 0 2px rgba(24,24,24,.08); }
+  .custom-model-field input[aria-invalid="true"] { border-color:#c83f3f; box-shadow:0 0 0 2px rgba(200,63,63,.09); }
+  .custom-model-select-wrap { position:relative; }
+  .custom-model-select-wrap select { appearance:none; padding:0 34px 0 29px; cursor:pointer; }
+  .custom-model-provider-mark { position:absolute; z-index:1; left:10px; top:50%; transform:translateY(-52%); color:#202020; font-size:20px; line-height:1; pointer-events:none; }
+  .custom-model-select-wrap > svg { position:absolute; right:11px; top:50%; width:14px; height:14px; transform:translateY(-50%); color:#747474; pointer-events:none; }
+  .custom-model-key-row { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:12px; }
+  .custom-model-secret { position:relative; min-width:0; }
+  .custom-model-secret input { padding-right:39px; }
+  .custom-model-secret button {
+    position:absolute; right:3px; top:3px; width:29px; height:26px; display:grid; place-items:center; border:0; border-radius:6px;
+    color:#595959; background:transparent; cursor:pointer;
+  }
+  .custom-model-secret button:hover { color:#161616; background:#f1f1f1; }
+  .custom-model-secret svg { width:15px; height:15px; }
+  .custom-model-secret .secret-eye { display:none; }
+  .custom-model-secret button.is-visible .secret-eye { display:block; }
+  .custom-model-secret button.is-visible .secret-eye-off { display:none; }
+  .custom-model-test, .custom-model-cancel, .custom-model-save {
+    height:34px; border-radius:9px; padding:0 15px; font:600 14px/1 inherit; white-space:nowrap; cursor:pointer; transition:background .15s, border-color .15s, color .15s, transform .12s;
+  }
+  .custom-model-test { height:32px; color:#222; background:#fff; border:1px solid #dedede; }
+  .custom-model-test:hover { background:#f6f6f6; border-color:#c9c9c9; }
+  .custom-model-test:disabled { color:#898989; cursor:wait; background:#f6f6f6; }
+  .custom-model-test-status { margin:7px 1px 0; color:#666; font-size:12px; line-height:1.45; }
+  .custom-model-test-status[hidden] { display:none; }
+  .custom-model-test-status.is-loading { color:#666; }
+  .custom-model-test-status.is-success { color:#257322; }
+  .custom-model-test-status.is-error { color:#b33434; }
+  .custom-model-advanced { min-width:0; margin:7px 0 14px; padding:0; border:0; }
+  .custom-model-advanced legend { width:100%; margin-bottom:10px; }
+  .custom-model-capabilities { display:flex; align-items:center; flex-wrap:wrap; gap:10px 20px; }
+  .custom-model-capabilities label { display:inline-flex; align-items:center; gap:7px; color:#242424; font-size:14px; line-height:1.2; cursor:pointer; user-select:none; }
+  .custom-model-capabilities input {
+    width:16px; height:16px; margin:0; accent-color:#454545; border-radius:4px; cursor:pointer;
+  }
+  .custom-model-limit-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .custom-model-limit-grid .custom-model-field { margin-bottom:0; }
+  .custom-model-footer {
+    flex:none; min-height:61px; display:flex; align-items:center; justify-content:flex-end; gap:9px; padding:8px 25px 17px 26px; background:#fff;
+  }
+  .custom-model-cancel { color:#222; background:#fff; border:1px solid #dedede; }
+  .custom-model-cancel:hover { background:#f5f5f5; border-color:#c8c8c8; }
+  .custom-model-save { min-width:68px; color:#fff; background:#1e1e1e; border:1px solid #1e1e1e; }
+  .custom-model-save:hover { background:#050505; border-color:#050505; }
+  .custom-model-test:active, .custom-model-cancel:active, .custom-model-save:active { transform:translateY(1px); }
+  .custom-model-dialog button:focus-visible, .custom-model-dialog input:focus-visible, .custom-model-dialog select:focus-visible {
+    outline:2px solid #171717; outline-offset:2px;
+  }
+  .custom-model-dialog.is-testing .custom-model-save { opacity:.62; }
+
+  @media(max-width:680px) {
+    .custom-model-dialog { border-radius:20px; }
+    .custom-model-head { padding-left:20px; padding-right:20px; }
+    .custom-model-scroll { padding-left:20px; padding-right:25px; }
+    .custom-model-footer { padding-left:20px; padding-right:20px; }
+    .custom-model-capabilities { gap:10px 16px; }
+  }
+  @media(max-width:460px) {
+    .custom-model-key-row { grid-template-columns:1fr; gap:8px; }
+    .custom-model-test { justify-self:start; }
+    .custom-model-limit-grid { grid-template-columns:1fr; gap:0; }
+    .custom-model-limit-grid .custom-model-field { margin-bottom:16px; }
+  }
   @media(max-width:680px) {
     .account-surface { padding:10px; align-items:end; }
     .account-dialog { width:100%; max-height:calc(100dvh - 20px); border-radius:23px 23px 15px 15px; }
@@ -1106,7 +1298,7 @@
           <div class="cp-refs" id="cpRefs"></div>
           <textarea id="prompt" rows="3"></textarea>
           <div class="row">
-            <button type="button" class="plus-btn" id="chipPlus" aria-label="add">
+            <button type="button" class="plus-btn" id="chipPlus" aria-label="add" aria-haspopup="dialog" aria-controls="plusPanel" aria-expanded="false">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
             </button>
             <button type="button" class="chip" id="chipDs">
@@ -1156,7 +1348,12 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 21 20h-5.2L12 13l-3.8 7H3L12 3Z" fill="currentColor"/></svg>
             </button>
             <div class="pk-panel" id="pkPanel"></div>
-            <div class="plus-panel" id="plusPanel"></div>
+            <div class="plus-panel" id="plusPanel" role="dialog" aria-label="添加创作上下文" aria-hidden="true"></div>
+            <input class="pm-hidden-input" id="pmAttachInput" type="file" multiple hidden />
+            <input class="pm-hidden-input" id="pmFigmaInput" type="file" accept=".fig,application/octet-stream" hidden />
+            <input class="pm-hidden-input" id="pmCodeFolderInput" type="file" multiple webkitdirectory directory hidden />
+            <input class="pm-hidden-input" id="pmPluginZipInput" type="file" accept=".zip,application/zip" hidden />
+            <input class="pm-hidden-input" id="pmPluginFolderInput" type="file" multiple webkitdirectory directory hidden />
           </div>
         
         </section>
@@ -1391,6 +1588,83 @@
       </header>
       <div class="account-panel-body" id="accountSurfaceBody"></div>
     </section>
+
+    <div class="custom-model-overlay" id="customModelModal" hidden>
+      <section class="custom-model-dialog" role="dialog" aria-modal="true" aria-labelledby="customModelTitle" aria-describedby="customModelProviderLabel">
+        <header class="custom-model-head">
+          <h2 id="customModelTitle">添加模型</h2>
+          <button type="button" class="custom-model-close" id="customModelClose" aria-label="关闭添加模型">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          </button>
+        </header>
+
+        <form class="custom-model-form" id="customModelForm" novalidate>
+          <div class="custom-model-scroll" id="customModelScroll">
+            <div class="custom-model-field">
+              <label id="customModelProviderLabel" for="customModelProvider">供应商（仅支持 OpenAI 兼容协议 API）</label>
+              <div class="custom-model-select-wrap">
+                <span class="custom-model-provider-mark" aria-hidden="true">◇</span>
+                <select id="customModelProvider" name="provider">
+                  <option value="custom">自定义</option>
+                </select>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg>
+              </div>
+            </div>
+
+            <div class="custom-model-field">
+              <label for="customModelEndpoint">接口地址</label>
+              <input id="customModelEndpoint" name="endpoint" type="url" inputmode="url" autocomplete="url" maxlength="500" placeholder="https://api.example.com/v1/chat/completions" />
+            </div>
+
+            <div class="custom-model-field">
+              <label for="customModelApiKey">API Key</label>
+              <div class="custom-model-key-row">
+                <div class="custom-model-secret">
+                  <input id="customModelApiKey" name="apiKey" type="password" autocomplete="new-password" maxlength="1000" placeholder="输入你的 API Key" />
+                  <button type="button" id="customModelKeyToggle" aria-label="显示 API Key" aria-pressed="false">
+                    <svg class="secret-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.8 12s3.2-5 9.2-5 9.2 5 9.2 5-3.2 5-9.2 5-9.2-5-9.2-5Z"/><circle cx="12" cy="12" r="2.3"/></svg>
+                    <svg class="secret-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 4 16 16M10.5 7.2A10.8 10.8 0 0 1 12 7c6 0 9.2 5 9.2 5a14 14 0 0 1-2.1 2.6M7.1 8.4A14.5 14.5 0 0 0 2.8 12s3.2 5 9.2 5c.8 0 1.6-.1 2.3-.3M9.8 9.8a3.1 3.1 0 0 0 4.4 4.4"/></svg>
+                  </button>
+                </div>
+                <button type="button" class="custom-model-test" id="customModelTest">测试连接</button>
+              </div>
+              <p class="custom-model-test-status" id="customModelTestStatus" role="status" aria-live="polite" hidden></p>
+            </div>
+
+            <div class="custom-model-field">
+              <label for="customModelName">模型名称</label>
+              <input id="customModelName" name="model" type="text" autocomplete="off" maxlength="180" placeholder="输入模型参数值，例如 gpt-4o 或 openai/gpt-4o" />
+            </div>
+
+            <fieldset class="custom-model-advanced">
+              <legend>高级配置</legend>
+              <div class="custom-model-capabilities">
+                <label><input id="customModelTools" type="checkbox" checked /> <span>工具调用</span></label>
+                <label><input id="customModelImages" type="checkbox" /> <span>图片输入</span></label>
+                <label><input id="customModelReasoning" type="checkbox" /> <span>思考模式</span></label>
+                <label><input id="customModelProtocol" type="checkbox" /> <span>自定义协议</span></label>
+              </div>
+            </fieldset>
+
+            <div class="custom-model-limit-grid">
+              <div class="custom-model-field">
+                <label for="customModelInputLimit">输入</label>
+                <input id="customModelInputLimit" name="inputLimit" type="number" min="1" step="1" inputmode="numeric" placeholder="使用提供商默认值" />
+              </div>
+              <div class="custom-model-field">
+                <label for="customModelOutputLimit">输出</label>
+                <input id="customModelOutputLimit" name="outputLimit" type="number" min="1" step="1" inputmode="numeric" placeholder="使用提供商默认值" />
+              </div>
+            </div>
+          </div>
+
+          <footer class="custom-model-footer">
+            <button type="button" class="custom-model-cancel" id="customModelCancel">取消</button>
+            <button type="submit" class="custom-model-save" id="customModelSave">保存</button>
+          </footer>
+        </form>
+      </section>
+    </div>
   </div>
 
 <script src="/studio-templates.js"></script>
@@ -1418,7 +1692,7 @@
       chipPlus: "添加",
       chipDir: "工作目录", pkMode: "输出类型", pmSkill: "技能", pmUseSkill: "使用此技能", pmSkillDesc: "为这次生成装配技能：视频模板、品牌、8-bit 风格等，命中触发词即生效。",
       moAuto: "自动识别", moLanding: "网页原型", moSignup: "注册流程", moPoster: "海报", moDeck: "幻灯片", moStoryboard: "视频分镜",
-      pmAttach: "附加文件", pmRef: "引用其它项目", pmLink: "关联本地代码", pmPlugin: "插件", pmFigma: "从Figma导入", pmConn: "连接器", pmMcp: "MCP",
+      pmAttach: "附加文件", pmRef: "引用其它项目", pmLink: "关联本地代码", pmPlugin: "插件", pmFigma: "从 Figma 导入", pmConn: "连接器", pmMcp: "MCP",
       pmSearch: "搜索插件…", pmUse: "使用此插件", pmOfficial: "官方", pmSelHint: "点选左侧插件查看详情",
       pmRefTitle: "引用项目", pmRefHint: "引用后 Buddy 会参考该项目的风格继续创作",
       pmRefFill: "参考「{name}」项目的风格，帮我继续设计：",
@@ -2423,13 +2697,22 @@
       assistantSuggestions: true,
       agentAutomation: true,
       profileBio: "",
+      customModelsVersion: 2,
       customModels: [
-        { id: "auto", linked: true },
-        { id: "claude-haiku-4-5", linked: false },
-        { id: "claude-opus-4-8", linked: false },
-        { id: "claude-opus-5.5", linked: false },
-        { id: "deepseek/deepseek-v4.1-flash:free", linked: false },
-        { id: "stealth/space-bunny-alpha", linked: false }
+        {
+          id: "auto",
+          model: "auto",
+          provider: "custom",
+          protocol: "openai",
+          baseUrl: "https://api.hcnsec.cn/v1",
+          apiKey: "",
+          apiKeyConfigured: true,
+          credentialSource: "server",
+          capabilities: { tools: true, imageInput: false, reasoning: false, customProtocol: false },
+          inputLimit: null,
+          outputLimit: null,
+          linked: false
+        }
       ],
       feedback: [],
       currentVersion: "",
@@ -2440,6 +2723,7 @@
   function readAccountState() {
     var base = accountDefaults(), saved = null;
     try { saved = JSON.parse(localStorage.getItem("db-account-state") || "null"); } catch (e) {}
+    var shouldRemoveLegacyModels = !!(saved && typeof saved === "object" && !Array.isArray(saved) && Number(saved.customModelsVersion || 0) < 2);
     if (saved && typeof saved === "object" && !Array.isArray(saved)) base = Object.assign(base, saved);
     if (["trial", "pro", "team"].indexOf(base.plan) < 0) base.plan = "trial";
     if (!Number.isFinite(Number(base.points)) || Number(base.points) < 0) base.points = 1101.25;
@@ -2448,10 +2732,51 @@
     if (!Array.isArray(base.invites)) base.invites = [];
     if (!Array.isArray(base.feedback)) base.feedback = [];
     if (!Array.isArray(base.customModels)) base.customModels = accountDefaults().customModels;
+    if (shouldRemoveLegacyModels) {
+      var savedAutoModel = base.customModels.filter(function (model) {
+        return model && String(model.model || model.id || "").trim() === "auto";
+      })[0];
+      base.customModels = [Object.assign({}, accountDefaults().customModels[0], savedAutoModel || {}, {
+        id: "auto",
+        model: "auto",
+        linked: false
+      })];
+    }
+    base.customModelsVersion = 2;
     base.customModels = base.customModels.filter(function (model) {
       return model && typeof model.id === "string" && model.id.trim();
     }).map(function (model) {
-      return { id: model.id.trim().slice(0, 120), linked: !!model.linked };
+      var capabilities = model.capabilities && typeof model.capabilities === "object" && !Array.isArray(model.capabilities)
+        ? model.capabilities
+        : {};
+      var modelName = typeof model.model === "string" && model.model.trim() ? model.model.trim() : model.id.trim();
+      var customProtocol = model.protocol === "custom" || capabilities.customProtocol === true;
+      var apiKey = typeof model.apiKey === "string" ? model.apiKey.slice(0, 1000) : "";
+      var serverCredential = model.credentialSource === "server" && !apiKey && modelName === "auto";
+      var positiveLimit = function (value) {
+        if (value === "" || value === null || value === undefined) return null;
+        var parsed = Number(value);
+        return Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : null;
+      };
+      return Object.assign({}, model, {
+        id: modelName.slice(0, 180),
+        model: modelName.slice(0, 180),
+        provider: "custom",
+        protocol: customProtocol ? "custom" : "openai",
+        baseUrl: typeof model.baseUrl === "string" ? model.baseUrl.trim().slice(0, 500) : "",
+        apiKey: apiKey,
+        apiKeyConfigured: serverCredential || !!apiKey || model.apiKeyConfigured === true,
+        credentialSource: serverCredential ? "server" : "manual",
+        capabilities: {
+          tools: capabilities.tools !== false,
+          imageInput: capabilities.imageInput === true,
+          reasoning: capabilities.reasoning === true,
+          customProtocol: customProtocol
+        },
+        inputLimit: positiveLimit(model.inputLimit),
+        outputLimit: positiveLimit(model.outputLimit),
+        linked: !!model.linked
+      });
     }).slice(0, 30);
     if (!base.claimed || typeof base.claimed !== "object" || Array.isArray(base.claimed)) base.claimed = {};
     if (["paper", "mint", "violet"].indexOf(base.appearance) < 0) base.appearance = "paper";
@@ -2492,6 +2817,14 @@
     realDTpl: null,
     realSkills: null,
     realPlugins: null,
+    realConnectors: null,
+    mcpCatalog: null,
+    composerResources: [],
+    pendingUploads: [],
+    pendingFigma: null,
+    linkedDirs: [],
+    selectedConnectorIds: [],
+    selectedMcpServerIds: [],
     tileBatch: 0,
     tileBatchRole: null,
     suggestionSkillToken: 0,
@@ -3335,7 +3668,7 @@
   }
 
   /* ── 进入生成视图 ── */
-  async function openGen(project, seedPrompt) {
+  async function openGen(project, seedPrompt, seedContexts) {
     if (window.StudioWorkbench && typeof window.StudioWorkbench.beforeProjectChange === "function") {
       var canChangeProject = await window.StudioWorkbench.beforeProjectChange();
       if (canChangeProject === false) return;
@@ -3357,6 +3690,9 @@
     go("gen");
     if (window.StudioWorkbench && typeof window.StudioWorkbench.onProjectOpen === "function") {
       window.StudioWorkbench.onProjectOpen(state.gen.pid, state.gen.name);
+    }
+    if (Array.isArray(seedContexts) && window.StudioWorkbench && typeof window.StudioWorkbench.addContext === "function") {
+      seedContexts.forEach(function (context) { window.StudioWorkbench.addContext(context); });
     }
     renderGenShell();
     apiGet("/api/db/projects/" + encodeURIComponent(state.gen.pid) + "/gen")
@@ -3445,8 +3781,92 @@
     } catch (e) { toast(t("actionFailed").replace("{message}", cleanErrorMessage(e && e.message ? e.message : e))); }
   });
 
+  function composerSubmissionSnapshot() {
+    return {
+      resources: state.composerResources.map(function (resource) { return Object.assign({}, resource); }),
+      uploads: state.pendingUploads.slice(),
+      figma: state.pendingFigma,
+      linkedDirs: state.linkedDirs.slice(),
+      connectorIds: state.selectedConnectorIds.slice(),
+      mcpServerIds: state.selectedMcpServerIds.slice()
+    };
+  }
+  function composerMetadataResources(snapshot) {
+    return snapshot.resources.map(function (resource) {
+      var output = { id: resource.id, kind: resource.kind, name: resource.name };
+      if (resource.projectId) output.projectId = resource.projectId;
+      if (resource.path) output.path = resource.path;
+      if (resource.connectorId) output.connectorId = resource.connectorId;
+      if (resource.serverId) output.serverId = resource.serverId;
+      if (resource.fileCount) output.fileCount = resource.fileCount;
+      return output;
+    }).slice(0, 30);
+  }
+  function resetSubmittedComposerResources(snapshot) {
+    var ids = snapshot.resources.map(function (resource) { return resource.id; });
+    state.composerResources = state.composerResources.filter(function (resource) { return ids.indexOf(resource.id) < 0; });
+    state.pendingUploads = state.pendingUploads.filter(function (entry) { return ids.indexOf(entry.resourceId) < 0; });
+    if (snapshot.figma && state.pendingFigma === snapshot.figma) state.pendingFigma = null;
+    state.linkedDirs = state.linkedDirs.filter(function (path) { return snapshot.linkedDirs.indexOf(path) < 0; });
+    state.selectedConnectorIds = state.selectedConnectorIds.filter(function (id) { return snapshot.connectorIds.indexOf(id) < 0; });
+    state.selectedMcpServerIds = state.selectedMcpServerIds.filter(function (id) { return snapshot.mcpServerIds.indexOf(id) < 0; });
+    updateChips();
+  }
+  async function composerFileText(file) {
+    if (!file || file.size > 2 * 1024 * 1024) return "";
+    var textual = /^text\//i.test(file.type || "") || /\.(?:txt|md|markdown|json|ya?ml|csv|tsv|html?|css|s[ac]ss|less|js|mjs|cjs|jsx|ts|tsx|vue|svelte|py|rb|go|rs|java|kt|swift|c|cc|cpp|h|hpp|sql|xml|svg|toml|ini|env)$/i.test(file.name || "");
+    if (!textual || typeof file.text !== "function") return "";
+    try { return (await file.text()).replace(/\u0000/g, "").slice(0, 5000); }
+    catch (error) { return ""; }
+  }
+  async function uploadComposerFiles(projectId, snapshot) {
+    if (!snapshot.uploads.length) return [];
+    var form = new FormData();
+    snapshot.uploads.forEach(function (entry) { form.append("files", entry.file, entry.file.name); });
+    var response = await fetch("/api/projects/" + encodeURIComponent(projectId) + "/upload", { method: "POST", body: form });
+    var payload = await response.json().catch(function () { return {}; });
+    if (!response.ok) throw new Error(apiErrorMessage(payload, plusL("文件上传失败", "File upload failed")));
+    var uploaded = payload && Array.isArray(payload.files) ? payload.files : [];
+    var contexts = [];
+    for (var i = 0; i < snapshot.uploads.length; i++) {
+      var entry = snapshot.uploads[i], saved = uploaded[i];
+      if (!saved || !saved.path) continue;
+      var content = await composerFileText(entry.file);
+      contexts.push({ id: "upload:" + saved.path, name: saved.path, type: content ? "document" : "file", content: content });
+    }
+    return contexts;
+  }
+  async function importComposerFigma(projectId, snapshot) {
+    if (!snapshot.figma || !snapshot.figma.file) return [];
+    var form = new FormData();
+    form.append("file", snapshot.figma.file, snapshot.figma.file.name);
+    var response = await fetch("/api/projects/" + encodeURIComponent(projectId) + "/figma/import", { method: "POST", body: form });
+    var payload = await response.json().catch(function () { return {}; });
+    if (!response.ok) throw new Error(apiErrorMessage(payload, plusL("Figma 导入失败", "Figma import failed")));
+    var contextPath = payload.contextPath || "figma/DESIGN-context.md";
+    var content = "";
+    try {
+      var contextResponse = await fetch(projectFileUrl(projectId, contextPath), { cache: "no-store" });
+      if (contextResponse.ok) content = (await contextResponse.text()).slice(0, 12000);
+    } catch (error) {}
+    return [{ id: "figma:" + contextPath, name: contextPath, type: "design-system", content: content }];
+  }
+  async function materializeComposerResources(projectId, snapshot) {
+    var contexts = [];
+    snapshot.resources.forEach(function (resource) {
+      if (resource.kind === "project") contexts.push({ id: resource.id, name: resource.name, type: "browser", content: resource.content || "" });
+      else if (resource.kind === "local-code" && resource.path) contexts.push({ id: resource.id, name: resource.name, type: "file", content: "Linked local code directory: " + resource.path + ". Use it only as a project association; do not claim to have read files that are not explicitly provided." });
+    });
+    try { contexts = contexts.concat(await uploadComposerFiles(projectId, snapshot)); }
+    catch (error) { toast(t("actionFailed").replace("{message}", cleanErrorMessage(error))); }
+    try { contexts = contexts.concat(await importComposerFigma(projectId, snapshot)); }
+    catch (error) { toast(t("actionFailed").replace("{message}", cleanErrorMessage(error))); }
+    return contexts;
+  }
+
   function createRealProject(prompt) {
     var name = prompt.slice(0, 18) + (prompt.length > 18 ? "…" : "");
+    var composerSnapshot = composerSubmissionSnapshot();
     var id = "db-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 6);
     var selectedMode = ensureRoleMode();
     var base = {
@@ -3458,6 +3878,10 @@
         source: "user"
       }
     };
+    if (composerSnapshot.resources.length) base.metadata.composerResources = composerMetadataResources(composerSnapshot);
+    if (composerSnapshot.linkedDirs.length) base.metadata.linkedDirs = composerSnapshot.linkedDirs;
+    if (composerSnapshot.connectorIds.length) base.metadata.connectorIds = composerSnapshot.connectorIds;
+    if (composerSnapshot.mcpServerIds.length) base.metadata.mcpServerIds = composerSnapshot.mcpServerIds;
     if (!/https?:\/\//i.test(prompt)) base.pendingPrompt = prompt;
     var extras = {};
     if (state.selDS) extras.designSystemId = state.selDS.id;
@@ -3473,12 +3897,15 @@
         var validationFailure = err && (err.status === 400 || err.status === 422);
         return withExtras && validationFailure ? attempt(base) : Promise.reject(err);
       })
-      .then(function (r) {
+      .then(async function (r) {
         toast(t("toastCreated").replace("{name}", name));
         loadProjects();
         showBubble(0);
         var proj = r && r.project;
-        return openGen({ id: (proj && proj.id) || id, t: (proj && proj.name) || name }, prompt);
+        var projectId = (proj && proj.id) || id;
+        var contexts = await materializeComposerResources(projectId, composerSnapshot);
+        resetSubmittedComposerResources(composerSnapshot);
+        return openGen({ id: projectId, t: (proj && proj.name) || name }, prompt, contexts);
       })
       .catch(function (error) {
         var message = cleanErrorMessage(error && error.message ? error.message : error);
@@ -3556,17 +3983,38 @@
     }
   })();
 
-  /* chips：模板 → 模板视图；技能/插件/设计系统 → 资源选择器 */
+  /* Composer resource entry points. Every exposed row resolves to a real picker,
+     daemon-backed catalogue, installation flow, or persisted project binding. */
   (function wireChips() {
     $("chipPlus").addEventListener("click", function (e) { e.stopPropagation(); openPlus(); });
-    /* 面板内点击一律不冒泡到 document 的 outside-dismiss 判定
-       （行点击会同步重建列表，旧 target 脱离文档树后 contains 会误判） */
-    [$("plusPanel"), $("pkPanel")].forEach(function (pn) {
-      if (pn) pn.addEventListener("click", function (e) { e.stopPropagation(); });
+    /* Panel clicks never bubble into the outside-dismiss handler. */
+    [$("plusPanel"), $("pkPanel")].forEach(function (panel) {
+      if (panel) panel.addEventListener("click", function (event) { event.stopPropagation(); });
     });
-    /* Working-folder attachment is hidden until a real directory grant can be
-       represented in this static Studio shell. Never expose a demo-only row. */
+    $("pmAttachInput").addEventListener("change", function () {
+      stageAttachmentFiles(this.files);
+      this.value = "";
+    });
+    $("pmFigmaInput").addEventListener("change", function () {
+      stageFigmaFile(this.files && this.files[0]);
+      this.value = "";
+    });
+    $("pmCodeFolderInput").addEventListener("change", function () {
+      stageCodeFolder(this.files);
+      this.value = "";
+    });
+    $("pmPluginZipInput").addEventListener("change", function () {
+      installPluginFiles("zip", this.files);
+      this.value = "";
+    });
+    $("pmPluginFolderInput").addEventListener("change", function () {
+      installPluginFiles("folder", this.files);
+      this.value = "";
+    });
     $("chipDs").addEventListener("click", function (e) { e.stopPropagation(); openPicker("ds"); });
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && plusOpen()) { event.preventDefault(); closePlus(); $("chipPlus").focus(); }
+    });
   })();
 
   /* ── 资源选择器（技能 / 插件 / 设计系统，数据来自 daemon）── */
@@ -3720,212 +4168,646 @@
     panel.style.left = left + "px";
     panel.style.top = top + "px";
   }
-  /* ── 「+」添加弹层（三列：动作菜单 / 资源列表 / 详情，参照真实产品交互）── */
+  /* ── Composer “+”: compact base menu + detached live-resource flyout ── */
   var PLUS_ICONS = {
-    attach: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m20 11.5-8.5 8.5a5 5 0 0 1-7-7l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7l-8.6 8.4a1.7 1.7 0 0 1-2.3-2.3l7.8-7.8"/></svg>',
-    ref: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="6.5" width="12.5" height="12.5" rx="3"/><path d="M8 6.5V5a1.5 1.5 0 0 1 1.5-1.5H19A1.5 1.5 0 0 1 20.5 5v9.5A1.5 1.5 0 0 1 19 16h-1.5"/></svg>',
-    link: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m9 7.5-4.5 4.5L9 16.5M15 7.5l4.5 4.5L15 16.5"/></svg>',
-    skill: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z"/><path d="M18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></svg>',
-    plugin: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/><circle cx="12" cy="12" r="3.2"/></svg>',
-    figma: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 3.5h7M8.5 3.5a3.5 3.5 0 0 0 0 7h7a3.5 3.5 0 0 0 0-7M8.5 10.5a3.5 3.5 0 0 0 0 7M12 10.5v7M15 10.5a3.5 3.5 0 1 1-3.5 3.5"/></svg>',
-    conn: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7.5V4.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 4.5v3M9 16.5v3a1.5 1.5 0 0 0 1.5 1.5h3a1.5 1.5 0 0 0 1.5-1.5v-3M6.5 9a2.5 2.5 0 0 0-2.5 2.5V13h16v-1.5A2.5 2.5 0 0 0 17.5 9z"/></svg>',
-    mcp: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="6" rx="2"/><rect x="3.5" y="13.5" width="17" height="6" rx="2"/><path d="M7.5 7.5h.01M7.5 16.5h.01"/></svg>'
+    attach: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m20 11.5-8.5 8.5a5 5 0 0 1-7-7l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7l-8.6 8.4a1.7 1.7 0 0 1-2.3-2.3l7.8-7.8"/></svg>',
+    ref: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.2A1.7 1.7 0 0 1 5.2 5.5h5l2 2h6.6a1.7 1.7 0 0 1 1.7 1.7v8.6a1.7 1.7 0 0 1-1.7 1.7H5.2a1.7 1.7 0 0 1-1.7-1.7Z"/></svg>',
+    link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.2A1.7 1.7 0 0 1 5.2 5.5h5l2 2h6.6a1.7 1.7 0 0 1 1.7 1.7v8.6a1.7 1.7 0 0 1-1.7 1.7H5.2a1.7 1.7 0 0 1-1.7-1.7Z"/><path d="m9 12-2 2 2 2M15 12l2 2-2 2"/></svg>',
+    plugin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3.5 10.2 7 13.5 8.2 10.2 9.5 9 13l-1.3-3.5-3.4-1.3L7.7 7 9 3.5Z"/><path d="m17 10 1.1 3 2.9 1.1-2.9 1.1-1.1 3-1.1-3-3-1.1 3-1.1 1.1-3Z"/><path d="m8 16 .7 2 2 .7-2 .7-.7 2-.8-2-1.9-.7 1.9-.7.8-2Z"/></svg>',
+    figma: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4.5 14v4.5a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5V14"/></svg>',
+    conn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m9.5 14.5 5-5"/><path d="m7.4 16.6-1.1 1.1a3 3 0 0 1-4.2-4.2l3.2-3.2a3 3 0 0 1 4.2 0"/><path d="m16.6 7.4 1.1-1.1a3 3 0 0 1 4.2 4.2l-3.2 3.2a3 3 0 0 1-4.2 0"/></svg>',
+    mcp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m9.5 14.5 5-5"/><path d="m7.4 16.6-1.1 1.1a3 3 0 0 1-4.2-4.2l3.2-3.2a3 3 0 0 1 4.2 0"/><path d="m16.6 7.4 1.1-1.1a3 3 0 0 1 4.2 4.2l-3.2 3.2a3 3 0 0 1-4.2 0"/></svg>'
   };
-  /* Only advertise resources that are backed by live daemon data. File,
-     local-folder, Figma, connector, and MCP rows return when their grant or
-     authorization flows are available in this Studio shell. */
+  var PLUS_CHEVRON = '<svg class="pm-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+  var PLUS_SEARCH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 4 4"/></svg>';
+  var PLUS_ROW_SPARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m9 4 1.2 3.5L14 9l-3.8 1.4L9 14l-1.3-3.6L4 9l3.7-1.5L9 4Z"/><path d="m17 12 .8 2.3 2.2.8-2.2.8L17 18l-.8-2.1-2.2-.8 2.2-.8L17 12Z"/></svg>';
+  var PLUS_ROW_FOLDER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.2A1.7 1.7 0 0 1 5.2 5.5h5l2 2h6.6a1.7 1.7 0 0 1 1.7 1.7v8.6a1.7 1.7 0 0 1-1.7 1.7H5.2a1.7 1.7 0 0 1-1.7-1.7Z"/></svg>';
+  var PLUS_ROW_SERVER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="6" rx="2"/><rect x="3.5" y="13.5" width="17" height="6" rx="2"/><path d="M7.5 7.5h.01M7.5 16.5h.01"/></svg>';
   var PLUS_MENU = [
+    { k: "attach", label: "pmAttach" },
     { k: "ref", label: "pmRef" },
-    { k: "skill", label: "pmSkill" },
-    { k: "plugin", label: "pmPlugin" }
+    { k: "link", label: "pmLink" },
+    { k: "plugin", label: "pmPlugin", fly: true },
+    { k: "figma", label: "pmFigma" },
+    { k: "conn", label: "pmConn", fly: true },
+    { k: "mcp", label: "pmMcp", fly: true }
   ];
-  var plusCfg = { tab: "plugin", q: "", sel: null, selRef: null };
+  var plusCfg = { tab: "plugin", q: "", selId: null, installMode: false, busy: false, pendingAuth: null };
+  var plusConnectorPromise = null;
+  var plusMcpPromise = null;
 
+  function plusL(zh, en) { return state.lang === "zh" ? zh : en; }
+  function plusHash(value) {
+    var h = 2166136261, text = String(value || "");
+    for (var i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return Math.abs(h);
+  }
+  function plusOpen() { return $("plusPanel").classList.contains("show"); }
   function closePlus() {
-    $("plusPanel").classList.remove("show");
+    var panel = $("plusPanel");
+    panel.classList.remove("show");
+    panel.setAttribute("aria-hidden", "true");
+    $("chipPlus").setAttribute("aria-expanded", "false");
   }
-  /* 悬停栏目即展开对应内容；click 仅作触屏兜底 */
-  function switchPlusTab(k, focusSearch) {
-    if (plusCfg.tab === k) return;
-    plusCfg.tab = k;
-    plusCfg.q = "";
-    plusCfg.sel = null;
-    renderPlus();
-    positionPlusPanel();
-    if (focusSearch) { var inp = $("pmSearch"); if (inp) inp.focus(); }
+  function plusSafePreviewUrl(value) {
+    var url = typeof value === "string" ? value.trim() : "";
+    return /^(?:https?:\/\/|\/)/i.test(url) ? url : "";
   }
-  function plusListData() {
-    if (plusCfg.tab === "plugin") {
-      return (state.realPlugins || []).map(function (p) {
-        return {
-          id: p.id,
-          name: p.title || p.id,
-          desc: (p.manifest && p.manifest.metadata && p.manifest.metadata.description) || p.version || "",
-          official: p.sourceKind === "bundled",
-          source: p.source
-        };
-      });
-    }
-    if (plusCfg.tab === "skill") {
-      return (state.realSkills || []).map(function (sk) {
-        return { id: sk.id, name: sk.name || sk.id, desc: (sk.description || "").split("\n")[0], tag: (sk.triggers || [])[0] || "" };
-      });
-    }
-    if (plusCfg.tab === "ref") {
-      return (state.realProjects || []).map(function (pj) { return { id: pj.id, name: pj.t, desc: pj.kind || pj.time || "" }; });
-    }
+  function pluginDescription(plugin) {
+    var manifest = plugin && plugin.manifest || {};
+    var metadata = manifest.metadata || {};
+    return metadata.description || manifest.description || plugin.version || plusL("为设计工作流扩展能力。", "Extends the design workflow with a reusable capability.");
+  }
+  function pluginPreview(plugin) {
+    var od = plugin && plugin.manifest && plugin.manifest.od || {};
+    var baked = od.bakedPreview || {};
+    var preview = od.preview || {};
+    return plusSafePreviewUrl(baked.poster || preview.poster || preview.gif || "");
+  }
+  function pluginCategory(plugin) {
+    var manifest = plugin && plugin.manifest || {};
+    var tags = Array.isArray(manifest.tags) ? manifest.tags : [];
+    var od = manifest.od || {};
+    return String(tags[0] || od.mode || plusL("插件", "Plugin"));
+  }
+  function plusPluginItems() {
+    return (state.realPlugins || []).map(function (plugin) {
+      return {
+        id: plugin.id,
+        name: plugin.title || plugin.id,
+        desc: pluginDescription(plugin),
+        category: pluginCategory(plugin),
+        official: plugin.sourceKind === "bundled",
+        source: plugin.source,
+        preview: pluginPreview(plugin),
+        raw: plugin
+      };
+    });
+  }
+  function plusProjectItems() {
+    return (state.realProjects || []).map(function (project) {
+      return { id: project.id, name: project.t || project.name || project.id, desc: project.kind || project.time || "", raw: project };
+    });
+  }
+  function plusConnectorItems() {
+    return (state.realConnectors || []).map(function (connector) {
+      return {
+        id: connector.id,
+        name: connector.name || connector.id,
+        desc: connector.description || connector.category || connector.provider || "",
+        category: connector.category || connector.provider || plusL("连接器", "Connector"),
+        connected: connector.status === "connected",
+        raw: connector
+      };
+    });
+  }
+  function plusMcpItems() {
+    var catalog = state.mcpCatalog || { servers: [], templates: [] };
+    var rows = [];
+    (catalog.servers || []).forEach(function (server) {
+      rows.push({ id: "server:" + server.id, serverId: server.id, name: server.label || server.id, desc: server.transport + (server.enabled === false ? " · " + plusL("已停用", "Disabled") : ""), kind: "server", enabled: server.enabled !== false, raw: server });
+    });
+    (catalog.templates || []).forEach(function (template) {
+      rows.push({ id: "template:" + template.id, templateId: template.id, name: template.label || template.id, desc: template.category || template.transport, kind: "template", enabled: false, raw: template });
+    });
+    return rows;
+  }
+  function plusItems(tab) {
+    if (tab === "plugin") return plusPluginItems();
+    if (tab === "ref") return plusProjectItems();
+    if (tab === "conn") return plusConnectorItems();
+    if (tab === "mcp") return plusMcpItems();
     return [];
   }
-  function plusRowsHtml(rows) {
-    return rows.length
-      ? rows.map(function (it) {
-          if (plusCfg.tab === "ref") {
-            var onR = plusCfg.selRef === it.id;
-            return '<button type="button" class="pm-row' + (onR ? " on" : "") + '" data-id="' + esc(it.id) + '">' +
-              '<span class="tx"><b>' + esc(it.name) + "</b>" + (it.desc ? "<small>" + esc(it.desc) + "</small>" : "") + "</span>" +
-              (onR ? '<span class="sel">' + t("pmRefSel") + "</span>" : "") + "</button>";
-          }
-          var on = plusCfg.tab === "plugin" && state.selPlugin && state.selPlugin.id === it.id;
-          return '<button type="button" class="pm-row' + (on ? " on" : "") + '" data-id="' + esc(it.id) + '">' +
-            '<span class="tx"><b>' + esc(it.name) + "</b>" + (it.desc ? "<small>" + esc(it.desc) + "</small>" : "") + "</span>" +
-            '<span class="ck">' + CHECK_SVG + "</span></button>";
-        }).join("")
-      : '<div class="pm-empty">' + t("pkEmpty") + "</div>";
+  function filteredPlusItems() {
+    var q = String(plusCfg.q || "").trim().toLowerCase();
+    return plusItems(plusCfg.tab).filter(function (item) {
+      return !q || (item.name + " " + item.desc + " " + item.id).toLowerCase().indexOf(q) >= 0;
+    });
   }
-  function openPlus() {
-    var panel = $("plusPanel");
-    if (panel.classList.contains("show")) { closePlus(); return; }
-    closePicker();
-    if (panel.parentElement !== document.body) document.body.appendChild(panel);
-    plusCfg = { tab: plusCfg.tab || "plugin", q: "", sel: null, selRef: plusCfg.selRef || null };
+  function selectedPlusItem() {
+    var items = plusItems(plusCfg.tab);
+    if (!items.length) return null;
+    var selected = items.filter(function (item) { return item.id === plusCfg.selId; })[0];
+    if (!selected) {
+      if (plusCfg.tab === "plugin" && state.selPlugin) selected = items.filter(function (item) { return item.id === state.selPlugin.id; })[0];
+      if (plusCfg.tab === "conn" && state.selectedConnectorIds.length) selected = items.filter(function (item) { return item.id === state.selectedConnectorIds[0]; })[0];
+      if (plusCfg.tab === "mcp" && state.selectedMcpServerIds.length) selected = items.filter(function (item) { return item.serverId === state.selectedMcpServerIds[0]; })[0];
+    }
+    selected = selected || items[0];
+    plusCfg.selId = selected.id;
+    return selected;
+  }
+  function loadPlusConnectors(force) {
+    if (!force && Array.isArray(state.realConnectors)) return Promise.resolve(state.realConnectors);
+    if (plusConnectorPromise) return plusConnectorPromise;
+    plusConnectorPromise = apiGet("/api/connectors", { cache: "no-store" }).then(function (data) {
+      state.realConnectors = data && Array.isArray(data.connectors) ? data.connectors : [];
+      return state.realConnectors;
+    }).catch(function (error) {
+      state.realConnectors = [];
+      throw error;
+    }).finally(function () { plusConnectorPromise = null; });
+    return plusConnectorPromise;
+  }
+  function loadPlusMcp(force) {
+    if (!force && state.mcpCatalog) return Promise.resolve(state.mcpCatalog);
+    if (plusMcpPromise) return plusMcpPromise;
+    plusMcpPromise = apiGet("/api/mcp/servers", { cache: "no-store" }).then(function (data) {
+      state.mcpCatalog = {
+        servers: data && Array.isArray(data.servers) ? data.servers : [],
+        templates: data && Array.isArray(data.templates) ? data.templates : []
+      };
+      return state.mcpCatalog;
+    }).catch(function (error) {
+      state.mcpCatalog = { servers: [], templates: [] };
+      throw error;
+    }).finally(function () { plusMcpPromise = null; });
+    return plusMcpPromise;
+  }
+  function ensurePlusData(tab) {
+    var request = null;
+    if (tab === "plugin" && (!Array.isArray(state.realPlugins) || state.realPlugins.length === 0)) request = loadPlugins(Array.isArray(state.realPlugins));
+    else if (tab === "ref" && !Array.isArray(state.realProjects)) request = loadProjects();
+    else if (tab === "conn" && !Array.isArray(state.realConnectors)) request = loadPlusConnectors(false);
+    else if (tab === "mcp" && !state.mcpCatalog) request = loadPlusMcp(false);
+    if (!request || typeof request.then !== "function") return;
+    var expectedTab = tab;
+    request.then(function () {
+      if (plusOpen() && plusCfg.tab === expectedTab) { renderPlus(); positionPlusPanel(); }
+    }).catch(function (error) {
+      if (plusOpen() && plusCfg.tab === expectedTab) renderPlus();
+      toast(t("actionFailed").replace("{message}", cleanErrorMessage(error)));
+    });
+  }
+  function switchPlusTab(tab, focusSearch) {
+    if (plusCfg.busy) return;
+    var same = plusCfg.tab === tab;
+    plusCfg.tab = tab;
+    if (!same) { plusCfg.q = ""; plusCfg.selId = null; plusCfg.installMode = false; }
     renderPlus();
-    panel.classList.add("show");
     positionPlusPanel();
-    var input = $("pmSearch");
-    if (input) input.focus();
+    ensurePlusData(tab);
+    if (focusSearch) {
+      var input = $("pmSearch");
+      if (input) input.focus();
+    }
   }
-  function positionPlusPanel() {
-    var panel = $("plusPanel");
-    var anchor = $("chipPlus");
-    if (!anchor) return;
-    var r = anchor.getBoundingClientRect();
-    var vw = window.innerWidth || document.documentElement.clientWidth;
-    var vh = window.innerHeight || document.documentElement.clientHeight;
-    var w = Math.min(660, vw - 32);
-    panel.style.width = w + "px";
-    var left = Math.max(12, Math.min(r.left, vw - w - 12));
-    var h = panel.offsetHeight || 380;
-    var top = r.top - 8 - h;
-    if (top < 12) top = Math.min(r.bottom + 8, vh - h - 12);
-    if (top < 12) top = 12;
-    panel.style.left = left + "px";
-    panel.style.top = top + "px";
+  function plusMenuHtml() {
+    return '<div class="pm-menu" role="menu" aria-label="' + escAttr(plusL("添加内容", "Add content")) + '">' + PLUS_MENU.map(function (item) {
+      var on = plusCfg.tab === item.k;
+      var arrow = item.fly ? PLUS_CHEVRON : "";
+      return '<button type="button" class="pm-item' + (on ? " on" : "") + '" role="menuitem" data-tab="' + item.k + '" aria-current="' + (on ? "true" : "false") + '">' + PLUS_ICONS[item.k] + '<span>' + esc(t(item.label)) + '</span>' + arrow + '</button>';
+    }).join("") + "</div>";
+  }
+  function plusRowIcon(tab) {
+    return tab === "plugin" ? PLUS_ROW_SPARK : tab === "ref" ? PLUS_ROW_FOLDER : PLUS_ROW_SERVER;
+  }
+  function plusRowsHtml() {
+    var loading = (plusCfg.tab === "plugin" && !Array.isArray(state.realPlugins)) || (plusCfg.tab === "ref" && !Array.isArray(state.realProjects)) || (plusCfg.tab === "conn" && !Array.isArray(state.realConnectors)) || (plusCfg.tab === "mcp" && !state.mcpCatalog);
+    if (loading) return '<div class="pm-loading"><span>' + esc(plusL("正在加载…", "Loading…")) + '</span></div>';
+    var rows = filteredPlusItems();
+    if (!rows.length) return '<div class="pm-empty"><span>' + esc(t("pkEmpty")) + '</span></div>';
+    return rows.map(function (item) {
+      var on = item.id === plusCfg.selId;
+      var desc = plusCfg.tab === "plugin" ? "" : item.desc;
+      var status = plusCfg.tab === "conn" ? '<i class="pm-status-dot' + (item.connected ? " connected" : "") + '"></i>' : plusCfg.tab === "mcp" && item.kind === "server" ? '<i class="pm-status-dot' + (item.enabled ? " connected" : "") + '"></i>' : "";
+      return '<button type="button" class="pm-row' + (on ? " on" : "") + '" data-id="' + escAttr(item.id) + '"><span class="pm-row-icon">' + plusRowIcon(plusCfg.tab) + '</span><span class="pm-row-copy"><b>' + esc(item.name) + '</b>' + (desc ? '<small>' + esc(desc) + '</small>' : "") + '</span>' + status + '</button>';
+    }).join("");
+  }
+  function plusSearchPlaceholder() {
+    if (plusCfg.tab === "ref") return t("pmRefSearch");
+    if (plusCfg.tab === "conn") return plusL("搜索连接器…", "Search connectors…");
+    if (plusCfg.tab === "mcp") return plusL("搜索 MCP…", "Search MCP…");
+    return t("pmSearch");
+  }
+  function plusFooterHtml() {
+    if (plusCfg.tab === "plugin") return '<button type="button" class="pm-add" id="pmAddPlugin">' + PLUS_ROW_SPARK + '<span>' + esc(plusL("添加插件", "Add plugin")) + '</span></button>';
+    if (plusCfg.tab === "ref") return '<button type="button" class="pm-add" id="pmReferenceSelected">' + PLUS_ROW_FOLDER + '<span>' + esc(plusL("引用所选项目", "Reference selected project")) + '</span></button>';
+    if (plusCfg.tab === "conn") return '<button type="button" class="pm-add" id="pmRefreshConnectors"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg><span>' + esc(plusL("刷新连接状态", "Refresh connections")) + '</span></button>';
+    return '<button type="button" class="pm-add" id="pmAddMcp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>' + esc(plusL("添加 MCP 服务器", "Add MCP server")) + '</span></button>';
+  }
+  function pluginPreviewHtml(item) {
+    var hue = plusHash(item.id) % 330;
+    var fallback = '<div class="pm-preview-art" style="--pm-hue:' + hue + '"><div class="pm-preview-window"><i></i><i></i><i></i></div></div>';
+    var image = item.preview ? '<img src="' + escAttr(item.preview) + '" alt="' + escAttr(item.name) + '" loading="lazy">' : "";
+    return '<div class="pm-preview">' + fallback + image + '</div>';
+  }
+  function plusPluginDetail() {
+    if (plusCfg.installMode) {
+      return '<div class="pm-detail"><div class="pm-detail-head"><h4>' + esc(plusL("添加插件", "Add plugin")) + '</h4><span class="pm-badge">ZIP / Folder</span></div><p>' + esc(plusL("选择一个插件压缩包或包含 manifest 的插件目录。安装会写入本地插件注册表并立即刷新列表。", "Choose a plugin ZIP or a folder containing its manifest. It will be installed into the local plugin registry and appear here immediately.")) + '</p><div class="pm-install-options"><button type="button" class="pm-install-card" id="pmInstallZip">' + PLUS_ICONS.attach + '<span><b>' + esc(plusL("上传 ZIP", "Upload ZIP")) + '</b><small>' + esc(plusL("安装打包好的插件", "Install a packaged plugin")) + '</small></span></button><button type="button" class="pm-install-card" id="pmInstallFolder">' + PLUS_ROW_FOLDER + '<span><b>' + esc(plusL("选择插件目录", "Choose plugin folder")) + '</b><small>' + esc(plusL("从本地源码目录安装", "Install from local source")) + '</small></span></button></div>' + (plusCfg.busy ? '<div class="pm-loading"><span>' + esc(plusL("正在安装插件…", "Installing plugin…")) + '</span></div>' : "") + '</div>';
+    }
+    var item = selectedPlusItem();
+    if (!item) return '<div class="pm-detail"><div class="pm-empty">' + esc(t("resourceEmpty")) + '</div></div>';
+    var selected = state.selPlugin && state.selPlugin.id === item.id;
+    return '<div class="pm-detail"><div class="pm-detail-head"><h4>' + esc(item.name) + '</h4><div class="pm-badges"><span class="pm-badge">' + esc(item.category) + '</span>' + (item.official ? '<span class="pm-badge official">' + esc(t("pmOfficial")) + '</span>' : "") + '</div></div><p>' + esc(item.desc) + '</p>' + (selected ? '<button type="button" class="pm-detail-action" id="pmRemovePlugin">✓ ' + esc(plusL("已添加到本次创作", "Added to this creation")) + '</button>' : '<div class="pm-note">' + esc(plusL("点击左侧插件即可添加到本次创作。", "Click the plugin in the list to add it to this creation.")) + '</div>') + pluginPreviewHtml(item) + '</div>';
+  }
+  function plusReferenceDetail() {
+    var item = selectedPlusItem();
+    if (!item) return '<div class="pm-detail"><div class="pm-empty">' + esc(t("resourceEmpty")) + '</div></div>';
+    var attached = state.composerResources.some(function (resource) { return resource.kind === "project" && resource.projectId === item.id; });
+    return '<div class="pm-detail"><div class="pm-detail-head"><h4>' + esc(item.name) + '</h4><span class="pm-badge">' + esc(item.desc || plusL("项目", "Project")) + '</span></div><p>' + esc(t("pmRefHint")) + '</p><button type="button" class="pm-detail-action primary" id="pmReferenceDetail"' + (plusCfg.busy ? " disabled" : "") + '>' + esc(attached ? plusL("更新引用", "Refresh reference") : t("pmRefConfirm")) + '</button><div class="pm-preview"><div class="pm-preview-art" style="--pm-hue:' + (plusHash(item.id) % 330) + '"><div class="pm-preview-window"><i></i><i></i><i></i></div></div></div></div>';
+  }
+  function plusConnectorDetail() {
+    var item = selectedPlusItem();
+    if (!item) return '<div class="pm-detail"><div class="pm-empty">' + esc(plusL("当前没有连接器。", "No connectors are available.")) + '</div></div>';
+    var connector = item.raw;
+    var selected = state.selectedConnectorIds.indexOf(item.id) >= 0;
+    var toolCount = Number(connector.toolCount) || (Array.isArray(connector.tools) ? connector.tools.length : 0);
+    var buttons = "";
+    if (item.connected) {
+      buttons += '<button type="button" class="pm-detail-action primary" id="pmUseConnector">' + esc(selected ? plusL("从本次创作移除", "Remove from this creation") : plusL("用于本次创作", "Use in this creation")) + '</button> ';
+      buttons += '<button type="button" class="pm-detail-action" id="pmDisconnectConnector">' + esc(plusL("断开", "Disconnect")) + '</button>';
+    } else {
+      buttons += '<button type="button" class="pm-detail-action primary" id="pmConnectConnector"' + (plusCfg.busy ? " disabled" : "") + '>' + esc(plusCfg.pendingAuth === item.id ? plusL("等待授权…", "Awaiting authorization…") : plusL("连接", "Connect")) + '</button>';
+    }
+    return '<div class="pm-detail"><div class="pm-detail-head"><h4>' + esc(item.name) + '</h4><div class="pm-badges"><span class="pm-badge">' + esc(item.category) + '</span>' + (item.connected ? '<span class="pm-badge official">' + esc(plusL("已连接", "Connected")) + '</span>' : "") + '</div></div><p>' + esc(item.desc || t("pmConnDesc")) + '</p><div class="pm-note">' + esc(plusL("可用工具", "Available tools")) + ' · ' + toolCount + '</div>' + buttons + pluginPreviewHtml({ id: item.id, name: item.name, preview: "" }) + '</div>';
+  }
+  function mcpFieldsHtml(template) {
+    var fields = [];
+    (template.envFields || []).forEach(function (field) { fields.push({ group: "env", field: field }); });
+    (template.headerFields || []).forEach(function (field) { fields.push({ group: "headers", field: field }); });
+    return fields.map(function (entry) {
+      var field = entry.field || {};
+      return '<label class="pm-field"><span>' + esc(field.label || field.key) + (field.required ? " *" : "") + '</span><input type="' + (field.secret ? "password" : "text") + '" data-mcp-group="' + entry.group + '" data-mcp-key="' + escAttr(field.key || "") + '" data-mcp-required="' + (field.required ? "true" : "false") + '" placeholder="' + escAttr(field.placeholder || "") + '"></label>';
+    }).join("");
+  }
+  function plusMcpDetail() {
+    var item = selectedPlusItem();
+    if (!item) return '<div class="pm-detail"><div class="pm-empty">' + esc(plusL("选择下方模板即可添加 MCP 服务器。", "Choose a template to add an MCP server.")) + '</div></div>';
+    if (item.kind === "template") {
+      var template = item.raw;
+      return '<div class="pm-detail"><div class="pm-detail-head"><h4>' + esc(item.name) + '</h4><div class="pm-badges"><span class="pm-badge">' + esc(template.category || "MCP") + '</span><span class="pm-badge">' + esc(template.transport || "stdio") + '</span></div></div><p>' + esc(template.description || t("pmMcpDesc")) + '</p><div class="pm-form" id="pmMcpFields">' + mcpFieldsHtml(template) + '</div><button type="button" class="pm-detail-action primary" id="pmSaveMcp"' + (plusCfg.busy ? " disabled" : "") + '>' + esc(plusL("添加服务器", "Add server")) + '</button></div>';
+    }
+    var server = item.raw;
+    var selected = state.selectedMcpServerIds.indexOf(server.id) >= 0;
+    var oauth = (server.transport === "http" || server.transport === "sse") && server.authMode !== "none";
+    return '<div class="pm-detail"><div class="pm-detail-head"><h4>' + esc(item.name) + '</h4><div class="pm-badges"><span class="pm-badge">' + esc(server.transport) + '</span><span class="pm-badge' + (server.enabled !== false ? " official" : "") + '">' + esc(server.enabled !== false ? plusL("已启用", "Enabled") : plusL("已停用", "Disabled")) + '</span></div></div><p>' + esc(server.url || ((server.command || "") + " " + ((server.args || []).join(" ")))) + '</p><button type="button" class="pm-detail-action primary" id="pmUseMcp">' + esc(selected ? plusL("从本次创作移除", "Remove from this creation") : plusL("用于本次创作", "Use in this creation")) + '</button> <button type="button" class="pm-detail-action" id="pmToggleMcp">' + esc(server.enabled !== false ? plusL("停用", "Disable") : plusL("启用", "Enable")) + '</button>' + (oauth ? ' <button type="button" class="pm-detail-action" id="pmAuthMcp">' + esc(plusL("连接 OAuth", "Connect OAuth")) + '</button>' : "") + '</div>';
+  }
+  function plusDetailHtml() {
+    if (plusCfg.tab === "plugin") return plusPluginDetail();
+    if (plusCfg.tab === "ref") return plusReferenceDetail();
+    if (plusCfg.tab === "conn") return plusConnectorDetail();
+    return plusMcpDetail();
+  }
+  function plusCatalogFlyoutHtml() {
+    return '<div class="pm-flyout" data-flyout="' + plusCfg.tab + '"><div class="pm-catalog"><div class="pm-search-wrap"><label class="pm-search">' + PLUS_SEARCH + '<input id="pmSearch" value="' + escAttr(plusCfg.q) + '" placeholder="' + escAttr(plusSearchPlaceholder()) + '" autocomplete="off" aria-label="' + escAttr(plusSearchPlaceholder()) + '"></label></div><div class="pm-rows" id="pmRows">' + plusRowsHtml() + '</div>' + plusFooterHtml() + '</div>' + plusDetailHtml() + '</div>';
+  }
+  function plusLinkFlyoutHtml() {
+    var linked = state.composerResources.filter(function (resource) { return resource.kind === "local-code" || resource.kind === "code-folder-upload"; });
+    var rows = linked.length ? linked.map(function (resource) {
+      return '<div class="pm-row on"><span class="pm-row-icon">' + PLUS_ROW_FOLDER + '</span><span class="pm-row-copy"><b>' + esc(resource.name) + '</b><small>' + esc(resource.path || plusL(resource.fileCount + " 个文件", resource.fileCount + " files")) + '</small></span><i class="pm-status-dot connected"></i></div>';
+    }).join("") : '<div class="pm-empty"><span>' + esc(plusL("尚未关联本地代码", "No local code linked yet")) + '</span></div>';
+    return '<div class="pm-flyout" data-flyout="link"><div class="pm-catalog"><div class="pm-search-wrap"><div class="pm-search">' + PLUS_ROW_FOLDER + '<span>' + esc(plusL("已关联目录", "Linked folders")) + '</span></div></div><div class="pm-rows">' + rows + '</div><button type="button" class="pm-add" id="pmWebCodeFooter">' + PLUS_ICONS.link + '<span>' + esc(plusL("关联本地代码", "Link local code")) + '</span></button></div><div class="pm-detail"><div class="pm-detail-head"><h4>' + esc(t("pmLink")) + '</h4><span class="pm-badge">Code</span></div><p>' + esc(t("pmLinkDesc")) + '</p><div class="pm-link-options"><button type="button" class="pm-link-option" id="pmNativeCode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3.5 7.2A1.7 1.7 0 0 1 5.2 5.5h5l2 2h6.6a1.7 1.7 0 0 1 1.7 1.7v8.6a1.7 1.7 0 0 1-1.7 1.7H5.2a1.7 1.7 0 0 1-1.7-1.7Z"/></svg><span><b>' + esc(plusL("桌面目录", "Desktop folder")) + '</b><small>' + esc(plusL("授予项目真实目录访问权限", "Grant the project real directory access")) + '</small></span></button><button type="button" class="pm-link-option" id="pmWebCode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 5.5h16v13H4z"/><path d="M8 9.5h8M8 13h5"/></svg><span><b>' + esc(plusL("浏览器上传", "Browser upload")) + '</b><small>' + esc(plusL("上传最多 12 个代码文件", "Upload up to 12 code files")) + '</small></span></button></div><div class="pm-note">' + esc(plusL("桌面目录会写入项目 linkedDirs；浏览器模式会把所选文件保存到新项目。", "Desktop folders are stored as linkedDirs; browser selections are uploaded into the new project.")) + '</div></div></div>';
   }
   function renderPlus() {
     var panel = $("plusPanel");
-    if (plusCfg.tab === "ref" && !plusCfg.selRef) {
-      var f0 = plusListData()[0];
-      if (f0) plusCfg.selRef = f0.id;
-    }
-    var menuHtml = '<div class="pm-menu">' + PLUS_MENU.map(function (m) {
-      return '<button type="button" class="pm-item' + (plusCfg.tab === m.k ? " on" : "") + '" data-tab="' + m.k + '">' + PLUS_ICONS[m.k] + "<span>" + t(m.label) + "</span></button>";
-    }).join("") + "</div>";
-    var rows = plusListData().filter(function (it) {
-      if (!plusCfg.q || !(plusCfg.tab === "plugin" || plusCfg.tab === "skill" || plusCfg.tab === "ref")) return true;
-      return (it.name + " " + it.desc + " " + it.id).toLowerCase().indexOf(plusCfg.q.toLowerCase()) >= 0;
-    });
-    var tabLabelKey = (PLUS_MENU.filter(function (m) { return m.k === plusCfg.tab; })[0] || {}).label || "pmPlugin";
-    var searchable = plusCfg.tab === "plugin" || plusCfg.tab === "skill" || plusCfg.tab === "ref";
-    var midHtml =
-      '<div class="pm-mid">' +
-      '<div class="pm-h"><b>' + t(tabLabelKey) + "</b>" + (searchable
-        ? '<input type="text" id="pmSearch" placeholder="' + t(plusCfg.tab === "ref" ? "pmRefSearch" : "pmSearch") + '" value="' + esc(plusCfg.q).replace(/"/g, "&quot;") + '" />'
-        : "") + "</div>" +
-      '<div class="pm-rows" id="pmRows">' + plusRowsHtml(rows) + "</div>" +
-      (plusCfg.tab === "ref"
-        ? '<div class="pm-foot"><button type="button" class="ghost" id="pmCancel">' + t("pmCancel") + '</button><button type="button" class="go" id="pmRefGo">' + t("pmRefConfirm") + "</button></div>"
-        : "") +
-      "</div>";
-    var detail;
-    if (plusCfg.tab === "plugin" || plusCfg.tab === "skill") {
-      if (plusCfg.sel) {
-        var pl = plusCfg.sel;
-        var isSkill = plusCfg.tab === "skill";
-        detail = '<div class="pm-detail">' +
-          (!isSkill && pl.official ? '<span class="tag">' + t("pmOfficial") + "</span>" : "") +
-          "<h4>" + esc(pl.name) + "</h4><p>" + esc(pl.desc || "") + "</p>" +
-          '<button type="button" class="use" id="pmUse">' + t(isSkill ? "pmUseSkill" : "pmUse") + "</button></div>";
-      } else {
-        var descKey = plusCfg.tab === "skill" ? "pmSkillDesc" : "pmPluginDesc";
-        var titleKey = plusCfg.tab === "skill" ? "pmSkill" : "pmPlugin";
-        detail = '<div class="pm-detail"><h4>' + t(titleKey) + "</h4><p>" + t(descKey) + '</p><div class="hint">' + t("pmSelHint") + "</div></div>";
-      }
-    } else if (plusCfg.tab === "ref") {
-      detail = "";
-    } else {
-      var meta = { attach: "pmAttachDesc", link: "pmLinkDesc", figma: "pmFigmaDesc", conn: "pmConnDesc", mcp: "pmMcpDesc" }[plusCfg.tab];
-      var label = { attach: "pmAttach", link: "pmLink", figma: "pmFigma", conn: "pmConn", mcp: "pmMcp" }[plusCfg.tab];
-      detail = '<div class="pm-detail"><h4>' + t(label) + "</h4><p>" + t(meta) + '</p><div class="hint">' + t("pmSelHint") + "</div></div>";
-    }
-    panel.classList.toggle("refmode", plusCfg.tab === "ref");
-    panel.innerHTML = menuHtml + midHtml + detail;
-
-    panel.querySelectorAll(".pm-item").forEach(function (b) {
-      var k = b.getAttribute("data-tab");
-      b.addEventListener("mouseenter", function () { switchPlusTab(k, false); });
-      b.addEventListener("click", function () { switchPlusTab(k, true); });
+    var flyout = plusCfg.tab === "attach" || plusCfg.tab === "figma" ? "" : plusCfg.tab === "link" ? plusLinkFlyoutHtml() : plusCatalogFlyoutHtml();
+    panel.innerHTML = plusMenuHtml() + flyout;
+    panel.querySelectorAll(".pm-item").forEach(function (button) {
+      var tab = button.getAttribute("data-tab");
+      var menu = PLUS_MENU.filter(function (item) { return item.k === tab; })[0];
+      if (menu && menu.fly) button.addEventListener("mouseenter", function () { switchPlusTab(tab, false); });
+      button.addEventListener("click", function () {
+        if (tab === "attach") { $("pmAttachInput").click(); return; }
+        if (tab === "figma") { $("pmFigmaInput").click(); return; }
+        switchPlusTab(tab, true);
+      });
     });
     var search = $("pmSearch");
     if (search) search.addEventListener("input", function () { plusCfg.q = this.value; renderPlusListOnly(); });
     bindPlusRows();
-    var pmCancelBtn = $("pmCancel");
-    if (pmCancelBtn) pmCancelBtn.addEventListener("click", function () { closePlus(); });
-    var pmRefGo = $("pmRefGo");
-    if (pmRefGo) pmRefGo.addEventListener("click", function () {
-      var pj = plusListData().filter(function (x) { return x.id === plusCfg.selRef; })[0];
-      if (!pj) { toast(t("pkEmpty")); return; }
-      $("prompt").value = t("pmRefFill").replace("{name}", pj.name);
-      closePlus();
-      $("prompt").focus();
-    });
-    var use = $("pmUse");
-    if (use) use.addEventListener("click", function () {
-      if (!plusCfg.sel) return;
-      if (plusCfg.tab === "skill") state.selSkill = { id: plusCfg.sel.id, name: plusCfg.sel.name };
-      else state.selPlugin = { id: plusCfg.sel.id, name: plusCfg.sel.name, source: plusCfg.sel.source };
-      updateChips();
-      toast(t("toastPicked").replace("{name}", plusCfg.sel.name));
-      closePlus();
-    });
+    bindPlusActions();
+    panel.querySelectorAll(".pm-preview img").forEach(function (image) { image.addEventListener("error", function () { image.remove(); }); });
   }
   function renderPlusListOnly() {
-    /* 搜索时只刷新中列，保持输入框焦点 */
-    var panel = $("plusPanel");
-    var rows = plusListData().filter(function (it) {
-      if (!plusCfg.q || !(plusCfg.tab === "plugin" || plusCfg.tab === "skill" || plusCfg.tab === "ref")) return true;
-      return (it.name + " " + it.desc + " " + it.id).toLowerCase().indexOf(plusCfg.q.toLowerCase()) >= 0;
-    });
-    var box = $("pmRows");
-    if (!box) return;
-    box.innerHTML = plusRowsHtml(rows);
+    var rows = $("pmRows");
+    if (!rows) return;
+    rows.innerHTML = plusRowsHtml();
     bindPlusRows();
   }
   function bindPlusRows() {
-    $("plusPanel").querySelectorAll(".pm-row").forEach(function (b) {
-      b.addEventListener("click", function () {
-        var id = b.getAttribute("data-id");
-        if (plusCfg.tab === "plugin" || plusCfg.tab === "skill") {
-          var it = plusListData().filter(function (x) { return x.id === id; })[0];
-          if (!it) return;
-          plusCfg.sel = it;
-          renderPlus();
-          positionPlusPanel();
-        } else if (plusCfg.tab === "ref") {
-          plusCfg.selRef = id;
-          renderPlusListOnly();
+    $("plusPanel").querySelectorAll(".pm-row[data-id]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        var id = button.getAttribute("data-id");
+        var item = plusItems(plusCfg.tab).filter(function (candidate) { return candidate.id === id; })[0];
+        if (!item) return;
+        plusCfg.selId = id;
+        plusCfg.installMode = false;
+        if (plusCfg.tab === "plugin") {
+          state.selPlugin = { id: item.id, name: item.name, source: item.source };
+          updateChips();
+          toast(t("toastPicked").replace("{name}", item.name));
         }
+        renderPlus();
+        positionPlusPanel();
       });
     });
+  }
+  function bindPlusActions() {
+    var on = function (id, handler) { var node = $(id); if (node) node.addEventListener("click", handler); };
+    on("pmAddPlugin", function () { plusCfg.installMode = true; renderPlus(); });
+    on("pmInstallZip", function () { $("pmPluginZipInput").click(); });
+    on("pmInstallFolder", function () { $("pmPluginFolderInput").click(); });
+    on("pmRemovePlugin", function () { state.selPlugin = null; updateChips(); renderPlus(); });
+    on("pmReferenceSelected", referenceSelectedProject);
+    on("pmReferenceDetail", referenceSelectedProject);
+    on("pmNativeCode", pickNativeCodeFolder);
+    on("pmWebCode", function () { $("pmCodeFolderInput").click(); });
+    on("pmWebCodeFooter", function () { $("pmCodeFolderInput").click(); });
+    on("pmRefreshConnectors", function () { refreshConnectorsInPlus(); });
+    on("pmConnectConnector", connectSelectedConnector);
+    on("pmDisconnectConnector", disconnectSelectedConnector);
+    on("pmUseConnector", toggleSelectedConnectorContext);
+    on("pmAddMcp", selectFirstMcpTemplate);
+    on("pmSaveMcp", saveSelectedMcpTemplate);
+    on("pmUseMcp", toggleSelectedMcpContext);
+    on("pmToggleMcp", toggleSelectedMcpEnabled);
+    on("pmAuthMcp", authorizeSelectedMcp);
+  }
+  function openPlus() {
+    var panel = $("plusPanel");
+    if (plusOpen()) { closePlus(); return; }
+    closePicker();
+    if (panel.parentElement !== document.body) document.body.appendChild(panel);
+    plusCfg = { tab: "plugin", q: "", selId: state.selPlugin ? state.selPlugin.id : null, installMode: false, busy: false, pendingAuth: null };
+    renderPlus();
+    panel.classList.add("show");
+    panel.setAttribute("aria-hidden", "false");
+    $("chipPlus").setAttribute("aria-expanded", "true");
+    positionPlusPanel();
+    ensurePlusData("plugin");
+    var input = $("pmSearch");
+    if (input) input.focus();
+  }
+  function positionPlusPanel() {
+    var panel = $("plusPanel"), anchor = $("chipPlus");
+    if (!anchor || !plusOpen()) return;
+    var rect = anchor.getBoundingClientRect();
+    var vw = window.innerWidth || document.documentElement.clientWidth;
+    var vh = window.innerHeight || document.documentElement.clientHeight;
+    var mobile = vw <= 720;
+    var menuHeight = 268;
+    var outerWidth = mobile ? Math.min(468, vw - 24) : 660;
+    var mobileFlyHeight = Math.max(170, Math.min(328, vh - 310));
+    var outerHeight = mobile ? 276 + mobileFlyHeight : 424;
+    var left = Math.max(12, Math.min(rect.left, vw - outerWidth - 12));
+    var top = rect.top - menuHeight - 10;
+    top = Math.min(top, vh - outerHeight - 12);
+    top = Math.max(12, top);
+    panel.style.left = Math.round(left) + "px";
+    panel.style.top = Math.round(top) + "px";
+  }
+
+  function composerResourceId(kind, value) { return kind + ":" + plusHash(kind + ":" + value + ":" + Date.now()).toString(36); }
+  function addComposerResource(resource) {
+    if (!resource || !resource.id) return;
+    state.composerResources = state.composerResources.filter(function (item) { return item.id !== resource.id; });
+    state.composerResources.push(resource);
+    updateChips();
+  }
+  function removeComposerResource(id) {
+    var removed = state.composerResources.filter(function (resource) { return resource.id === id; })[0];
+    state.composerResources = state.composerResources.filter(function (resource) { return resource.id !== id; });
+    state.pendingUploads = state.pendingUploads.filter(function (entry) { return entry.resourceId !== id; });
+    if (removed && removed.kind === "figma") state.pendingFigma = null;
+    if (removed && removed.kind === "local-code" && removed.path) state.linkedDirs = state.linkedDirs.filter(function (path) { return path !== removed.path; });
+    if (removed && removed.kind === "connector") state.selectedConnectorIds = state.selectedConnectorIds.filter(function (connectorId) { return connectorId !== removed.connectorId; });
+    if (removed && removed.kind === "mcp") state.selectedMcpServerIds = state.selectedMcpServerIds.filter(function (serverId) { return serverId !== removed.serverId; });
+    updateChips();
+  }
+  function remainingUploadSlots() { return Math.max(0, 12 - state.pendingUploads.length); }
+  function stageAttachmentFiles(fileList) {
+    var files = Array.prototype.slice.call(fileList || []);
+    var available = remainingUploadSlots();
+    if (!files.length) return;
+    files.slice(0, available).forEach(function (file) {
+      var id = composerResourceId("file", file.name + ":" + file.size + ":" + file.lastModified);
+      state.pendingUploads.push({ resourceId: id, file: file, kind: "file" });
+      addComposerResource({ id: id, kind: "file", name: file.name, size: file.size });
+    });
+    if (files.length > available) toast(plusL("一次最多附加 12 个文件。", "You can attach up to 12 files at a time."));
+    closePlus();
+    toast(plusL("已附加 " + Math.min(files.length, available) + " 个文件", Math.min(files.length, available) + " file(s) attached"));
+  }
+  function stageCodeFolder(fileList) {
+    var files = Array.prototype.slice.call(fileList || []);
+    if (!files.length) return;
+    var available = remainingUploadSlots();
+    var chosen = files.slice(0, available);
+    var firstPath = chosen[0] && chosen[0].webkitRelativePath || chosen[0].name;
+    var folderName = String(firstPath).split("/")[0] || plusL("本地代码", "Local code");
+    var id = composerResourceId("code-folder", folderName);
+    chosen.forEach(function (file) { state.pendingUploads.push({ resourceId: id, file: file, kind: "code-folder" }); });
+    addComposerResource({ id: id, kind: "code-folder-upload", name: folderName, fileCount: chosen.length });
+    if (files.length > available) toast(plusL("已选择前 12 个文件，其余文件未上传。", "The first 12 files were selected; remaining files were not uploaded."));
+    closePlus();
+    toast(t("toastPicked").replace("{name}", folderName));
+  }
+  function stageFigmaFile(file) {
+    if (!file) return;
+    if (!/\.fig$/i.test(file.name)) { toast(plusL("请选择 .fig 文件。", "Choose a .fig file.")); return; }
+    var id = "figma:pending";
+    state.pendingFigma = { resourceId: id, file: file };
+    addComposerResource({ id: id, kind: "figma", name: file.name, size: file.size });
+    closePlus();
+    toast(t("toastPicked").replace("{name}", file.name));
+  }
+  async function referenceSelectedProject() {
+    var item = selectedPlusItem();
+    if (!item || plusCfg.busy) return;
+    plusCfg.busy = true;
+    renderPlus();
+    var content = "";
+    try {
+      var data = await apiGet("/api/db/projects/" + encodeURIComponent(item.id) + "/gen", { cache: "no-store" });
+      var events = data && Array.isArray(data.events) ? data.events : [];
+      for (var i = events.length - 1; i >= 0; i--) {
+        var event = events[i];
+        if (event && event.type === "artifact" && event.payload && typeof event.payload.html === "string") { content = event.payload.html.slice(0, 12000); break; }
+      }
+      var id = "project:" + item.id;
+      addComposerResource({ id: id, kind: "project", projectId: item.id, name: item.name, content: content, desc: item.desc });
+      closePlus();
+      toast(t("toastPicked").replace("{name}", item.name));
+    } catch (error) {
+      plusCfg.busy = false;
+      renderPlus();
+      toast(t("actionFailed").replace("{message}", cleanErrorMessage(error)));
+    }
+  }
+  async function pickNativeCodeFolder() {
+    if (plusCfg.busy) return;
+    plusCfg.busy = true;
+    renderPlus();
+    try {
+      var result = await apiSend("/api/dialog/open-folder", "POST", {});
+      var path = result && typeof result.path === "string" ? result.path.trim() : "";
+      if (!path) { plusCfg.busy = false; renderPlus(); return; }
+      if (state.linkedDirs.indexOf(path) < 0) state.linkedDirs.push(path);
+      var name = path.split(/[\\/]/).filter(Boolean).pop() || path;
+      addComposerResource({ id: "local-code:" + path, kind: "local-code", name: name, path: path });
+      closePlus();
+      toast(t("toastPicked").replace("{name}", name));
+    } catch (error) {
+      plusCfg.busy = false;
+      renderPlus();
+      toast(t("actionFailed").replace("{message}", cleanErrorMessage(error)));
+    }
+  }
+  async function installPluginFiles(kind, fileList) {
+    var files = Array.prototype.slice.call(fileList || []);
+    if (!files.length || plusCfg.busy) return;
+    plusCfg.busy = true;
+    plusCfg.installMode = true;
+    if (plusOpen()) renderPlus();
+    try {
+      var form = new FormData();
+      var url;
+      if (kind === "zip") {
+        form.append("file", files[0]);
+        url = "/api/plugins/upload-zip";
+      } else {
+        files.forEach(function (file) {
+          form.append("files", file, file.name);
+          form.append("paths", file.webkitRelativePath || file.name);
+        });
+        url = "/api/plugins/upload-folder";
+      }
+      var response = await fetch(url, { method: "POST", body: form });
+      var payload = await response.json().catch(function () { return {}; });
+      if (!response.ok || !payload.ok) throw new Error(payload.message || apiErrorMessage(payload.error, response.statusText || "Plugin install failed"));
+      state.realPlugins = null;
+      await loadPlugins(true);
+      plusCfg.busy = false;
+      plusCfg.installMode = false;
+      if (payload.plugin) plusCfg.selId = payload.plugin.id;
+      if (plusOpen()) renderPlus();
+      toast(payload.message || plusL("插件已安装。", "Plugin installed."));
+    } catch (error) {
+      plusCfg.busy = false;
+      if (plusOpen()) renderPlus();
+      toast(t("actionFailed").replace("{message}", cleanErrorMessage(error)));
+    }
+  }
+  function selectedConnectorItem() { return plusConnectorItems().filter(function (item) { return item.id === plusCfg.selId; })[0] || null; }
+  async function refreshConnectorsInPlus() {
+    if (plusCfg.busy) return;
+    plusCfg.busy = true; renderPlus();
+    try { await loadPlusConnectors(true); plusCfg.busy = false; renderPlus(); }
+    catch (error) { plusCfg.busy = false; renderPlus(); toast(t("actionFailed").replace("{message}", cleanErrorMessage(error))); }
+  }
+  async function connectSelectedConnector() {
+    var item = selectedConnectorItem();
+    if (!item || plusCfg.busy) return;
+    plusCfg.busy = true; renderPlus();
+    try {
+      var result = await apiSend("/api/connectors/" + encodeURIComponent(item.id) + "/connect", "POST", {});
+      var redirect = result && result.auth && result.auth.redirectUrl;
+      if (redirect) {
+        plusCfg.pendingAuth = item.id;
+        window.open(redirect, "od-connector-auth", "noopener,noreferrer");
+        toast(plusL("请在新窗口完成授权，然后刷新连接状态。", "Complete authorization in the new window, then refresh connection status."));
+      }
+      await loadPlusConnectors(true);
+      plusCfg.busy = false; renderPlus();
+    } catch (error) { plusCfg.busy = false; renderPlus(); toast(t("actionFailed").replace("{message}", cleanErrorMessage(error))); }
+  }
+  async function disconnectSelectedConnector() {
+    var item = selectedConnectorItem();
+    if (!item || plusCfg.busy) return;
+    plusCfg.busy = true; renderPlus();
+    try {
+      await apiRequest("/api/connectors/" + encodeURIComponent(item.id) + "/connection", { method: "DELETE" });
+      state.selectedConnectorIds = state.selectedConnectorIds.filter(function (id) { return id !== item.id; });
+      state.composerResources = state.composerResources.filter(function (resource) { return !(resource.kind === "connector" && resource.connectorId === item.id); });
+      await loadPlusConnectors(true); plusCfg.busy = false; updateChips(); renderPlus();
+    } catch (error) { plusCfg.busy = false; renderPlus(); toast(t("actionFailed").replace("{message}", cleanErrorMessage(error))); }
+  }
+  function toggleSelectedConnectorContext() {
+    var item = selectedConnectorItem();
+    if (!item || !item.connected) return;
+    var selected = state.selectedConnectorIds.indexOf(item.id) >= 0;
+    if (selected) {
+      state.selectedConnectorIds = state.selectedConnectorIds.filter(function (id) { return id !== item.id; });
+      state.composerResources = state.composerResources.filter(function (resource) { return !(resource.kind === "connector" && resource.connectorId === item.id); });
+    } else {
+      state.selectedConnectorIds.push(item.id);
+      addComposerResource({ id: "connector:" + item.id, kind: "connector", connectorId: item.id, name: item.name });
+    }
+    updateChips(); renderPlus();
+  }
+  function selectedMcpItem() { return plusMcpItems().filter(function (item) { return item.id === plusCfg.selId; })[0] || null; }
+  function selectFirstMcpTemplate() {
+    var item = plusMcpItems().filter(function (candidate) { return candidate.kind === "template"; })[0];
+    if (!item) return;
+    plusCfg.selId = item.id; renderPlus();
+  }
+  async function persistMcpServers(servers) {
+    var data = await apiSend("/api/mcp/servers", "PUT", { servers: servers });
+    state.mcpCatalog = { servers: data && Array.isArray(data.servers) ? data.servers : [], templates: data && Array.isArray(data.templates) ? data.templates : (state.mcpCatalog && state.mcpCatalog.templates || []) };
+    return state.mcpCatalog;
+  }
+  async function saveSelectedMcpTemplate() {
+    var item = selectedMcpItem();
+    if (!item || item.kind !== "template" || plusCfg.busy) return;
+    var template = item.raw;
+    var env = {}, headers = {}, missing = null;
+    $("plusPanel").querySelectorAll("[data-mcp-key]").forEach(function (input) {
+      var value = input.value.trim(), key = input.getAttribute("data-mcp-key"), group = input.getAttribute("data-mcp-group");
+      if (input.getAttribute("data-mcp-required") === "true" && !value && !missing) missing = input;
+      if (value) (group === "headers" ? headers : env)[key] = value;
+    });
+    if (missing) { missing.focus(); toast(plusL("请填写必填字段。", "Complete the required fields.")); return; }
+    var existing = state.mcpCatalog && state.mcpCatalog.servers || [];
+    var id = template.id, suffix = 2;
+    while (existing.some(function (server) { return server.id === id; })) id = template.id + "-" + suffix++;
+    var server = { id: id, label: template.label, templateId: template.id, transport: template.transport, enabled: true };
+    if (template.authMode) server.authMode = template.authMode;
+    if (template.command) server.command = template.command;
+    if (Array.isArray(template.args)) server.args = template.args.slice();
+    if (template.url) server.url = template.url;
+    if (Object.keys(env).length) server.env = env;
+    if (Object.keys(headers).length) server.headers = headers;
+    plusCfg.busy = true; renderPlus();
+    try {
+      await persistMcpServers(existing.concat([server]));
+      plusCfg.busy = false; plusCfg.selId = "server:" + id;
+      state.selectedMcpServerIds.push(id);
+      addComposerResource({ id: "mcp:" + id, kind: "mcp", serverId: id, name: template.label || id });
+      renderPlus(); toast(t("toastPicked").replace("{name}", template.label || id));
+    } catch (error) { plusCfg.busy = false; renderPlus(); toast(t("actionFailed").replace("{message}", cleanErrorMessage(error))); }
+  }
+  function toggleSelectedMcpContext() {
+    var item = selectedMcpItem();
+    if (!item || item.kind !== "server") return;
+    var id = item.serverId, selected = state.selectedMcpServerIds.indexOf(id) >= 0;
+    if (selected) {
+      state.selectedMcpServerIds = state.selectedMcpServerIds.filter(function (value) { return value !== id; });
+      state.composerResources = state.composerResources.filter(function (resource) { return !(resource.kind === "mcp" && resource.serverId === id); });
+    } else {
+      state.selectedMcpServerIds.push(id);
+      addComposerResource({ id: "mcp:" + id, kind: "mcp", serverId: id, name: item.name });
+    }
+    updateChips(); renderPlus();
+  }
+  async function toggleSelectedMcpEnabled() {
+    var item = selectedMcpItem();
+    if (!item || item.kind !== "server" || plusCfg.busy) return;
+    var servers = (state.mcpCatalog.servers || []).map(function (server) { return server.id === item.serverId ? Object.assign({}, server, { enabled: server.enabled === false }) : server; });
+    plusCfg.busy = true; renderPlus();
+    try { await persistMcpServers(servers); plusCfg.busy = false; renderPlus(); }
+    catch (error) { plusCfg.busy = false; renderPlus(); toast(t("actionFailed").replace("{message}", cleanErrorMessage(error))); }
+  }
+  async function authorizeSelectedMcp() {
+    var item = selectedMcpItem();
+    if (!item || item.kind !== "server" || plusCfg.busy) return;
+    plusCfg.busy = true; renderPlus();
+    try {
+      var result = await apiSend("/api/mcp/oauth/start", "POST", { serverId: item.serverId });
+      plusCfg.busy = false; renderPlus();
+      if (result && result.authorizeUrl) window.open(result.authorizeUrl, "od-mcp-auth", "noopener,noreferrer");
+    } catch (error) { plusCfg.busy = false; renderPlus(); toast(t("actionFailed").replace("{message}", cleanErrorMessage(error))); }
   }
 
   /* 页面滚动/窗口变化时收起（面板内部滚动除外） */
@@ -3983,14 +4865,18 @@
     if (state.selPlugin) refs.push({ k: "plugin", name: state.selPlugin.name });
     if (state.selSkill) refs.push({ k: "skill", name: state.selSkill.name });
     if (state.selDS) refs.push({ k: "ds", name: state.selDS.name });
-    refs.forEach(function (r) {
+    state.composerResources.forEach(function (resource) {
+      refs.push({ k: "resource", id: resource.id, name: resource.name });
+    });
+    refs.forEach(function (ref) {
       var tag = document.createElement("span");
       tag.className = "cp-ref";
-      tag.innerHTML = '<span class="at">@</span><b>' + esc(r.name) + '</b><button type="button" class="rm" aria-label="remove"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>';
+      tag.innerHTML = '<span class="at">@</span><b>' + esc(ref.name) + '</b><button type="button" class="rm" aria-label="' + escAttr(plusL("移除", "Remove")) + '"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>';
       tag.querySelector(".rm").addEventListener("click", function () {
-        if (r.k === "plugin") state.selPlugin = null;
-        else if (r.k === "skill") state.selSkill = null;
-        else state.selDS = null;
+        if (ref.k === "plugin") state.selPlugin = null;
+        else if (ref.k === "skill") state.selSkill = null;
+        else if (ref.k === "ds") state.selDS = null;
+        else removeComposerResource(ref.id);
         updateChips();
       });
       box.appendChild(tag);
@@ -4663,7 +5549,7 @@
   function loadProjects(forceStarter) {
     state.projectsLoading = true;
     renderProjects();
-    ensureRoleStarterProjects(!!forceStarter).then(function () {
+    return ensureRoleStarterProjects(!!forceStarter).then(function () {
       return Promise.all([
         apiGet("/api/projects"),
         apiGet("/api/db/projects/gen-summaries").catch(function () { return { summaries: [] }; })
@@ -4821,10 +5707,20 @@
       return !!(state.selSkill && !state.selSkill.pending);
     });
   }
-  function loadPlugins() {
-    apiGet("/api/plugins").then(function (d) {
-      state.realPlugins = (d && d.plugins) || [];
-    }).catch(function () {});
+  var pluginsLoadPromise = null;
+  function loadPlugins(force) {
+    if (!force && Array.isArray(state.realPlugins)) return Promise.resolve(state.realPlugins);
+    if (pluginsLoadPromise) return pluginsLoadPromise;
+    pluginsLoadPromise = apiGet("/api/plugins", { cache: "no-store" }).then(function (d) {
+      state.realPlugins = (d && Array.isArray(d.plugins)) ? d.plugins : [];
+      return state.realPlugins;
+    }).catch(function (error) {
+      state.realPlugins = [];
+      throw error;
+    }).finally(function () {
+      pluginsLoadPromise = null;
+    });
+    return pluginsLoadPromise;
   }
 
   function renderNav() {
@@ -5101,6 +5997,7 @@
     if (action === "updates") setTimeout(function () { checkAccountUpdates(false); }, 80);
   }
   function closeAccountSurface() {
+    if (customModelModalIsOpen()) closeCustomModelModal(false);
     var surface = $("accountSurface");
     if (surface.hidden) return;
     surface.hidden = true;
@@ -5352,61 +6249,350 @@
     else if (section === "help") renderSettingsHelp();
     else renderSettingsModels();
   }
-  function renderSettingsModels() {
-    var models = state.account.customModels || [];
-    var rows = models.map(function (model, index) {
-      return '<div class="settings-model-row"><span class="settings-model-spark">✧</span><div class="settings-model-name">' + esc(model.id) + '<small>' + accountL("自定义", "Custom") + '</small></div><div class="settings-model-actions"><button type="button" class="settings-icon-button" data-model-edit="' + index + '" title="' + accountEscapeAttr(accountL("编辑", "Edit")) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m4 20 4.3-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z"/><path d="m13.8 7.2 3 3"/></svg></button><button type="button" class="settings-icon-button' + (model.linked ? ' is-linked' : '') + '" data-model-link="' + index + '" title="' + accountEscapeAttr(accountL("复制标识并切换链接", "Copy ID and toggle link")) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 13a4 4 0 0 0 5.7.1l2.2-2.2a4 4 0 0 0-5.7-5.7L11 6.4"/><path d="M14 11a4 4 0 0 0-5.7-.1L6.1 13a4 4 0 0 0 5.7 5.7l1.2-1.2"/></svg></button><button type="button" class="settings-icon-button danger" data-model-delete="' + index + '" title="' + accountEscapeAttr(accountL("删除", "Delete")) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></button></div></div>';
-    }).join("");
-    if (!rows) rows = '<div class="acc-note" style="margin:12px">' + accountL("还没有自定义模型，点击右上角添加。", "No custom models yet. Add one from the top right.") + '</div>';
-    $("settingsContent").innerHTML = '<section class="settings-panel">' + settingsPanelHead(accountL("自定义模型", "Custom models"), accountL("模型添加后会自动保存到当前本地工作区的 ", "Models are saved automatically to the current local workspace at ") + '<span class="settings-path">~/.workbuddy-ai/models.json</span>', '<button type="button" class="acc-btn" id="settingsAddModel">' + accountL("添加模型", "Add model") + '</button>') + '<div class="settings-card"><form class="settings-add-model" id="settingsAddModelForm" hidden><input id="settingsAddModelName" maxlength="120" autocomplete="off" placeholder="provider/model-name"><button type="submit" class="acc-btn primary">' + accountL("保存", "Save") + '</button><button type="button" class="acc-btn" id="settingsAddModelCancel">' + accountL("取消", "Cancel") + '</button></form><div class="settings-model-list">' + rows + '</div></div></section>';
-    $("settingsAddModel").addEventListener("click", function () {
-      $("settingsAddModelForm").hidden = false;
-      $("settingsAddModelName").focus();
+  var customModelEditIndex = -1;
+  var customModelReturnFocus = null;
+  var customModelTestController = null;
+  var customModelTestFingerprint = "";
+  var customModelOriginalFingerprint = "";
+
+  function customModelModalIsOpen() {
+    return !!$("customModelModal") && !$("customModelModal").hidden;
+  }
+  function customModelConnectionFingerprint(config) {
+    return [config.baseUrl, config.apiKey, config.model, config.protocol, config.credentialSource || "manual"].join("\n");
+  }
+  function customModelUsesServerCredential(config) {
+    var current = customModelEditIndex >= 0 ? state.account.customModels[customModelEditIndex] : null;
+    if (!current || config.apiKey || config.model !== "auto") return false;
+    var configuredEndpoint = "https://api.hcnsec.cn/v1";
+    try {
+      return customModelDaemonBaseUrl(config.baseUrl) === configuredEndpoint && current.credentialSource === "server";
+    } catch (e) {
+      return false;
+    }
+  }
+  function customModelReadLimit(input) {
+    var value = input.value.trim();
+    if (!value) return null;
+    var parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : null;
+  }
+  function readCustomModelForm() {
+    var customProtocol = $("customModelProtocol").checked;
+    var config = {
+      provider: "custom",
+      protocol: customProtocol ? "custom" : "openai",
+      baseUrl: $("customModelEndpoint").value.trim(),
+      apiKey: $("customModelApiKey").value.trim(),
+      model: $("customModelName").value.trim(),
+      capabilities: {
+        tools: $("customModelTools").checked,
+        imageInput: $("customModelImages").checked,
+        reasoning: $("customModelReasoning").checked,
+        customProtocol: customProtocol
+      },
+      inputLimit: customModelReadLimit($("customModelInputLimit")),
+      outputLimit: customModelReadLimit($("customModelOutputLimit"))
+    };
+    config.credentialSource = customModelUsesServerCredential(config) ? "server" : "manual";
+    config.apiKeyConfigured = config.credentialSource === "server" || !!config.apiKey;
+    return config;
+  }
+  function customModelSetStatus(kind, message) {
+    var status = $("customModelTestStatus");
+    status.className = "custom-model-test-status" + (kind ? " is-" + kind : "");
+    status.textContent = message || "";
+    status.hidden = !message;
+  }
+  function customModelResetInvalidState() {
+    ["customModelEndpoint", "customModelApiKey", "customModelName", "customModelInputLimit", "customModelOutputLimit"].forEach(function (id) {
+      $(id).removeAttribute("aria-invalid");
     });
-    $("settingsAddModelCancel").addEventListener("click", function () { $("settingsAddModelForm").hidden = true; });
-    $("settingsAddModelForm").addEventListener("submit", function (e) {
-      e.preventDefault();
-      var id = $("settingsAddModelName").value.trim().replace(/\s+/g, "-").slice(0, 120);
-      if (!id) { $("settingsAddModelName").focus(); return; }
-      if (models.some(function (model) { return model.id.toLowerCase() === id.toLowerCase(); })) {
-        toast(accountL("该模型已经存在", "That model already exists"));
-        return;
+  }
+  function customModelValidate(options) {
+    options = options || {};
+    customModelResetInvalidState();
+    var config = readCustomModelForm();
+    var invalid = [];
+    if (!config.baseUrl) invalid.push([$("customModelEndpoint"), accountL("请填写接口地址", "Enter an endpoint URL")]);
+    else {
+      try {
+        var parsedUrl = new URL(config.baseUrl);
+        if (["http:", "https:"].indexOf(parsedUrl.protocol) < 0 || !parsedUrl.hostname) throw new Error("invalid");
+      } catch (e) {
+        invalid.push([$("customModelEndpoint"), accountL("请输入有效的 HTTP(S) 接口地址", "Enter a valid HTTP(S) endpoint URL")]);
       }
-      state.account.customModels.push({ id: id, linked: false });
-      saveAccountState();
-      renderSettingsModels();
-      toast(accountL("模型已添加到本地配置", "Model added to local configuration"));
+    }
+    if (!config.apiKey && config.credentialSource !== "server") invalid.push([$("customModelApiKey"), accountL("请填写 API Key", "Enter an API key")]);
+    if (!config.model) invalid.push([$("customModelName"), accountL("请填写模型名称", "Enter a model name")]);
+    [
+      [$("customModelInputLimit"), accountL("输入上限必须是大于 0 的整数", "The input limit must be a positive integer")],
+      [$("customModelOutputLimit"), accountL("输出上限必须是大于 0 的整数", "The output limit must be a positive integer")]
+    ].forEach(function (entry) {
+      var raw = entry[0].value.trim();
+      if (raw && (!/^\d+$/.test(raw) || Number(raw) < 1)) invalid.push(entry);
     });
-    Array.prototype.forEach.call($("settingsContent").querySelectorAll("[data-model-edit]"), function (button) {
+    if (options.checkDuplicate && config.model) {
+      var duplicate = state.account.customModels.some(function (item, index) {
+        return index !== customModelEditIndex && String(item.model || item.id || "").trim() === config.model;
+      });
+      if (duplicate) invalid.push([$("customModelName"), accountL("该模型已存在", "That model already exists")]);
+    }
+    if (invalid.length) {
+      invalid.forEach(function (entry) { entry[0].setAttribute("aria-invalid", "true"); });
+      customModelSetStatus("error", invalid[0][1]);
+      if (options.focus !== false) invalid[0][0].focus();
+      return null;
+    }
+    return config;
+  }
+  function customModelDaemonBaseUrl(endpoint) {
+    var parsed = new URL(endpoint);
+    parsed.hash = "";
+    parsed.search = "";
+    parsed.pathname = parsed.pathname.replace(/\/+$/, "").replace(/\/chat\/completions$/i, "") || "/";
+    return parsed.toString().replace(/\/$/, "");
+  }
+  function customModelResultMessage(result, modelName) {
+    var latency = Math.max(0, Math.round(Number(result.latencyMs) || 0));
+    if (result.ok) {
+      var sample = typeof result.sample === "string" && result.sample.trim() ? " · “" + result.sample.trim().slice(0, 80) + "”" : "";
+      var path = result.viaBrowser ? accountL(" · 浏览器直连", " · direct browser connection") : accountL(" · Daemon", " · daemon");
+      return accountL("连接成功 · " + latency + " ms", "Connected · " + latency + " ms") + path + sample;
+    }
+    var detail = result.detail ? cleanErrorMessage({ message: result.detail }) : "";
+    if (/ECONNRESET|socket hang up|TLS.*(?:reset|closed)|fetch failed/i.test(detail)) {
+      return accountL(
+        "接口格式正确，但上游在 TLS 握手时重置了连接。请检查网关的地区或 IP 访问策略；若密钥由服务端配置，可在上方输入密钥后重试浏览器直连。",
+        "The endpoint format is valid, but the upstream reset the TLS connection. Check its region or IP access policy; if the key is daemon-managed, enter it above to retry directly from the browser."
+      );
+    }
+    var messages = {
+      auth_failed: accountL("API Key 无效，请检查后重试。", "The API key is invalid. Check it and try again."),
+      forbidden: accountL("服务拒绝访问，请检查 API Key 权限。", "Access was denied. Check the API key permissions."),
+      not_found_model: accountL("未找到模型 “" + modelName + "”。", "Model ‘" + modelName + "’ was not found."),
+      invalid_model_id: accountL("模型名称无效，请检查参数值。", "The model name is invalid."),
+      invalid_base_url: accountL("接口地址无效或不是兼容端点。", "The endpoint URL is invalid or incompatible."),
+      rate_limited: accountL("连接受到速率限制，请稍后重试。", "The connection was rate limited. Try again later."),
+      timeout: accountL("连接测试超时（" + latency + " ms）。", "The connection test timed out (" + latency + " ms)."),
+      upstream_unavailable: accountL("上游服务暂时不可用", "The upstream service is unavailable") + (result.status ? " (HTTP " + result.status + ")" : "")
+    };
+    var message = messages[result.kind] || accountL("连接失败", "Connection failed");
+    return detail ? message.replace(/[。.]+$/, "") + accountL("：", ": ") + detail : message;
+  }
+  function customModelShouldTryBrowser(result, config) {
+    if (!config.apiKey || !result || result.ok) return false;
+    return /ECONNRESET|socket hang up|TLS.*(?:reset|closed)|fetch failed/i.test(String(result.detail || ""));
+  }
+  function testCustomModelInBrowser(config, signal) {
+    var startedAt = Date.now();
+    var url = customModelDaemonBaseUrl(config.baseUrl) + "/chat/completions";
+    return fetch(url, {
+      method: "POST",
+      mode: "cors",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + config.apiKey
+      },
+      body: JSON.stringify({
+        model: config.model,
+        messages: [{ role: "user", content: "Reply with exactly OK." }],
+        temperature: 0,
+        max_tokens: 8,
+        stream: false
+      }),
+      signal: signal
+    }).then(function (response) {
+      return response.text().then(function (raw) {
+        var latencyMs = Date.now() - startedAt;
+        var payload = null;
+        try { payload = raw ? JSON.parse(raw) : null; } catch (e) {}
+        if (!response.ok) {
+          var providerMessage = payload && payload.error && (payload.error.message || payload.error.code)
+            ? String(payload.error.message || payload.error.code)
+            : "HTTP " + response.status;
+          providerMessage = providerMessage.replace(config.apiKey, "[REDACTED]");
+          var kind = response.status === 401 ? "auth_failed" : response.status === 403 ? "forbidden" : response.status === 429 ? "rate_limited" : response.status === 404 ? "not_found_model" : "upstream_unavailable";
+          return { ok: false, kind: kind, status: response.status, latencyMs: latencyMs, model: config.model, detail: providerMessage, viaBrowser: true };
+        }
+        var sample = payload && payload.choices && payload.choices[0] && payload.choices[0].message
+          ? String(payload.choices[0].message.content || "")
+          : "OK";
+        sample = sample.replace(config.apiKey, "[REDACTED]");
+        return { ok: true, kind: "success", latencyMs: latencyMs, model: config.model, sample: sample.slice(0, 120), viaBrowser: true };
+      });
+    }).catch(function (error) {
+      if (error && error.name === "AbortError") throw error;
+      return {
+        ok: false,
+        kind: "unknown",
+        latencyMs: Date.now() - startedAt,
+        model: config.model,
+        detail: accountL(
+          "Daemon 连接被重置，浏览器直连也被网络或 CORS 策略阻止。",
+          "The daemon connection was reset, and the direct browser attempt was also blocked by the network or CORS policy."
+        ),
+        viaBrowser: true
+      };
+    });
+  }
+  function setCustomModelTesting(testing) {
+    var dialog = $("customModelModal").querySelector(".custom-model-dialog");
+    dialog.classList.toggle("is-testing", testing);
+    $("customModelTest").disabled = testing;
+    $("customModelTest").textContent = testing ? accountL("测试中…", "Testing…") : accountL("测试连接", "Test connection");
+  }
+  function resetCustomModelSecretVisibility() {
+    $("customModelApiKey").type = "password";
+    $("customModelKeyToggle").classList.remove("is-visible");
+    $("customModelKeyToggle").setAttribute("aria-pressed", "false");
+    $("customModelKeyToggle").setAttribute("aria-label", accountL("显示 API Key", "Show API key"));
+  }
+  function openCustomModelModal(index, returnFocus) {
+    var model = Number.isInteger(index) && state.account.customModels[index] ? state.account.customModels[index] : null;
+    var capabilities = model && model.capabilities && typeof model.capabilities === "object" ? model.capabilities : {};
+    customModelEditIndex = model ? index : -1;
+    customModelReturnFocus = returnFocus || document.activeElement;
+    customModelTestFingerprint = "";
+    customModelResetInvalidState();
+    customModelSetStatus("", "");
+    setCustomModelTesting(false);
+    resetCustomModelSecretVisibility();
+    $("customModelTitle").textContent = model ? accountL("编辑模型", "Edit model") : accountL("添加模型", "Add model");
+    $("customModelClose").setAttribute("aria-label", model ? accountL("关闭编辑模型", "Close edit model") : accountL("关闭添加模型", "Close add model"));
+    $("customModelProvider").value = "custom";
+    $("customModelEndpoint").value = model && model.baseUrl ? model.baseUrl : "";
+    $("customModelApiKey").value = model && model.apiKey ? model.apiKey : "";
+    $("customModelApiKey").placeholder = model && model.credentialSource === "server" && !model.apiKey
+      ? accountL("已由服务端安全配置；输入新密钥可覆盖", "Securely configured on the daemon; enter a key to override")
+      : accountL("输入你的 API Key", "Enter your API key");
+    $("customModelName").value = model ? String(model.model || model.id || "") : "";
+    $("customModelTools").checked = model ? capabilities.tools !== false : true;
+    $("customModelImages").checked = !!capabilities.imageInput;
+    $("customModelReasoning").checked = !!capabilities.reasoning;
+    $("customModelProtocol").checked = !!(model && (model.protocol === "custom" || capabilities.customProtocol));
+    $("customModelInputLimit").value = model && model.inputLimit ? String(model.inputLimit) : "";
+    $("customModelOutputLimit").value = model && model.outputLimit ? String(model.outputLimit) : "";
+    customModelOriginalFingerprint = customModelConnectionFingerprint(readCustomModelForm());
+    $("customModelModal").hidden = false;
+    $("accountDialog").setAttribute("aria-hidden", "true");
+    $("customModelScroll").scrollTop = 0;
+    requestAnimationFrame(function () { $("customModelEndpoint").focus(); });
+  }
+  function closeCustomModelModal(restoreFocus) {
+    if (!customModelModalIsOpen()) return;
+    if (customModelTestController) customModelTestController.abort();
+    customModelTestController = null;
+    setCustomModelTesting(false);
+    $("customModelModal").hidden = true;
+    $("accountDialog").removeAttribute("aria-hidden");
+    resetCustomModelSecretVisibility();
+    if (restoreFocus !== false) {
+      var target = customModelReturnFocus && customModelReturnFocus.isConnected ? customModelReturnFocus : $("settingsAddModel");
+      if (target && typeof target.focus === "function") target.focus();
+    }
+    customModelReturnFocus = null;
+    customModelEditIndex = -1;
+  }
+  function testCustomModelConnection() {
+    var config = customModelValidate({ focus: true });
+    if (!config) return;
+    if (customModelTestController) customModelTestController.abort();
+    var controller = new AbortController();
+    customModelTestController = controller;
+    var fingerprint = customModelConnectionFingerprint(config);
+    setCustomModelTesting(true);
+    customModelSetStatus("loading", accountL("正在通过本地 Daemon 测试连接…", "Testing through the local daemon…"));
+    apiSend("/api/test/connection", "POST", {
+      mode: "provider",
+      protocol: "openai",
+      baseUrl: customModelDaemonBaseUrl(config.baseUrl),
+      apiKey: config.apiKey,
+      model: config.model,
+      credentialSource: config.credentialSource === "server" ? "designbuddy_custom_model" : undefined
+    }, { signal: controller.signal }).then(function (result) {
+      if (customModelTestController !== controller || !customModelModalIsOpen()) return null;
+      if (customModelShouldTryBrowser(result, config)) {
+        customModelSetStatus("loading", accountL("Daemon 连接被重置，正在从浏览器网络重试…", "The daemon connection was reset. Retrying from the browser network…"));
+        return testCustomModelInBrowser(config, controller.signal);
+      }
+      return result;
+    }).then(function (result) {
+      if (!result || customModelTestController !== controller || !customModelModalIsOpen()) return;
+      if (result.ok) {
+        customModelTestFingerprint = fingerprint;
+        customModelSetStatus("success", customModelResultMessage(result, config.model));
+      } else {
+        customModelTestFingerprint = "";
+        customModelSetStatus("error", customModelResultMessage(result, config.model));
+      }
+    }).catch(function (error) {
+      if (error && error.name === "AbortError") return;
+      if (customModelTestController !== controller || !customModelModalIsOpen()) return;
+      customModelTestFingerprint = "";
+      customModelSetStatus("error", accountL("连接失败：", "Connection failed: ") + cleanErrorMessage(error));
+    }).finally(function () {
+      if (customModelTestController !== controller) return;
+      customModelTestController = null;
+      if (customModelModalIsOpen()) setCustomModelTesting(false);
+    });
+  }
+  function saveCustomModel(event) {
+    event.preventDefault();
+    var config = customModelValidate({ focus: true, checkDuplicate: true });
+    if (!config) return;
+    if (customModelEditIndex < 0 && state.account.customModels.length >= 30) {
+      customModelSetStatus("error", accountL("最多可保存 30 个自定义模型。", "You can save up to 30 custom models."));
+      return;
+    }
+    var previous = customModelEditIndex >= 0 ? state.account.customModels[customModelEditIndex] : null;
+    var fingerprint = customModelConnectionFingerprint(config);
+    var linked = fingerprint === customModelTestFingerprint || !!(previous && previous.linked && fingerprint === customModelOriginalFingerprint);
+    var saved = Object.assign({}, previous || {}, config, {
+      id: config.model,
+      model: config.model,
+      linked: linked
+    });
+    if (customModelEditIndex >= 0) state.account.customModels[customModelEditIndex] = saved;
+    else state.account.customModels.push(saved);
+    saveAccountState();
+    closeCustomModelModal(false);
+    renderSettingsModels();
+    toast(previous ? accountL("模型配置已保存", "Model settings saved") : accountL("模型已添加", "Model added"));
+    requestAnimationFrame(function () {
+      var target = $("settingsAddModel");
+      if (target) target.focus();
+    });
+  }
+  function renderSettingsModels() {
+    var body = $("settingsContent");
+    var models = state.account.customModels || [];
+    body.innerHTML = '<div class="settings-panel"><div class="settings-panel-head"><div><h2>' + accountL("自定义模型", "Custom Models") + '</h2><p>' + accountL("连接并管理工作台中可用的 OpenAI 兼容模型。", "Connect and manage OpenAI-compatible models available in your workspace.") + '</p></div><button type="button" class="acc-btn" id="settingsAddModel">' + accountL("添加模型", "Add model") + '</button></div><div class="settings-card"><div class="settings-model-list">' + models.map(function (model, index) {
+      var modelName = String(model.model || model.id || "");
+      var endpoint = model.baseUrl ? String(model.baseUrl) : accountL("尚未配置接口地址", "Endpoint not configured");
+      return '<article class="settings-model-row"><span class="settings-model-spark">◇</span><div class="settings-model-name"><span class="settings-model-title">' + esc(modelName) + '</span><small>' + (model.linked ? accountL("已连接", "Connected") : accountL("未连接", "Not connected")) + ' · ' + esc(endpoint) + '</small></div><span class="settings-model-actions"><button type="button" class="settings-model-connect' + (model.linked ? ' linked' : '') + '" data-model-link="' + index + '"' + (model.linked ? ' disabled' : '') + '>' + (model.linked ? '✓ ' + accountL("已连接", "Connected") : accountL("连接", "Connect")) + '</button><button type="button" class="settings-icon-button" data-model-edit="' + index + '" aria-label="' + accountL("编辑", "Edit") + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m4 16-.7 4 4-.7L18 8.6 14.4 5 4 16Z"/><path d="m12.8 6.6 3.6 3.6"/></svg></button><button type="button" class="settings-icon-button danger" data-model-delete="' + index + '" aria-label="' + accountL("删除", "Delete") + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 7h14M9 7V4h6v3M8 10v7M12 10v7M16 10v7M7 7l1 14h8l1-14"/></svg></button></span></article>';
+    }).join("") + '</div></div></div>';
+    $("settingsAddModel").addEventListener("click", function () { openCustomModelModal(-1, this); });
+    Array.prototype.forEach.call(body.querySelectorAll("[data-model-edit]"), function (button) {
       button.addEventListener("click", function () {
-        var index = Number(button.getAttribute("data-model-edit"));
+        openCustomModelModal(Number(button.getAttribute("data-model-edit")), button);
+      });
+    });
+    Array.prototype.forEach.call(body.querySelectorAll("[data-model-link]"), function (button) {
+      button.addEventListener("click", function () {
+        var index = Number(button.getAttribute("data-model-link"));
         var model = state.account.customModels[index];
         if (!model) return;
-        var next = window.prompt(accountL("编辑模型标识", "Edit model ID"), model.id);
-        if (next == null) return;
-        next = next.trim().replace(/\s+/g, "-").slice(0, 120);
-        if (!next) return;
-        model.id = next;
-        saveAccountState();
-        renderSettingsModels();
-        toast(accountL("模型已更新", "Model updated"));
+        openCustomModelModal(index, button);
+        if (model.baseUrl && (model.apiKey || model.credentialSource === "server") && (model.model || model.id)) setTimeout(testCustomModelConnection, 0);
+        else customModelSetStatus("error", accountL("请补全接口地址和 API Key，然后测试连接。", "Complete the endpoint and API key, then test the connection."));
       });
     });
-    Array.prototype.forEach.call($("settingsContent").querySelectorAll("[data-model-link]"), function (button) {
-      button.addEventListener("click", function () {
-        var model = state.account.customModels[Number(button.getAttribute("data-model-link"))];
-        if (!model) return;
-        model.linked = !model.linked;
-        saveAccountState();
-        copyText(model.id, function () { toast(accountL("模型标识已复制", "Model ID copied")); });
-        renderSettingsModels();
-      });
-    });
-    Array.prototype.forEach.call($("settingsContent").querySelectorAll("[data-model-delete]"), function (button) {
+    Array.prototype.forEach.call(body.querySelectorAll("[data-model-delete]"), function (button) {
       button.addEventListener("click", function () {
         var index = Number(button.getAttribute("data-model-delete"));
         var model = state.account.customModels[index];
-        if (!model || !window.confirm(accountL("删除模型“" + model.id + "”？", "Delete model “" + model.id + "”?"))) return;
+        if (!model || !window.confirm(accountL("删除模型 “", "Delete model ‘") + String(model.model || model.id) + accountL("”？", "’?"))) return;
         state.account.customModels.splice(index, 1);
         saveAccountState();
         renderSettingsModels();
@@ -5414,6 +6600,39 @@
       });
     });
   }
+
+  $("customModelClose").addEventListener("click", function () { closeCustomModelModal(true); });
+  $("customModelCancel").addEventListener("click", function () { closeCustomModelModal(true); });
+  $("customModelModal").addEventListener("click", function (event) {
+    if (event.target === this) closeCustomModelModal(true);
+  });
+  $("customModelForm").addEventListener("submit", saveCustomModel);
+  $("customModelTest").addEventListener("click", testCustomModelConnection);
+  $("customModelKeyToggle").addEventListener("click", function () {
+    var input = $("customModelApiKey");
+    var visible = input.type === "password";
+    input.type = visible ? "text" : "password";
+    this.classList.toggle("is-visible", visible);
+    this.setAttribute("aria-pressed", visible ? "true" : "false");
+    this.setAttribute("aria-label", visible ? accountL("隐藏 API Key", "Hide API key") : accountL("显示 API Key", "Show API key"));
+    input.focus();
+  });
+  ["customModelEndpoint", "customModelApiKey", "customModelName", "customModelInputLimit", "customModelOutputLimit"].forEach(function (id) {
+    $(id).addEventListener("input", function () {
+      this.removeAttribute("aria-invalid");
+      if (customModelTestFingerprint && customModelConnectionFingerprint(readCustomModelForm()) !== customModelTestFingerprint) {
+        customModelTestFingerprint = "";
+        customModelSetStatus("loading", accountL("连接配置已更改，请重新测试。", "Connection settings changed. Test again."));
+      }
+    });
+  });
+  $("customModelProtocol").addEventListener("change", function () {
+    if (customModelTestFingerprint && customModelConnectionFingerprint(readCustomModelForm()) !== customModelTestFingerprint) {
+      customModelTestFingerprint = "";
+      customModelSetStatus("loading", accountL("协议设置已更改，请重新测试。", "Protocol settings changed. Test again."));
+    }
+  });
+
   function renderSettingsGeneral() {
     var roleOptions = ["designer", "pm", "dev", "admin"].map(function (id) {
       return '<option value="' + id + '"' + (state.role === id ? ' selected' : '') + '>' + esc(ROLES[id][state.lang].name) + '</option>';
@@ -5697,6 +6916,28 @@
     if (accountMenuIsOpen() && !$("roleSw").contains(e.target)) closeAccountMenu();
   });
   document.addEventListener("keydown", function (e) {
+    if (customModelModalIsOpen()) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeCustomModelModal(true);
+        return;
+      }
+      if (e.key === "Tab") {
+        var modalFocusable = Array.prototype.filter.call($("customModelModal").querySelectorAll('button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'), function (node) {
+          return node.getClientRects().length > 0;
+        });
+        if (modalFocusable.length) {
+          var modalFirst = modalFocusable[0], modalLast = modalFocusable[modalFocusable.length - 1];
+          if (e.shiftKey && document.activeElement === modalFirst) { e.preventDefault(); modalLast.focus(); }
+          else if (!e.shiftKey && document.activeElement === modalLast) { e.preventDefault(); modalFirst.focus(); }
+        }
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === ",") {
+        e.preventDefault();
+        return;
+      }
+    }
     if ((e.metaKey || e.ctrlKey) && e.key === ",") {
       e.preventDefault();
       openAccountSurface("settings");
@@ -6088,7 +7329,7 @@
   loadSystems();
   loadDTemplates();
   loadSkills();
-  loadPlugins();
+  loadPlugins().catch(function () {});
   loadBrain();
   updateChips();
 })();

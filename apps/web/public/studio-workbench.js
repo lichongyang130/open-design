@@ -1220,6 +1220,7 @@
     onProjectOpen: onProjectOpen,
     onLanguageChange: onLanguageChange,
     renderContext: renderContext,
+    addContext: addContext,
     renderProjectFiles: renderProjectFiles,
     promptWithContext: promptWithContext,
     reloadFiles: loadFiles

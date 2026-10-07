@@ -1133,11 +1133,15 @@ function networkErrorToKind(err: unknown): ConnectionTestKind {
     // `TypeError` with a `cause` whose `code` is one of these.
     const cause = (err as { cause?: { code?: string } }).cause;
     const code = cause?.code;
+    // A reset means the hostname resolved and a socket was opened, so calling
+    // the URL "invalid" is misleading. It is an upstream/network-path outage.
+    if (code === 'ECONNRESET' || code === 'EPIPE') {
+      return 'upstream_unavailable';
+    }
     if (
       code === 'ENOTFOUND' ||
       code === 'EAI_AGAIN' ||
       code === 'ECONNREFUSED' ||
-      code === 'ECONNRESET' ||
       code === 'ETIMEDOUT' ||
       code === 'EHOSTUNREACH' ||
       code === 'ENETUNREACH' ||
