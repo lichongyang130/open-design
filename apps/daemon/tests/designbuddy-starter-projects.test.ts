@@ -32,19 +32,33 @@ function fixtureDb() {
 }
 
 describe('DesignBuddy real starter projects', () => {
-  it('ships 50 distinct long-form commercial pages with working in-page controls', () => {
+  it('ships 50 distinct long-form commercial pages across ten real product systems', () => {
     expect(DESIGNER_COMMERCIAL_STARTERS).toHaveLength(50);
     expect(new Set(DESIGNER_COMMERCIAL_STARTERS.map((starter) => starter.key)).size).toBe(50);
     expect(new Set(DESIGNER_COMMERCIAL_STARTERS.map((starter) => starter.html)).size).toBe(50);
+    const families = new Set<string>();
+    const layouts = new Map<string, Set<string>>();
     for (const starter of DESIGNER_COMMERCIAL_STARTERS) {
       expect((starter.html.match(/<section/g) ?? []).length).toBeGreaterThanOrEqual(5);
       expect((starter.html.match(/<button/g) ?? []).length).toBeGreaterThanOrEqual(12);
       expect(starter.html).toContain('scroll-behavior:smooth');
-      expect(starter.html).toContain('data-action="primary"');
-      expect(starter.html).toContain('data-tab="1"');
+      expect(starter.html).toContain('id="experience"');
+      expect(starter.html).toContain('data-open-action');
+      expect(starter.html).toContain('data-detail');
       expect(starter.html).toContain("addEventListener('click'");
+      expect(starter.html).not.toContain('关键价值，<br>一眼可见');
       expect(starter.interactive).toBe(true);
+      const family = starter.html.match(/data-family="([^"]+)"/)?.[1];
+      const layout = starter.html.match(/data-layout="([^"]+)"/)?.[1];
+      expect(family).toBeTruthy();
+      expect(layout).toBeTruthy();
+      families.add(family!);
+      const familyLayouts = layouts.get(family!) ?? new Set<string>();
+      familyLayouts.add(layout!);
+      layouts.set(family!, familyLayouts);
     }
+    expect(families.size).toBe(10);
+    expect(Array.from(layouts.values()).every((familyLayouts) => familyLayouts.size === 5)).toBe(true);
 
     const dom = new JSDOM(DESIGNER_COMMERCIAL_STARTERS[0]!.html, {
       runScripts: 'dangerously',
@@ -52,26 +66,28 @@ describe('DesignBuddy real starter projects', () => {
       url: 'https://preview.example/project',
     });
     const document = dom.window.document;
-    const save = document.querySelector('[data-action="save"]')!;
-    save.click();
-    expect(save.classList.contains('is-saved')).toBe(true);
-    expect(save.textContent).toContain('已保存');
 
-    const secondTab = document.querySelector('[data-tab="1"]')!;
-    secondTab.click();
-    expect(secondTab.classList.contains('active')).toBe(true);
-    expect(document.querySelector('[data-panel="1"]')?.classList.contains('active')).toBe(true);
+    const productChoices = document.querySelectorAll('[data-choice][data-group="product"]');
+    (productChoices[1]).click();
+    expect(productChoices[1]?.classList.contains('active')).toBe(true);
+    expect(document.querySelector('[data-choice-output="product"]')?.textContent).toBe(
+      productChoices[1]?.getAttribute('data-choice'),
+    );
 
-    const thirdFeature = document.querySelector('[data-feature="2"]')!;
+    const add = document.querySelector('[data-add]');
+    add.click();
+    expect(document.querySelector('[data-bag-count]')?.textContent).toBe('1');
+    expect(add.textContent).toContain('已加入');
+
+    const thirdFeature = document.querySelectorAll('[data-detail]')[2];
     thirdFeature.click();
-    expect(document.querySelector('#featureTitle')?.textContent).toBe(thirdFeature.dataset.title);
+    expect(document.querySelector('#detailTitle')?.textContent).toBe(thirdFeature.dataset.detail);
 
-    document.querySelector('[data-action="primary"]')!.click();
-    expect(document.querySelector('#demoModal')?.classList.contains('open')).toBe(true);
-    const form = document.querySelector('#demoForm')!;
-    form.dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }));
-    expect(document.querySelector('#demoModal')?.classList.contains('open')).toBe(false);
-    expect(document.querySelector('#toast')?.textContent).toContain('提交成功');
+    (document.querySelector('[data-open-action]')).click();
+    expect(document.querySelector('#actionDrawer')?.classList.contains('open')).toBe(true);
+    (document.querySelector('[data-confirm-action]')).click();
+    expect(document.querySelector('#actionDrawer')?.classList.contains('open')).toBe(false);
+    expect(document.querySelector('#toast')?.textContent).toContain('方案已确认');
     dom.window.close();
   });
 
@@ -81,7 +97,7 @@ describe('DesignBuddy real starter projects', () => {
 
     const initialized = initializeDesignBuddyStarterProjects(db, 'designer');
     expect(initialized.initialized).toBe(true);
-    expect(initialized.version).toBe(2);
+    expect(initialized.version).toBe(3);
     expect(initialized.createdProjectIds).toHaveLength(56);
     expect(new Set(initialized.projectIds).size).toBe(56);
 
@@ -142,9 +158,9 @@ describe('DesignBuddy real starter projects', () => {
       expect(html).toContain('<script');
       expect(artifact?.payload?.interactive).toBe(true);
       if (html.includes('data-commercial-project')) {
-        expect(html).toContain('id="overview"');
-        expect(html).toContain('id="product"');
-        expect(html).toContain('data-action="primary"');
+        expect(html).toContain('id="proof"');
+        expect(html).toContain('id="experience"');
+        expect(html).toContain('data-open-action');
         expect(html).toContain("scrollIntoView");
       }
       artifactHtml.add(html);
@@ -221,7 +237,7 @@ describe('DesignBuddy real starter projects', () => {
 
     expect(readDesignBuddyStarterStatus(db, 'designer').initialized).toBe(false);
     const upgraded = initializeDesignBuddyStarterProjects(db, 'designer');
-    expect(upgraded.version).toBe(2);
+    expect(upgraded.version).toBe(3);
     expect(upgraded.createdProjectIds).toHaveLength(50);
     expect((db.prepare('SELECT COUNT(*) AS count FROM projects').get() as { count: number }).count).toBe(56);
     expect(new Set(upgraded.projectIds).size).toBe(56);
@@ -230,6 +246,77 @@ describe('DesignBuddy real starter projects', () => {
     );
     expect(legacyArtifacts.every((artifact) => artifact?.payload?.interactive === true)).toBe(true);
     expect(legacyArtifacts.every((artifact) => String(artifact?.payload?.html).includes('data-od-legacy-interactions'))).toBe(true);
+    db.close();
+  });
+
+  it('upgrades a v2 library in place without overwriting a later user artifact', () => {
+    const db = fixtureDb();
+    const seeded = initializeDesignBuddyStarterProjects(db, 'designer');
+    const rows = db.prepare('SELECT id, metadata_json AS metadataJson FROM projects').all() as Array<{
+      id: string;
+      metadataJson: string;
+    }>;
+    const metadata = rows.map((row) => ({ row, value: JSON.parse(row.metadataJson) as Record<string, any> }));
+    const commercial = metadata.find((item) => String(item.value.starterKey).startsWith('designer.commercial.'))!;
+    const legacy = metadata.find((item) => item.value.starterKey === 'designer.brand-site')!;
+
+    const setOriginalHtml = db.prepare(
+      `UPDATE designbuddy_gen SET payload = ? WHERE project_id = ? AND type = 'artifact'`,
+    );
+    setOriginalHtml.run(
+      JSON.stringify({ name: '旧商业界面', version: 1, kind: 'landing', html: '<!doctype html><p>generic v2</p>' }),
+      commercial.row.id,
+    );
+    setOriginalHtml.run(
+      JSON.stringify({ name: '旧品牌界面', version: 1, kind: 'landing', html: '<!doctype html><p>legacy v2</p>' }),
+      legacy.row.id,
+    );
+    appendDesignBuddyGenEvent(db, commercial.row.id, 'artifact', {
+      name: '用户定制版本',
+      version: 2,
+      kind: 'landing',
+      html: '<!doctype html><title>user-owned-v2</title>',
+    });
+    appendDesignBuddyGenEvent(db, commercial.row.id, 'done', { version: 2, kind: 'landing' });
+
+    db.prepare(
+      `UPDATE designbuddy_prefs SET value = ?, updated_at = ? WHERE key = 'starter-projects:designer'`,
+    ).run(
+      JSON.stringify({
+        version: 2,
+        projectIds: seeded.projectIds,
+        starterKeys: metadata.map((item) => item.value.starterKey),
+      }),
+      Date.now(),
+    );
+    const markMetadataV2 = db.prepare('UPDATE projects SET metadata_json = ? WHERE id = ?');
+    db.transaction(() => metadata.forEach((item) => {
+      markMetadataV2.run(JSON.stringify({ ...item.value, starterVersion: 2 }), item.row.id);
+    }))();
+
+    const upgraded = initializeDesignBuddyStarterProjects(db, 'designer');
+    expect(upgraded.version).toBe(3);
+    expect(upgraded.createdProjectIds).toEqual([]);
+    expect((db.prepare('SELECT COUNT(*) AS count FROM projects').get() as { count: number }).count).toBe(56);
+
+    const commercialArtifacts = listDesignBuddyGenEvents(db, commercial.row.id)
+      .filter((event) => event.type === 'artifact');
+    expect(String(commercialArtifacts[0]?.payload?.html)).toContain('data-family="commerce"');
+    expect(String(commercialArtifacts[0]?.payload?.html)).toContain('id="experience"');
+    expect(commercialArtifacts[1]?.payload?.html).toContain('user-owned-v2');
+    const commercialSummary = listDesignBuddyGenSummaries(db)
+      .find((summary) => summary.projectId === commercial.row.id);
+    expect(commercialSummary?.latestVersion).toBe(2);
+    expect(commercialSummary?.html).toContain('user-owned-v2');
+
+    const legacyArtifact = listDesignBuddyGenEvents(db, legacy.row.id)
+      .find((event) => event.type === 'artifact');
+    expect(String(legacyArtifact?.payload?.html)).toContain('data-od-legacy-interactions');
+    expect(String(legacyArtifact?.payload?.html)).toContain('SELECTED CUSTOMER STORIES');
+    const versions = db.prepare('SELECT metadata_json AS metadataJson FROM projects').all() as Array<{
+      metadataJson: string;
+    }>;
+    expect(versions.every((row) => JSON.parse(row.metadataJson).starterVersion === 3)).toBe(true);
     db.close();
   });
 

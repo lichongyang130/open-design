@@ -89,7 +89,7 @@ export interface DesignBuddyStarterStatus {
   createdProjectIds: string[];
 }
 
-const DESIGNER_STARTER_VERSION = 2;
+const DESIGNER_STARTER_VERSION = 3;
 const DESIGNER_STARTER_PREF = 'starter-projects:designer';
 
 interface DesignerStarterBlueprint {
@@ -191,6 +191,12 @@ const DESIGNER_STARTERS: DesignerStarterBlueprint[] = [
   ...LEGACY_DESIGNER_STARTERS,
   ...DESIGNER_COMMERCIAL_STARTERS,
 ];
+
+function starterArtifactHtml(starter: DesignerStarterBlueprint): string {
+  return starter.interactive
+    ? starter.html
+    : enhanceLegacyStarterHtml(starter.html, starter.name);
+}
 
 const SEED_REVIEWS: Array<{ title: string; author: string; status: DesignBuddyReviewStatus; ageHours: number }> = [
   { title: '官网首页改版', author: '小鹿', status: 'wait', ageHours: 2 },
@@ -329,10 +335,11 @@ export function readDesignBuddyStarterStatus(db: SqliteDb, role: DesignBuddyRole
 
 /**
  * Materialize the Designer showcase as persisted projects with replayable v1
- * artifacts. Version 2 keeps the original six projects and adds fifty
- * commercial, scrollable, interactive product experiences. Upgrades are
- * idempotent per starter key, so an existing or intentionally deleted v1
- * project is never duplicated or silently resurrected.
+ * artifacts. Version 3 replaces the generic showcase skeletons with ten
+ * industry-specific, responsive product systems and tailored upgrades for the
+ * original six projects. Existing starter artifacts are refreshed in place,
+ * while later user-authored versions, user projects, and intentionally deleted
+ * starters remain untouched.
  */
 export function initializeDesignBuddyStarterProjects(db: SqliteDb, role: DesignBuddyRole): DesignBuddyStarterStatus {
   const current = readDesignBuddyStarterStatus(db, role);
@@ -383,16 +390,16 @@ export function initializeDesignBuddyStarterProjects(db: SqliteDb, role: DesignB
     `SELECT id, payload FROM designbuddy_gen WHERE project_id = ? AND type = 'artifact' ORDER BY seq ASC`,
   );
   const updateArtifactEvent = db.prepare(`UPDATE designbuddy_gen SET payload = ? WHERE id = ?`);
+  const updateProjectMetadata = db.prepare(`UPDATE projects SET metadata_json = ? WHERE id = ?`);
   const writePreference = db.prepare(
     `INSERT INTO designbuddy_prefs (key, value, updated_at) VALUES (?, ?, ?)
      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
   );
 
   db.transaction(() => {
-    // Existing v1 starters already live in user databases. Enrich their first
-    // artifact in place so their original buttons now provide visible feedback
-    // without changing later user-generated versions.
-    for (const starter of LEGACY_DESIGNER_STARTERS) {
+    // Refresh only the original system artifact. Any later artifact version is
+    // user-authored and remains the summary's latest version after migration.
+    for (const starter of DESIGNER_STARTERS) {
       const existing = existingStarterByKey.get(starter.key);
       if (!existing) continue;
       const rows = selectArtifactEvents.all(existing.id) as Array<{ id: string; payload: string }>;
@@ -405,17 +412,24 @@ export function initializeDesignBuddyStarterProjects(db: SqliteDb, role: DesignB
               ...payload,
               name: starter.name,
               kind: starter.mode,
-              html: enhanceLegacyStarterHtml(starter.html, starter.name),
+              html: starterArtifactHtml(starter),
               interactive: true,
             }),
             row.id,
           );
           break;
         } catch {
-          // Leave an unreadable historical event untouched; the remaining
-          // migration can still add the new commercial showcase safely.
+          // Leave unreadable historical events untouched; other starter rows
+          // can still be upgraded safely in the same transaction.
         }
       }
+      updateProjectMetadata.run(
+        JSON.stringify({
+          ...existing.metadata,
+          starterVersion: DESIGNER_STARTER_VERSION,
+        }),
+        existing.id,
+      );
     }
 
     DESIGNER_STARTERS.forEach((starter, index) => {
@@ -429,9 +443,7 @@ export function initializeDesignBuddyStarterProjects(db: SqliteDb, role: DesignB
         starterKey: starter.key,
         starterVersion: DESIGNER_STARTER_VERSION,
       };
-      const artifactHtml = starter.interactive
-        ? starter.html
-        : enhanceLegacyStarterHtml(starter.html, starter.name);
+      const artifactHtml = starterArtifactHtml(starter);
       const eventSpecs: Array<{
         type: DesignBuddyGenEventType;
         payload: Record<string, any>;
