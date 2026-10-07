@@ -116,14 +116,19 @@ describe('DesignBuddy real starter projects', () => {
     expect(allBlueprints).toHaveLength(18);
     expect(new Set(allBlueprints.map((starter) => starter.key)).size).toBe(18);
     expect(new Set(allBlueprints.map((starter) => starter.html)).size).toBe(18);
+    const layoutSignatures = allBlueprints.map((starter) =>
+      /data-layout-signature="([^"]+)"/.exec(starter.html)?.[1],
+    );
+    expect(layoutSignatures.every(Boolean)).toBe(true);
+    expect(new Set(layoutSignatures).size).toBe(18);
 
     for (const role of roles) {
       expect(DESIGNBUDDY_ROLE_STARTERS[role]).toHaveLength(6);
       for (const starter of DESIGNBUDDY_ROLE_STARTERS[role]) {
         expect(starter.role).toBe(role);
         expect(starter.html).toContain(`data-role-starter="${role}"`);
-        expect(starter.html).toContain('data-stage');
-        expect(starter.html).toContain('data-record');
+        expect(starter.html).toContain('data-project-layout=');
+        expect(starter.html).toContain('min-height:1180px');
         expect(starter.html).toContain("addEventListener('click'");
         expect(starter.interactive).toBe(true);
       }
@@ -136,14 +141,22 @@ describe('DesignBuddy real starter projects', () => {
         url: `https://preview.example/project/${starter.key}`,
       });
       const document = dom.window.document;
-      const metrics = document.querySelectorAll<HTMLElement>('[data-select]');
-      metrics[1]!.click();
-      expect(metrics[1]!.classList.contains('active')).toBe(true);
-      document.getElementById('openAction')!.click();
-      expect(document.getElementById('drawer')!.classList.contains('open')).toBe(true);
-      document.getElementById('confirmAction')!.click();
-      expect(document.getElementById('drawer')!.classList.contains('open')).toBe(false);
-      expect(document.getElementById('toast')!.textContent).toContain('状态已更新');
+      const inlineAction = Array.from(document.querySelectorAll<HTMLElement>('[data-action]'))
+        .find((button) =>
+          !button.hasAttribute('data-modal')
+          && !button.hasAttribute('disabled')
+          && !button.classList.contains('active'),
+        );
+      expect(inlineAction).toBeTruthy();
+      inlineAction!.click();
+      expect(inlineAction!.classList.contains('active')).toBe(true);
+      const modalAction = document.querySelector<HTMLElement>('[data-action][data-modal]');
+      expect(modalAction).toBeTruthy();
+      modalAction!.click();
+      expect(document.getElementById('projectDialog')!.classList.contains('open')).toBe(true);
+      document.getElementById('dialogConfirm')!.click();
+      expect(document.getElementById('projectDialog')!.classList.contains('open')).toBe(false);
+      expect(document.getElementById('liveStatus')!.textContent).toContain('操作已确认');
       dom.window.close();
     }
 
@@ -151,7 +164,7 @@ describe('DesignBuddy real starter projects', () => {
     for (const role of roles) {
       expect(readDesignBuddyStarterStatus(db, role).initialized).toBe(false);
       const initialized = initializeDesignBuddyStarterProjects(db, role);
-      expect(initialized).toMatchObject({ role, initialized: true, version: 1 });
+      expect(initialized).toMatchObject({ role, initialized: true, version: 2 });
       expect(initialized.createdProjectIds).toHaveLength(6);
       expect(new Set(initialized.projectIds).size).toBe(6);
     }
@@ -175,6 +188,57 @@ describe('DesignBuddy real starter projects', () => {
     const pmAgain = initializeDesignBuddyStarterProjects(db, 'pm');
     expect(pmAgain.createdProjectIds).toEqual([]);
     expect((db.prepare('SELECT COUNT(*) AS count FROM projects').get() as { count: number }).count).toBe(17);
+    db.close();
+  });
+
+  it('upgrades repeated operational-role v1 shells in place without replacing later user artifacts', () => {
+    const db = fixtureDb();
+    const initial = initializeDesignBuddyStarterProjects(db, 'pm');
+    const ids = [...initial.projectIds];
+    const rows = db.prepare(
+      `SELECT p.id, p.metadata_json AS metadataJson, g.id AS eventId, g.payload
+       FROM projects p JOIN designbuddy_gen g ON g.project_id = p.id
+       WHERE g.type = 'artifact' AND json_extract(g.payload, '$.version') = 1`,
+    ).all() as Array<{ id: string; metadataJson: string; eventId: string; payload: string }>;
+    expect(rows).toHaveLength(6);
+    for (const row of rows) {
+      const metadata = JSON.parse(row.metadataJson);
+      db.prepare('UPDATE projects SET metadata_json = ? WHERE id = ?')
+        .run(JSON.stringify({ ...metadata, starterVersion: 1 }), row.id);
+      const payload = JSON.parse(row.payload);
+      db.prepare('UPDATE designbuddy_gen SET payload = ? WHERE id = ?')
+        .run(JSON.stringify({ ...payload, html: '<html data-old-repeated-shell></html>' }), row.eventId);
+    }
+    const preference = {
+      version: 1,
+      projectIds: ids,
+      starterKeys: DESIGNBUDDY_ROLE_STARTERS.pm.map((starter) => starter.key),
+    };
+    db.prepare(`UPDATE designbuddy_prefs SET value = ? WHERE key = 'starter-projects:pm'`)
+      .run(JSON.stringify(preference));
+    db.prepare(
+      `INSERT INTO designbuddy_gen (id, project_id, seq, type, payload, created_at)
+       VALUES ('user-v2-artifact', ?, 99, 'artifact', ?, ?)`,
+    ).run(ids[0], JSON.stringify({ version: 2, name: 'User iteration', html: '<main>keep me</main>' }), Date.now());
+
+    const upgraded = initializeDesignBuddyStarterProjects(db, 'pm');
+    expect(upgraded).toMatchObject({ role: 'pm', initialized: true, version: 2, createdProjectIds: [] });
+    expect(upgraded.projectIds).toEqual(ids);
+    const upgradedV1 = rows.map((row) => {
+      const event = db.prepare('SELECT payload FROM designbuddy_gen WHERE id = ?').get(row.eventId) as { payload: string };
+      return JSON.parse(event.payload).html as string;
+    });
+    expect(upgradedV1.every((html) => html.includes('data-layout-signature='))).toBe(true);
+    expect(new Set(upgradedV1.map((html) => /data-layout-signature="([^"]+)"/.exec(html)?.[1])).size).toBe(6);
+    expect(listDesignBuddyGenEvents(db, ids[0]!).at(-1)?.payload).toMatchObject({
+      version: 2,
+      html: '<main>keep me</main>',
+    });
+    const metadataVersions = db.prepare(
+      `SELECT json_extract(metadata_json, '$.starterVersion') AS version
+       FROM projects WHERE json_extract(metadata_json, '$.designBuddyRole') = 'pm'`,
+    ).all() as Array<{ version: number }>;
+    expect(metadataVersions.every((row) => row.version === 2)).toBe(true);
     db.close();
   });
 

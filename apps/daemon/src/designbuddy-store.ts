@@ -101,7 +101,7 @@ export interface DesignBuddyStarterStatus {
 }
 
 const DESIGNER_STARTER_VERSION = 3;
-const ROLE_STARTER_VERSION = 1;
+const ROLE_STARTER_VERSION = 2;
 const DESIGNER_STARTER_PREF = 'starter-projects:designer';
 
 function starterPreferenceKey(role: DesignBuddyRole): string {
@@ -377,7 +377,7 @@ function initializeOperationalRoleStarterProjects(
     | DbRow
     | undefined;
   const preference = parseStarterPreference(preferenceRow?.value);
-  const existingStarterByKey = new Map<string, string>();
+  const existingStarterByKey = new Map<string, { id: string; metadata: Record<string, any> }>();
   const existingRows = db
     .prepare(`SELECT id, metadata_json AS metadataJson FROM projects`)
     .all() as Array<{ id: string; metadataJson: string | null }>;
@@ -389,18 +389,21 @@ function initializeOperationalRoleStarterProjects(
         && metadata.designBuddyRole === role
         && typeof metadata.starterKey === 'string'
       ) {
-        existingStarterByKey.set(metadata.starterKey, row.id);
+        existingStarterByKey.set(metadata.starterKey, { id: row.id, metadata });
       }
     } catch {
       // Malformed user metadata is never treated as a role starter.
     }
   }
 
+  // Preference keys include intentionally deleted starters. Existing rows are
+  // upgraded in place; missing keys that were materialized before are not
+  // recreated, preserving the user's deletion decision across v2 migration.
   const completedKeys = new Set(preference.starterKeys);
-  existingStarterByKey.forEach((_id, key) => completedKeys.add(key));
+  existingStarterByKey.forEach((_row, key) => completedKeys.add(key));
   const projectIds = Array.from(new Set([
     ...preference.projectIds,
-    ...Array.from(existingStarterByKey.values()),
+    ...Array.from(existingStarterByKey.values()).map((row) => row.id),
   ]));
   const createdProjectIds: string[] = [];
   const now = Date.now();
@@ -413,12 +416,49 @@ function initializeOperationalRoleStarterProjects(
     `INSERT INTO designbuddy_gen (id, project_id, seq, type, payload, created_at)
      VALUES (?, ?, ?, ?, ?, ?)`,
   );
+  const selectArtifactEvents = db.prepare(
+    `SELECT id, payload FROM designbuddy_gen WHERE project_id = ? AND type = 'artifact' ORDER BY seq ASC`,
+  );
+  const updateArtifactEvent = db.prepare(`UPDATE designbuddy_gen SET payload = ? WHERE id = ?`);
+  const updateProjectMetadata = db.prepare(`UPDATE projects SET metadata_json = ? WHERE id = ?`);
   const writePreference = db.prepare(
     `INSERT INTO designbuddy_prefs (key, value, updated_at) VALUES (?, ?, ?)
      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
   );
 
   db.transaction(() => {
+    // Version 2 replaces the repeated role shell with eighteen distinct
+    // product-specific workspaces. Refresh only the original v1 artifact so
+    // later user-generated versions and project names remain untouched.
+    for (const starter of starters) {
+      const existing = existingStarterByKey.get(starter.key);
+      if (!existing) continue;
+      const rows = selectArtifactEvents.all(existing.id) as Array<{ id: string; payload: string }>;
+      for (const row of rows) {
+        try {
+          const payload = JSON.parse(row.payload) as Record<string, any>;
+          if (Number(payload.version) !== 1) continue;
+          updateArtifactEvent.run(
+            JSON.stringify({
+              ...payload,
+              name: starter.name,
+              kind: starter.mode,
+              html: starter.html,
+              interactive: true,
+            }),
+            row.id,
+          );
+          break;
+        } catch {
+          // Preserve unreadable historical events instead of risking user data.
+        }
+      }
+      updateProjectMetadata.run(
+        JSON.stringify({ ...existing.metadata, starterVersion: ROLE_STARTER_VERSION }),
+        existing.id,
+      );
+    }
+
     starters.forEach((starter, index) => {
       if (completedKeys.has(starter.key)) return;
       const projectId = `db-starter-${randomUUID()}`;
@@ -488,7 +528,8 @@ function initializeOperationalRoleStarterProjects(
 /**
  * Materialize each role's showcase as persisted projects with replayable v1
  * artifacts. Designer version 3 contains the 56 commercial experiences;
- * Product, Developer, and Admin each receive six role-specific workspaces.
+ * operational role version 2 gives every PM, Developer, and Admin project a
+ * distinct workspace instead of reusing one visual shell.
  * User projects and intentionally deleted starters remain untouched.
  */
 export function initializeDesignBuddyStarterProjects(db: SqliteDb, role: DesignBuddyRole): DesignBuddyStarterStatus {

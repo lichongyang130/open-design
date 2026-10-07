@@ -84,6 +84,21 @@ describe('DesignBuddy Studio reliability contracts', () => {
     expect(initialize).not.toContain('state.role !== "designer"');
   });
 
+  it('lets the Projects gallery and live artifact thumbnails cover all available space', () => {
+    expect(studio).toContain('.main.projects-wall { align-items: stretch; padding: 24px 24px 52px; }');
+    expect(studio).toContain('.main-inner.project-wall { width: 100%; max-width: none; }');
+    expect(studio).toContain('repeat(auto-fit, minmax(min(520px, 100%), 1fr))');
+    expect(studio).toContain('aspect-ratio: 16 / 10; min-height: 280px');
+    expect(studio).toContain('.pcard .thumb.real iframe { position: absolute; inset: 0;');
+    const apply = functionBody(studio, 'applyView', 'closePicker');
+    expect(apply).toContain('inner.classList.toggle("project-wall", v === "projects")');
+    expect(apply).toContain('main.classList.toggle("projects-wall", v === "projects")');
+    const thumbnail = functionBody(studio, 'projectThumbnailDocument', 'renameRealProject');
+    expect(thumbnail).toContain('width:100%!important;height:100%!important;overflow:hidden!important');
+    expect(thumbnail).toContain('.wrap,.shell,.wide,.project{width:100vw!important;max-width:none!important');
+    expect(thumbnail).toContain('.hero{min-height:100vh!important}');
+  });
+
   it('round-trips a shared template id and page through the hash router', async () => {
     const dom = new JSDOM('<!doctype html><body></body>', {
       pretendToBeVisual: true,

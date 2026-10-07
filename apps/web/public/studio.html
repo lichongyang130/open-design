@@ -103,7 +103,9 @@
   .main { display: flex; flex-direction: column; align-items: center; padding: 40px 40px 60px; }
   .main-inner { width: min(860px, 100%); }
   .main-inner.wide { width: min(1360px, 100%); }
-  .main-inner.wide .topbar { margin-bottom: 16px; }
+  .main.projects-wall { align-items: stretch; padding: 24px 24px 52px; }
+  .main-inner.project-wall { width: 100%; max-width: none; }
+  .main-inner.wide .topbar, .main-inner.project-wall .topbar { margin-bottom: 16px; }
   .topbar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 42px; }
   .lang { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--glass); border: 1px solid var(--glass-border); backdrop-filter: blur(14px); }
   .lang button { appearance: none; border: 0; background: transparent; color: var(--muted); font: 600 12px/1 inherit; padding: 6px 12px; border-radius: 999px; cursor: pointer; transition: 0.2s; }
@@ -460,16 +462,17 @@
   .pill.on { background: var(--ink); color: #f4f8f0; border-color: transparent; box-shadow: 0 8px 18px rgba(32,38,30,0.22); }
   .pill .n { opacity: 0.55; margin-left: 5px; font-size: 11px; }
 
-  /* Projects are intentionally shown as a two-column portfolio, not a dense
-     utility grid: each real interface remains legible before it is opened. */
-  .proj-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+  /* Projects form a fluid portfolio wall: cards use the whole viewport while
+     staying large enough for each real interface to remain legible. */
+  .proj-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(520px, 100%), 1fr)); gap: 18px; width: 100%; }
   .pcard { border-radius: 22px; overflow: hidden; background: var(--glass); border: 1px solid var(--glass-border); backdrop-filter: blur(18px); box-shadow: 0 12px 30px rgba(58,70,52,0.09); cursor: pointer; transition: transform 0.18s, box-shadow 0.2s, border-color .2s; content-visibility: auto; contain-intrinsic-size: 470px; }
   .pcard:hover { transform: translateY(-5px); border-color: rgba(82,128,68,.24); box-shadow: 0 26px 54px rgba(43,58,39,0.17); }
   .pcard:focus-visible { outline: 3px solid rgba(92,184,50,0.34); outline-offset: 3px; }
-  .pcard .thumb { width: 100%; aspect-ratio: 16 / 9; min-height: 236px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; background: #e9eee8; }
+  .pcard .thumb { width: 100%; aspect-ratio: 16 / 10; min-height: 280px; display: flex; align-items: stretch; justify-content: stretch; position: relative; overflow: hidden; background: #e9eee8; }
+  .pcard .thumb:not(.real) { align-items: center; justify-content: center; }
   .pcard .thumb svg { filter: drop-shadow(0 6px 14px rgba(30,40,26,0.25)); }
   .pcard .thumb.real { align-items: stretch; justify-content: stretch; background: #f5f5ef; isolation: isolate; }
-  .pcard .thumb.real iframe { width: 300%; height: 300%; transform: scale(0.333334); transform-origin: 0 0; border: 0; pointer-events: none; background: #f5f5ef; position: relative; z-index: 0; }
+  .pcard .thumb.real iframe { position: absolute; inset: 0; width: 300%; height: 300%; transform: scale(0.333334); transform-origin: 0 0; border: 0; pointer-events: none; background: #f5f5ef; z-index: 0; }
   .pcard .thumb.real::after { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg,rgba(10,16,12,.05),transparent 42%,rgba(8,13,10,.32)); pointer-events: none; }
   .project-thumb-bar { position: absolute; z-index: 3; left: 14px; right: 14px; top: 14px; height: 29px; border: 1px solid rgba(255,255,255,.64); border-radius: 10px; background: rgba(248,249,246,.88); backdrop-filter: blur(12px); display: flex; align-items: center; gap: 5px; padding: 0 10px; color: #58625b; font-size: 9px; font-weight: 800; box-shadow: 0 5px 16px rgba(17,27,20,.1); }
   .project-thumb-bar i { width: 5px; height: 5px; border-radius: 50%; background: #99a29b; }
@@ -3105,9 +3108,14 @@
     var views = document.querySelectorAll(".view");
     for (var i = 0; i < views.length; i++) views[i].classList.toggle("on", views[i].id === "view-" + v);
     var inner = document.querySelector(".main-inner");
-    /* Project thumbnails need portfolio-scale width; the former 860px content
-       column squeezed the gallery into narrow utility cards. */
-    if (inner) inner.classList.toggle("wide", v === "gen" || v === "projects");
+    /* Projects use the entire viewport beside the rail so every live thumbnail
+       fills its tile edge-to-edge instead of sitting in a capped content column. */
+    if (inner) {
+      inner.classList.toggle("wide", v === "gen");
+      inner.classList.toggle("project-wall", v === "projects");
+    }
+    var main = document.querySelector(".main");
+    if (main) main.classList.toggle("projects-wall", v === "projects");
     var navV = v === "gen" ? "projects" : v;
     var items = document.querySelectorAll(".nav-item");
     for (var j = 0; j < items.length; j++) items[j].classList.toggle("on", items[j].getAttribute("data-nav") === navV);
@@ -3586,14 +3594,15 @@
 
   function projectThumbnailDocument(html) {
     if (!html) return "";
-    /* The card iframe uses a 3× virtual desktop viewport. Remove the artifact's
-       fixed max-width only inside this non-interactive thumbnail so its hero
-       fills the new wide 16:9 frame instead of appearing as a thin strip. */
+    /* The card iframe uses a 3× virtual desktop viewport. Force the artifact's
+       first viewport to cover every pixel of the thumbnail; the full artifact
+       keeps its own spacing when opened in the interactive preview. */
     var thumbnailCss = '<style data-studio-project-thumbnail>' +
-      'html,body{overflow:hidden!important}' +
-      '.wrap,.shell,.wide{width:92vw!important;max-width:none!important}' +
+      'html,body{width:100%!important;height:100%!important;overflow:hidden!important;margin:0!important}' +
+      '.wrap,.shell,.wide,.project{width:100vw!important;max-width:none!important;margin:0!important}' +
+      '.project{padding:0!important;min-height:100vh!important}' +
       '.nav{position:relative!important;top:auto!important}' +
-      '.hero{min-height:760px!important}' +
+      '.hero{min-height:100vh!important}' +
       '.od-commercial-continuation{display:none!important}' +
       '</style>';
     return /<\/head>/i.test(html) ? html.replace(/<\/head>/i, thumbnailCss + "</head>") : html;
