@@ -420,13 +420,19 @@
   .send.loading::after { content: ""; width: 15px; height: 15px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.42); border-top-color: #fff; animation: spin 0.7s linear infinite; position: absolute; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* 示例提示词（原版轮播 → 丰富成网格） */
+  /* 示例提示词：按角色轮换，并在点击时绑定详细提示词与真实技能。 */
   .section { margin-top: 34px; animation: rise 0.7s 0.08s cubic-bezier(0.2,0.9,0.25,1) both; }
-  .section h2 { font-size: 14px; font-weight: 700; color: var(--muted); letter-spacing: 0.02em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .section-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+  .section h2 { font-size: 14px; font-weight: 700; color: var(--muted); letter-spacing: 0.02em; margin: 0; display: flex; align-items: center; gap: 8px; }
   .section h2 .spark-ico { color: var(--lime-deep); }
-  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 10px; }
+  .tiles-refresh { appearance: none; border: 0; background: transparent; color: var(--faint); min-height: 30px; padding: 5px 8px; border-radius: 9px; display: inline-flex; align-items: center; gap: 6px; font: 700 11.5px/1 inherit; cursor: pointer; transition: color .18s, background .18s; }
+  .tiles-refresh:hover { color: var(--ink); background: rgba(32,38,30,.07); }
+  .tiles-refresh:focus-visible { outline: 2px solid var(--lime-deep); outline-offset: 2px; }
+  .tiles-refresh svg { transition: transform .34s cubic-bezier(.2,.8,.2,1); }
+  .tiles-refresh.spinning svg { transform: rotate(180deg); }
+  .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
   .tile {
-    display: flex; align-items: center; gap: 11px; padding: 13px 14px;
+    min-height: 90px; display: flex; align-items: center; gap: 11px; padding: 13px 14px;
     border-radius: 16px; background: var(--glass); border: 1px solid var(--glass-border);
     backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
     box-shadow: 0 8px 22px rgba(58,70,52,0.07);
@@ -434,12 +440,17 @@
     transition: transform 0.18s ease, box-shadow 0.2s, background 0.2s;
   }
   .tile:hover { transform: translateY(-3px); background: var(--glass-strong); box-shadow: 0 16px 34px rgba(58,70,52,0.13); }
+  .tile:focus-visible { outline: 2px solid var(--lime-deep); outline-offset: 3px; }
   .tile .ic { width: 34px; height: 34px; border-radius: 10px; flex: none; display: grid; place-items: center; }
   .tile .ic i1 { display: none; }
-  .tile .tx b { display: block; font-size: 13px; }
-  .tile .tx span { display: block; font-size: 11px; color: var(--faint); font-weight: 500; margin-top: 3px; }
+  .tile .tx { min-width: 0; flex: 1; }
+  .tile .tx b { display: block; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tile .tx .tile-type { display: block; font-size: 11px; color: var(--faint); font-weight: 500; margin-top: 3px; }
+  .tile .tx .tile-skill { max-width: 100%; display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; border-radius: 999px; padding: 2px 6px; background: rgba(64,151,42,.09); color: var(--lime-deep); font-size: 9.5px; line-height: 1.35; font-weight: 750; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: top; }
+  .tile .tx .tile-skill::before { content: "✦"; flex: none; font-size: 8px; }
   .tile .go { margin-left: auto; color: var(--faint); opacity: 0; transition: opacity 0.2s, transform 0.2s; }
   .tile:hover .go { opacity: 1; transform: translateX(2px); color: var(--lime-deep); }
+  @media (max-width: 880px) { .tiles { grid-template-columns: 1fr; } }
 
   /* 最近项目 */
   .projects { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
@@ -667,6 +678,59 @@
   .account-dialog-close { width: 36px; height: 36px; border: 0; border-radius: 11px; display: grid; place-items: center; background: rgba(32,38,30,.06); color: var(--ink); cursor: pointer; }
   .account-dialog-close:hover { background: rgba(32,38,30,.11); }
   .account-panel-body { min-height: 0; overflow-y: auto; padding: 21px; scrollbar-width: thin; scrollbar-color: rgba(32,38,30,.24) transparent; }
+
+  /* 设置工作区：参考桌面设置中心，保留当前网站主题与真实本地状态。 */
+  .account-dialog.settings-workspace {
+    width: min(1040px,calc(100vw - 32px)); height: min(720px,calc(100dvh - 32px)); max-height: none;
+    grid-template-rows: minmax(0,1fr); border-radius: 24px; background: color-mix(in srgb,var(--paper) 94%,#f4f4f2);
+  }
+  .settings-workspace .account-dialog-head { display: none; }
+  .settings-workspace .account-panel-body { grid-row: 1; padding: 0; overflow: hidden; }
+  .settings-shell { height: 100%; min-height: 0; display: grid; grid-template-columns: 220px minmax(0,1fr); background: color-mix(in srgb,var(--paper) 92%,#f1f1ef); }
+  .settings-sidebar { min-height: 0; overflow-y: auto; padding: 13px 10px 18px; border-right: 1px solid var(--hairline); scrollbar-width: thin; }
+  .settings-window-row { height: 30px; display: flex; align-items: center; padding: 0 3px; }
+  .settings-close-dot { width: 13px; height: 13px; padding: 0; border: 0; border-radius: 50%; background: #ff5f57; box-shadow: inset 0 0 0 1px rgba(126,22,17,.14); cursor: pointer; }
+  .settings-close-dot:hover { background: #ff453a; transform: scale(1.06); }
+  .settings-close-dot:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+  .settings-sidebar-title { margin: 0 12px 8px; color: var(--muted); font-size: 11px; font-weight: 650; }
+  .settings-nav-group + .settings-nav-group { margin-top: 15px; }
+  .settings-nav-label { display: block; margin: 0 12px 6px; color: var(--faint); font-size: 10px; font-weight: 650; }
+  .settings-nav { display: flex; flex-direction: column; gap: 2px; }
+  .settings-nav-button { width: 100%; min-height: 34px; display: grid; grid-template-columns: 20px minmax(0,1fr); align-items: center; gap: 8px; padding: 6px 11px; border: 0; border-radius: 9px; background: transparent; color: var(--ink); text-align: left; cursor: pointer; font: 570 13px/1.2 inherit; }
+  .settings-nav-button:hover { background: rgba(32,38,30,.055); }
+  .settings-nav-button.active { background: rgba(32,38,30,.095); font-weight: 720; }
+  .settings-nav-button svg { width: 16px; height: 16px; color: var(--muted); }
+  .settings-nav-divider { height: 1px; margin: 15px 12px; background: var(--hairline); }
+  .settings-main { min-width: 0; min-height: 0; overflow-y: auto; padding: 26px 28px 34px; scrollbar-width: thin; scrollbar-color: rgba(32,38,30,.22) transparent; }
+  .settings-panel { width: min(100%,760px); margin: 0 auto; }
+  .settings-panel-head { min-height: 58px; display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 0 2px 17px; }
+  .settings-panel-head h2 { font-size: 15px; line-height: 1.25; letter-spacing: -.01em; }
+  .settings-panel-head p { margin-top: 5px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+  .settings-path { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+  .settings-card { overflow: hidden; border: 1px solid rgba(32,38,30,.055); border-radius: 15px; background: color-mix(in srgb,var(--card) 92%,#fff); box-shadow: 0 1px 0 rgba(255,255,255,.85), 0 6px 18px rgba(32,38,30,.035); }
+  .settings-model-list { border-top: 1px solid var(--hairline); }
+  .settings-model-row { min-height: 44px; display: grid; grid-template-columns: 22px minmax(0,1fr) auto; align-items: center; gap: 8px; padding: 5px 10px 5px 4px; border-top: 1px solid var(--hairline); }
+  .settings-model-row:first-child { border-top: 0; }
+  .settings-model-spark { width: 22px; display: grid; place-items: center; color: var(--ink); font-size: 22px; font-weight: 300; }
+  .settings-model-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 570; }
+  .settings-model-name small { margin-left: 6px; color: var(--faint); font-size: 11px; font-weight: 500; }
+  .settings-model-actions { display: flex; align-items: center; gap: 3px; }
+  .settings-icon-button { width: 30px; height: 30px; border: 0; border-radius: 8px; display: grid; place-items: center; background: transparent; color: var(--muted); cursor: pointer; }
+  .settings-icon-button:hover, .settings-icon-button.is-linked { color: var(--ink); background: rgba(32,38,30,.07); }
+  .settings-icon-button.is-linked { color: var(--lime-deep); }
+  .settings-icon-button.danger:hover { color: #b64131; background: rgba(210,80,58,.09); }
+  .settings-icon-button svg { width: 15px; height: 15px; }
+  .settings-add-model { display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: 8px; padding: 11px; border-top: 1px solid var(--hairline); background: rgba(32,38,30,.025); }
+  .settings-add-model[hidden] { display: none; }
+  .settings-add-model input { min-width: 0; height: 36px; border: 1px solid var(--hairline); border-radius: 9px; background: rgba(255,255,255,.72); padding: 0 11px; color: var(--ink); font: 500 12px/1 inherit; outline: 0; }
+  .settings-add-model input:focus { border-color: var(--lime-deep); box-shadow: 0 0 0 3px var(--lime-wash); }
+  .settings-simple-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+  .settings-shortcut { min-height: 48px; display: flex; align-items: center; gap: 12px; padding: 10px 13px; border-top: 1px solid var(--hairline); }
+  .settings-shortcut:first-child { border-top: 0; }
+  .settings-shortcut span { flex: 1; font-size: 12px; }
+  .settings-shortcut kbd { padding: 4px 7px; border: 1px solid var(--hairline); border-bottom-width: 2px; border-radius: 6px; background: rgba(255,255,255,.68); color: var(--muted); font: 650 10px/1 ui-monospace,monospace; }
+  .settings-status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--lime-deep); box-shadow: 0 0 0 4px var(--lime-wash); }
+
   .acc-stack { display: flex; flex-direction: column; gap: 14px; }
   .acc-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
   .acc-grid.three { grid-template-columns: repeat(3,minmax(0,1fr)); }
@@ -769,6 +833,19 @@
     .account-dialog-head { grid-template-columns:38px minmax(0,1fr) 34px; padding:15px; min-height:82px; }
     .account-dialog-icon { width:38px; height:38px; border-radius:12px; }
     .account-panel-body { padding:15px; }
+    .account-dialog.settings-workspace { width:100%; height:calc(100dvh - 20px); border-radius:18px; }
+    .settings-shell { grid-template-columns:1fr; grid-template-rows:auto minmax(0,1fr); }
+    .settings-sidebar { max-height:190px; padding:8px; border-right:0; border-bottom:1px solid var(--hairline); }
+    .settings-window-row { height:24px; }
+    .settings-sidebar-title { margin-bottom:5px; }
+    .settings-nav-groups { display:flex; gap:10px; overflow-x:auto; padding-bottom:3px; }
+    .settings-nav-group, .settings-nav-group + .settings-nav-group { min-width:164px; margin-top:0; }
+    .settings-nav-divider { display:none; }
+    .settings-main { padding:18px 14px 24px; }
+    .settings-panel-head { flex-direction:column; gap:10px; }
+    .settings-model-row { grid-template-columns:20px minmax(0,1fr); }
+    .settings-model-actions { grid-column:2; justify-content:flex-start; margin-top:-3px; }
+    .settings-add-model, .settings-simple-grid { grid-template-columns:1fr; }
     .acc-grid, .acc-grid.three, .acc-plan-grid, .acc-theme-grid { grid-template-columns:1fr; }
     .acc-plan { min-height:0; }
     .acc-inline { align-items:stretch; flex-direction:column; }
@@ -1092,14 +1169,14 @@
         </div>
 
         <section class="section" id="secTiles">
-          <h2><span class="spark-ico">✦</span><span data-i18n="examplesTitle">试试这些</span></h2>
-          <div class="tiles" id="tiles"></div>
-        </section>
-
-        <section class="section" style="animation-delay:.16s" id="homeRecent">
-          <h2><span class="spark-ico">◍</span><span data-i18n="recentTitle">最近项目</span></h2>
-          <div class="projects" id="homeProjGrid">
+          <div class="section-head">
+            <h2><span class="spark-ico">✦</span><span data-i18n="examplesTitle">试试这些</span></h2>
+            <button class="tiles-refresh" id="refreshTiles" type="button">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7v5h-5"/><path d="M4 17v-5h5"/><path d="M6.1 9a7 7 0 0 1 11.3-2L20 9M4 15l2.6 2A7 7 0 0 0 17.9 15"/></svg>
+              <span data-i18n="examplesRefresh">换一批</span>
+            </button>
           </div>
+          <div class="tiles" id="tiles" aria-live="polite"></div>
         </section>
 
         <section class="section" id="homeReview" hidden>
@@ -1300,7 +1377,7 @@
   <div class="toast" id="toast" role="status"></div>
 
   <div class="account-surface" id="accountSurface" hidden>
-    <section class="account-dialog" role="dialog" aria-modal="true" aria-labelledby="accountSurfaceTitle" aria-describedby="accountSurfaceSub">
+    <section class="account-dialog" id="accountDialog" role="dialog" aria-modal="true" aria-labelledby="accountSurfaceTitle" aria-describedby="accountSurfaceSub">
       <header class="account-dialog-head">
         <span class="account-dialog-icon" id="accountSurfaceIcon" aria-hidden="true"></span>
         <div class="account-dialog-copy">
@@ -1359,7 +1436,9 @@
       pmConnDesc: "连接第三方服务，把外部内容带进创作流程。",
       pmMcpDesc: "接入 MCP 服务器，扩展 Buddy 的工具能力。",
       hint: "⌘/Ctrl + Enter 发送", send: "发送",
-      examplesTitle: "试试这些", recentTitle: "最近项目",
+      examplesTitle: "试试这些", examplesRefresh: "换一批", recentTitle: "最近项目",
+      examplesReady: "已填入详细提示词，并添加技能：{skill}", examplesBatch: "已换一批建议",
+      examplesSkillLoading: "正在加载匹配技能…", examplesSkillUnavailable: "匹配技能暂时不可用，请稍后重试",
       p1: "品牌官网改版", t1: "2 小时前", p2: "移动端注册流", t2: "昨天", p3: "Q3 汇报幻灯片", t3: "3 天前",
       stDone: "已完成", stRun: "生成中",
       words: ["原型", "幻灯片", "文档"],
@@ -1585,7 +1664,9 @@
       pmConnDesc: "Connect third-party services into your flow.",
       pmMcpDesc: "Attach MCP servers to extend Buddy's tools.",
       hint: "⌘/Ctrl + Enter to send", send: "Send",
-      examplesTitle: "Try these", recentTitle: "Recent projects",
+      examplesTitle: "Try these", examplesRefresh: "Refresh", recentTitle: "Recent projects",
+      examplesReady: "Detailed prompt added with skill: {skill}", examplesBatch: "Suggestions refreshed",
+      examplesSkillLoading: "Loading the matching skill…", examplesSkillUnavailable: "The matching skill is unavailable. Please try again",
       p1: "Brand site redesign", t1: "2h ago", p2: "Mobile signup flow", t2: "Yesterday", p3: "Q3 report deck", t3: "3d ago",
       stDone: "Done", stRun: "Running",
       words: ["prototype", "deck", "doc"],
@@ -1840,6 +1921,9 @@
           { icon: "shop", t: "商品详情页排版", s: "文档", p: "排版一个商品详情页" },
           { icon: "dash", t: "订单跟踪仪表盘", s: "原型", p: "做一个订单跟踪仪表盘原型" }
         ,{ icon: "pitch", t: "活动宣传海报", s: "图像", p: "设计一张活动宣传海报" }
+        ,{ icon: "doc", t: "设计系统基础", s: "设计系统", p: "为新产品建立一套设计系统基础规范" }
+        ,{ icon: "flow", t: "移动端新手引导", s: "App", p: "设计一套移动端新用户引导体验" }
+        ,{ icon: "pitch", t: "社交媒体发布卡", s: "图像", p: "设计一组新品发布社交媒体卡片" }
         ]
       },
       en: {
@@ -1870,6 +1954,9 @@
           { icon: "shop", t: "Product page layout", s: "Document", p: "Lay out a product page" },
           { icon: "dash", t: "Orders dashboard", s: "Prototype", p: "Prototype an orders dashboard" }
         ,{ icon: "pitch", t: "Event poster", s: "Image", p: "Design an event poster" }
+        ,{ icon: "doc", t: "Design system foundation", s: "Design system", p: "Create a design-system foundation for a new product" }
+        ,{ icon: "flow", t: "Mobile onboarding", s: "App", p: "Design a mobile onboarding experience for new users" }
+        ,{ icon: "pitch", t: "Social launch cards", s: "Image", p: "Design a set of social cards for a product launch" }
         ]
       }
     },
@@ -1901,8 +1988,11 @@
         ,{ icon: "doc", t: "竞品对比分析", s: "文档", p: "写一份竞品对比分析" }
         ,{ icon: "deck", t: "版本规划路线图", s: "幻灯片", p: "做一版产品路线图" }
         ,{ icon: "flow", t: "需求优先级梳理", s: "原型", p: "梳理下季度的需求优先级" }
-        ,{ icon: "shop", t: "用户调研问卷", s: "文档", p: "设计一份用户调研问卷" }
-        ,{ icon: "land", t: "发布清单页", s: "原型", p: "排一版功能发布清单页" }
+        ,{ icon: "doc", t: "用户调研问卷", s: "文档", p: "设计一份用户调研问卷" }
+        ,{ icon: "flow", t: "发布清单页", s: "原型", p: "排一版功能发布清单页" }
+        ,{ icon: "doc", t: "版本上线复盘", s: "文档", p: "整理一次版本上线后的产品复盘" }
+        ,{ icon: "dash", t: "增长实验计划", s: "方案", p: "制定一套可验证的增长实验计划" }
+        ,{ icon: "flow", t: "干系人协作图", s: "流程", p: "梳理复杂项目的干系人与协作关系" }
         ]
       },
       en: {
@@ -1931,8 +2021,11 @@
         ,{ icon: "doc", t: "Competitor analysis", s: "Document", p: "Write a competitor analysis" }
         ,{ icon: "deck", t: "Roadmap deck", s: "Slides", p: "Create a product roadmap deck" }
         ,{ icon: "flow", t: "Prioritize backlog", s: "Prototype", p: "Prioritize next quarter's backlog" }
-        ,{ icon: "shop", t: "User survey", s: "Document", p: "Design a user research survey" }
-        ,{ icon: "land", t: "Release checklist", s: "Prototype", p: "Lay out a release checklist page" }
+        ,{ icon: "doc", t: "User survey", s: "Document", p: "Design a user research survey" }
+        ,{ icon: "flow", t: "Release checklist", s: "Prototype", p: "Lay out a release checklist page" }
+        ,{ icon: "doc", t: "Launch retrospective", s: "Document", p: "Create a product retrospective after a release" }
+        ,{ icon: "dash", t: "Growth experiment plan", s: "Plan", p: "Create a measurable growth experiment plan" }
+        ,{ icon: "flow", t: "Stakeholder map", s: "Workflow", p: "Map stakeholders and collaboration for a complex project" }
         ]
       }
     },
@@ -1965,7 +2058,10 @@
         ,{ icon: "web", t: "响应式导航栏", s: "代码", p: "写一个响应式导航栏组件" }
         ,{ icon: "doc", t: "组件使用文档", s: "文档", p: "为按钮组件写一份使用文档" }
         ,{ icon: "dash", t: "CI/CD 流水线图", s: "文档", p: "画一张 CI/CD 流水线示意图" }
-        ,{ icon: "anim", t: "错误边界组件", s: "代码", p: "写一个错误边界组件" }
+        ,{ icon: "code", t: "错误边界组件", s: "代码", p: "写一个错误边界组件" }
+        ,{ icon: "web", t: "无障碍表单", s: "代码", p: "实现一个完整的无障碍注册表单" }
+        ,{ icon: "dash", t: "前端性能审计", s: "报告", p: "为现有前端页面制作性能审计与修复方案" }
+        ,{ icon: "code", t: "设计令牌流水线", s: "代码", p: "搭建设计令牌到前端代码的同步流水线" }
         ]
       },
       en: {
@@ -1995,7 +2091,10 @@
         ,{ icon: "web", t: "Responsive navbar", s: "Code", p: "Build a responsive navbar component" }
         ,{ icon: "doc", t: "Component docs", s: "Document", p: "Write usage docs for the button component" }
         ,{ icon: "dash", t: "CI/CD pipeline", s: "Document", p: "Diagram the CI/CD pipeline" }
-        ,{ icon: "anim", t: "Error boundary", s: "Code", p: "Write an error-boundary component" }
+        ,{ icon: "code", t: "Error boundary", s: "Code", p: "Write an error-boundary component" }
+        ,{ icon: "web", t: "Accessible form", s: "Code", p: "Implement a complete accessible signup form" }
+        ,{ icon: "dash", t: "Frontend performance audit", s: "Report", p: "Audit an existing frontend page and plan performance fixes" }
+        ,{ icon: "code", t: "Design-token pipeline", s: "Code", p: "Build a pipeline that syncs design tokens into frontend code" }
         ]
       }
     },
@@ -2019,7 +2118,20 @@
           "想看本月的<b>生成趋势</b>吗？",
           "有 2 条<b>待审批</b>事项等你处理"
         ],
-        tiles: []
+        tiles: [
+          { icon: "dash", t: "团队用量驾驶舱", s: "看板", p: "生成一套团队用量与成本驾驶舱" },
+          { icon: "doc", t: "成员与席位审计", s: "报告", p: "整理成员、角色与席位使用审计报告" },
+          { icon: "flow", t: "审批流程优化", s: "流程", p: "重新设计跨团队资产审批流程" },
+          { icon: "web", t: "工作区治理中心", s: "原型", p: "设计统一的工作区治理中心" },
+          { icon: "dash", t: "异常用量预警", s: "看板", p: "设计团队异常用量监测与预警看板" },
+          { icon: "deck", t: "季度效能汇报", s: "幻灯片", p: "制作季度团队效能复盘汇报" },
+          { icon: "flow", t: "权限矩阵梳理", s: "文档", p: "梳理团队角色与资源权限矩阵" },
+          { icon: "flow", t: "资产迁移计划", s: "计划", p: "制定历史设计资产迁移与验收计划" },
+          { icon: "doc", t: "运营周报", s: "报告", p: "生成本周团队运营与风险周报" },
+          { icon: "flow", t: "入离职交接流程", s: "流程", p: "设计成员入职与离职的权限交接流程" },
+          { icon: "dash", t: "季度成本预算", s: "方案", p: "制定下一季度团队工具成本与额度预算" },
+          { icon: "flow", t: "服务异常响应", s: "流程", p: "建立团队服务异常的分级响应流程" }
+        ]
       },
       en: {
         name: "Admin", desc: "Team & usage",
@@ -2039,10 +2151,125 @@
           "Want this month's <b>generation trend</b>?",
           "2 items are <b>awaiting approval</b>"
         ],
-        tiles: []
+        tiles: [
+          { icon: "dash", t: "Team usage cockpit", s: "Dashboard", p: "Create a team usage and cost cockpit" },
+          { icon: "doc", t: "Member & seat audit", s: "Report", p: "Audit members, roles, and seat utilization" },
+          { icon: "flow", t: "Approval workflow", s: "Workflow", p: "Redesign the cross-team asset approval workflow" },
+          { icon: "web", t: "Workspace governance", s: "Prototype", p: "Design a unified workspace governance center" },
+          { icon: "dash", t: "Usage anomaly alerts", s: "Dashboard", p: "Design a team usage anomaly and alerting dashboard" },
+          { icon: "deck", t: "Quarterly effectiveness", s: "Slides", p: "Create a quarterly team effectiveness review" },
+          { icon: "flow", t: "Access matrix", s: "Document", p: "Map team roles to resource permissions" },
+          { icon: "flow", t: "Asset migration plan", s: "Plan", p: "Plan and validate a legacy design asset migration" },
+          { icon: "doc", t: "Operations weekly", s: "Report", p: "Create this week's team operations and risk report" },
+          { icon: "flow", t: "Joiner-leaver handoff", s: "Workflow", p: "Design access handoffs for employee onboarding and offboarding" },
+          { icon: "dash", t: "Quarterly cost budget", s: "Plan", p: "Plan next quarter's team tooling costs and usage budget" },
+          { icon: "flow", t: "Service incident response", s: "Workflow", p: "Create a severity-based response workflow for service incidents" }
+        ]
       }
     }
   };
+
+  /* “试试这些”由真实技能目录驱动。首选技能与通用提示增强技能都来自仓库内置目录；
+     技能清单尚在加载时只显示待校验引用，提交前必须用 /api/skills 完成校验。 */
+  var SUGGESTION_BATCH_SIZE = 6;
+  var SUGGESTION_SKILL_IDS = {
+    designer: [
+      ["design-brief", "enhance-prompt"], ["slides", "enhance-prompt"], ["login-flow", "enhance-prompt"],
+      ["emilkowalski-motion", "enhance-prompt"], ["frontend-slides", "enhance-prompt"], ["frontend-design", "enhance-prompt"],
+      ["ecommerce-image-workflow", "enhance-prompt"], ["data-report", "enhance-prompt"], ["poster-hero", "enhance-prompt"],
+      ["figma-create-design-system-rules", "enhance-prompt"], ["apple-hig", "enhance-prompt"], ["social-x-post-card", "enhance-prompt"]
+    ],
+    pm: [
+      ["design-brief", "enhance-prompt"], ["frame-flowchart-sticky", "enhance-prompt"], ["slides", "enhance-prompt"],
+      ["data-report", "enhance-prompt"], ["research-decision-room", "enhance-prompt"], ["slides", "enhance-prompt"],
+      ["research-decision-room", "enhance-prompt"], ["research-decision-room", "enhance-prompt"], ["release-notes-one-pager", "enhance-prompt"],
+      ["research-decision-room", "enhance-prompt"], ["data-report", "enhance-prompt"], ["frame-flowchart-sticky", "enhance-prompt"]
+    ],
+    dev: [
+      ["frontend-dev", "enhance-prompt"], ["figma-code-connect-components", "enhance-prompt"], ["doc", "enhance-prompt"],
+      ["review-animations", "enhance-prompt"], ["frontend-skill", "enhance-prompt"], ["frontend-dev", "enhance-prompt"],
+      ["doc", "enhance-prompt"], ["frame-flowchart-sticky", "enhance-prompt"], ["frontend-dev", "enhance-prompt"],
+      ["frontend-dev", "enhance-prompt"], ["web-design-guidelines", "enhance-prompt"], ["figma-create-design-system-rules", "enhance-prompt"]
+    ],
+    admin: [
+      ["data-report", "enhance-prompt"], ["data-report", "enhance-prompt"], ["frame-flowchart-sticky", "enhance-prompt"],
+      ["platform-design", "enhance-prompt"], ["data-report", "enhance-prompt"], ["slides", "enhance-prompt"],
+      ["design-review", "enhance-prompt"], ["design-brief", "enhance-prompt"], ["data-report", "enhance-prompt"],
+      ["design-brief", "enhance-prompt"], ["data-report", "enhance-prompt"], ["frame-flowchart-sticky", "enhance-prompt"]
+    ]
+  };
+  var SUGGESTION_PROMPT_GUIDANCE = {
+    designer: {
+      zh: "请交付一套可直接预览并继续编辑的完整设计方案：先说明目标用户、使用场景与一个明确的视觉方向，再给出信息架构、关键页面或区块、真实中文文案、组件规格和交互逻辑。覆盖桌面与移动端适配，以及默认、悬停、加载、空、成功和错误状态；保证层级、对比度、键盘操作与无障碍可用。避免占位文案和通用 AI 风格，每个主要按钮都要有可见反馈，最后附上设计决策与交付检查清单。",
+      en: "Deliver a complete design that can be previewed and edited immediately. Define the target audience, usage context, and one clear visual direction, then provide the information architecture, key screens or sections, realistic copy, component specifications, and interaction logic. Cover desktop and mobile layouts plus default, hover, loading, empty, success, and error states. Ensure hierarchy, contrast, keyboard access, and accessibility. Avoid placeholder copy and generic AI styling, give every primary action visible feedback, and finish with design decisions and a delivery checklist."
+    },
+    pm: {
+      zh: "请整理成可直接进入评审的产品方案：明确业务背景、目标用户、核心问题、成功目标与非目标，补充关键假设、主流程及异常流程、范围边界、优先级和依赖。列出需要验证的数据指标、埋点、风险与备选方案，并给出按阶段拆分的里程碑、负责人协作点、验收标准和上线后复盘方式。内容必须具体、可执行，未知信息请明确标注为待确认，不要虚构结论。",
+      en: "Turn this into a review-ready product plan. State the business context, target users, core problem, success goals, and non-goals, then cover key assumptions, primary and exception flows, scope boundaries, priorities, and dependencies. Define metrics and instrumentation to validate, risks and fallback options, phased milestones, ownership handoffs, acceptance criteria, and the post-launch review. Keep it concrete and executable; mark unknowns as decisions to confirm instead of inventing conclusions."
+    },
+    dev: {
+      zh: "请提供可运行、可维护、可评审的工程交付：先说明技术选型与约束，再给出目录结构、核心组件或接口、类型定义、状态管理和数据流。实现响应式布局、键盘操作与无障碍，覆盖加载、空数据、错误、重试和成功反馈；同时考虑性能、安全、边界条件与渐进降级。代码不要省略关键部分，沿用项目现有规范，并附启动方式、关键测试用例、验收步骤以及后续扩展点。",
+      en: "Provide a runnable, maintainable, review-ready engineering delivery. Explain the technical choices and constraints, then include the file structure, core components or APIs, type definitions, state management, and data flow. Implement responsive behavior, keyboard access, and accessibility, with loading, empty, error, retry, and success states. Address performance, security, edge cases, and graceful degradation. Do not omit critical code, follow the repository conventions, and include setup instructions, key tests, verification steps, and extension points."
+    },
+    admin: {
+      zh: "请输出一套可用于团队决策与执行的管理方案：明确统计口径、时间范围、目标与责任人，展示核心指标、趋势、分组对比和需要关注的异常。补充成员、角色、权限及审批动作，覆盖加载、空数据、失败、权限不足和审计记录等状态。给出风险分级、处理建议、通知机制、可导出结果以及后续跟进节奏；所有数字必须注明数据来源或标记为示例，不得伪造真实团队结论。",
+      en: "Create an operational plan that supports team decisions and action. Define metric formulas, date range, goals, and owners, then show key indicators, trends, cohort comparisons, and anomalies requiring attention. Include member, role, permission, and approval actions plus loading, empty, failure, insufficient-access, and audit-log states. Add risk severity, recommended actions, notifications, exportable results, and a follow-up cadence. Every number must cite its source or be clearly labeled as sample data; never fabricate conclusions about the real team."
+    }
+  };
+  var SUGGESTION_FORMAT_GUIDANCE = {
+    doc: {
+      zh: "文档请使用清晰标题、摘要、分节正文、关键假设、待确认项、结论与下一步行动，并让读者能快速扫描重点。",
+      en: "Structure the document with a clear title, executive summary, scannable sections, assumptions, open questions, decisions, and next actions."
+    },
+    deck: {
+      zh: "演示文稿请规划 10–12 页完整叙事，为每页给出标题、唯一核心观点、建议图表或视觉和简短演讲备注，结尾包含明确行动项。",
+      en: "Plan a coherent 10–12 slide narrative. Give every slide a title, one core message, a recommended chart or visual, and short speaker notes, ending with explicit actions."
+    },
+    flow: {
+      zh: "流程需要标明入口、完成条件、角色、关键节点、判断分支、表单校验、异常路径、返回与恢复机制，并说明每一步的界面反馈。",
+      en: "Map entry points, completion criteria, actors, key steps, decision branches, validation, exception paths, backtracking, recovery, and the UI feedback at every step."
+    },
+    anim: {
+      zh: "动效请提供故事板或状态序列、持续时间、延迟、缓动、循环规则和实现建议，同时给出低性能设备与减少动态效果偏好下的降级方案。",
+      en: "Specify a storyboard or state sequence, timing, delay, easing, loop rules, and implementation approach, plus fallbacks for low-power devices and reduced-motion preferences."
+    },
+    pitch: {
+      zh: "先确定一个鲜明概念、核心信息和视觉母题，再给出内容节奏、版式层级、字体与配色、关键视觉以及不同尺寸下的安全区和导出规格。",
+      en: "Establish one distinctive concept, key message, and visual motif, then define content rhythm, layout hierarchy, typography, color, hero visuals, safe areas, and export sizes."
+    },
+    land: {
+      zh: "页面需覆盖首屏价值主张、信任证据、功能或权益、使用方式、异议处理和最终转化区，并定义导航、表单、CTA 与移动端行为。",
+      en: "Cover the hero value proposition, trust proof, features or benefits, how it works, objection handling, and final conversion section, with navigation, form, CTA, and mobile behavior."
+    },
+    shop: {
+      zh: "电商内容需处理商品信息层级、媒体画廊、规格选择、价格与促销、库存配送、购买动作、评价和推荐，并覆盖缺货与选择错误状态。",
+      en: "Handle product-information hierarchy, media gallery, variants, price and promotion, stock and delivery, purchase actions, reviews, recommendations, and out-of-stock or invalid-selection states."
+    },
+    dash: {
+      zh: "看板需定义指标口径与更新时间，包含全局筛选、概览指标、趋势、分组对比、异常提示、明细下钻和导出，并注明无数据时的处理。",
+      en: "Define metric formulas and freshness, then include global filters, overview KPIs, trends, cohort comparisons, anomaly alerts, drill-down details, export, and no-data handling."
+    },
+    web: {
+      zh: "前端页面请拆分语义化区块与可复用组件，明确断点、内容溢出、导航、表单校验、焦点顺序和所有关键交互状态。",
+      en: "Break the page into semantic sections and reusable components, defining breakpoints, content overflow, navigation, form validation, focus order, and all important interaction states."
+    },
+    code: {
+      zh: "代码交付请定义组件 API、属性与事件、类型、依赖、使用示例和测试，说明边界条件，并避免只有静态外观而没有真实交互。",
+      en: "Define the component API, props and events, types, dependencies, usage examples, and tests. Explain edge cases and deliver real interactions rather than a static visual shell."
+    }
+  };
+
+  function buildSuggestionPrompt(tile, role, lang) {
+    var base = String(tile && tile.p || "").trim();
+    if (!/[.!?。！？]$/.test(base)) base += lang === "zh" ? "。" : ".";
+    var roleGuidance = SUGGESTION_PROMPT_GUIDANCE[role] || SUGGESTION_PROMPT_GUIDANCE.designer;
+    var formatGuidance = SUGGESTION_FORMAT_GUIDANCE[tile && tile.icon] || SUGGESTION_FORMAT_GUIDANCE.web;
+    return base + "\n\n" + (formatGuidance[lang] || formatGuidance.en) + "\n\n" + (roleGuidance[lang] || roleGuidance.en);
+  }
+  function suggestionSkillCandidates(role, index) {
+    var roleSkills = SUGGESTION_SKILL_IDS[role] || SUGGESTION_SKILL_IDS.designer;
+    return (roleSkills[index] || ["enhance-prompt"]).slice();
+  }
 
   /* 项目中心跟随注册角色变化；真实项目会与这些角色示例合并展示。 */
   var ROLE_PROJECTS = {
@@ -2193,6 +2420,17 @@
       productUpdates: true,
       autoMemory: true,
       personalizedMemory: true,
+      assistantSuggestions: true,
+      agentAutomation: true,
+      profileBio: "",
+      customModels: [
+        { id: "auto", linked: true },
+        { id: "claude-haiku-4-5", linked: false },
+        { id: "claude-opus-4-8", linked: false },
+        { id: "claude-opus-5.5", linked: false },
+        { id: "deepseek/deepseek-v4.1-flash:free", linked: false },
+        { id: "stealth/space-bunny-alpha", linked: false }
+      ],
       feedback: [],
       currentVersion: "",
       lastUpdateCheck: 0,
@@ -2209,6 +2447,12 @@
     if (!Array.isArray(base.transactions)) base.transactions = [];
     if (!Array.isArray(base.invites)) base.invites = [];
     if (!Array.isArray(base.feedback)) base.feedback = [];
+    if (!Array.isArray(base.customModels)) base.customModels = accountDefaults().customModels;
+    base.customModels = base.customModels.filter(function (model) {
+      return model && typeof model.id === "string" && model.id.trim();
+    }).map(function (model) {
+      return { id: model.id.trim().slice(0, 120), linked: !!model.linked };
+    }).slice(0, 30);
     if (!base.claimed || typeof base.claimed !== "object" || Array.isArray(base.claimed)) base.claimed = {};
     if (["paper", "mint", "violet"].indexOf(base.appearance) < 0) base.appearance = "paper";
     base.streak = Math.max(0, Number(base.streak) || 0);
@@ -2248,6 +2492,9 @@
     realDTpl: null,
     realSkills: null,
     realPlugins: null,
+    tileBatch: 0,
+    tileBatchRole: null,
+    suggestionSkillToken: 0,
     gen: { pid: null, name: "", events: [], status: "idle", runId: 0, timers: [], mod: {}, offline: false, welcome: false, abort: null, mediaTaskId: null },
     bnFilter: 0,
     realBrain: null,
@@ -2269,27 +2516,89 @@
     toast._t = setTimeout(function () { el.classList.remove("show"); }, 2800);
   }
 
+  function suggestionSkillLabel(index) {
+    var candidates = suggestionSkillCandidates(state.role, index);
+    var resolved = availableSuggestionSkill(candidates);
+    return resolved ? resolved.name : candidates[0];
+  }
+  function applySuggestion(tile, index) {
+    var prompt = $("prompt");
+    prompt.value = buildSuggestionPrompt(tile, state.role, state.lang);
+    var candidates = suggestionSkillCandidates(state.role, index);
+    var resolved = availableSuggestionSkill(candidates);
+    state.suggestionSkillToken += 1;
+    if (resolved) {
+      state.selSkill = resolved;
+      updateChips();
+      toast(t("examplesReady").replace("{skill}", resolved.name));
+    } else if (Array.isArray(state.realSkills) && state.realSkills.length) {
+      state.selSkill = null;
+      updateChips();
+      toast(t("examplesSkillUnavailable"));
+    } else {
+      state.selSkill = {
+        id: candidates[0],
+        name: candidates[0],
+        pending: true,
+        candidates: candidates,
+        token: state.suggestionSkillToken
+      };
+      updateChips();
+      toast(t("examplesSkillLoading"));
+      loadSkills();
+    }
+    prompt.focus();
+    prompt.setSelectionRange(prompt.value.length, prompt.value.length);
+  }
   function renderTiles() {
     var box = $("tiles");
-    box.innerHTML = "";
+    var refresh = $("refreshTiles");
     var tiles = ROLES[state.role][state.lang].tiles;
-    var hues = TILE_HUE;
-    tiles.forEach(function (tl, i) {
+    if (state.tileBatchRole !== state.role) {
+      state.tileBatchRole = state.role;
+      state.tileBatch = 0;
+    }
+    var batchCount = Math.max(1, Math.ceil(tiles.length / SUGGESTION_BATCH_SIZE));
+    state.tileBatch = ((state.tileBatch % batchCount) + batchCount) % batchCount;
+    var start = state.tileBatch * SUGGESTION_BATCH_SIZE;
+    var visible = tiles.slice(start, start + SUGGESTION_BATCH_SIZE);
+    box.innerHTML = "";
+    box.setAttribute("aria-label", t("examplesTitle"));
+    refresh.hidden = batchCount < 2;
+    refresh.setAttribute("aria-label", t("examplesRefresh"));
+    visible.forEach(function (tl, localIndex) {
+      var index = start + localIndex;
+      var candidates = suggestionSkillCandidates(state.role, index);
+      var skillLabel = suggestionSkillLabel(index);
       var b = document.createElement("button");
       b.type = "button";
       b.className = "tile";
-      var hue = hues[i % hues.length].split(",");
+      b.setAttribute("data-suggestion-index", String(index));
+      b.setAttribute("data-skill-id", candidates[0]);
+      b.setAttribute("aria-label", tl.t + " · " + skillLabel);
+      var hue = TILE_HUE[index % TILE_HUE.length].split(",");
       b.innerHTML =
-        '<span class="ic" style="background:linear-gradient(140deg,' + hue[0] + ',' + hue[1] + ');color:#2c3a28">' + TILE_SVG[tl.icon] + "</span>" +
-        '<span class="tx"><b>' + tl.t + "</b><span>" + tl.s + "</span></span>" +
+        '<span class="ic" style="background:linear-gradient(140deg,' + hue[0] + ',' + hue[1] + ');color:#2c3a28">' + (TILE_SVG[tl.icon] || TILE_SVG.web) + "</span>" +
+        '<span class="tx"><b>' + esc(tl.t) + '</b><span class="tile-type">' + esc(tl.s) + '</span><span class="tile-skill">' + esc(skillLabel) + "</span></span>" +
         '<span class="go"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6.5l5.5 5.5L13 17.5"/></svg></span>';
-      b.addEventListener("click", function () {
-        $("prompt").value = tl.p;
-        $("prompt").focus();
-      });
+      b.addEventListener("click", function () { applySuggestion(tl, index); });
       box.appendChild(b);
     });
   }
+  function refreshSuggestionBatch() {
+    var tiles = ROLES[state.role][state.lang].tiles;
+    var batchCount = Math.max(1, Math.ceil(tiles.length / SUGGESTION_BATCH_SIZE));
+    if (batchCount < 2) return;
+    state.tileBatch = (state.tileBatch + 1) % batchCount;
+    renderTiles();
+    var button = $("refreshTiles");
+    button.classList.remove("spinning");
+    void button.offsetWidth;
+    button.classList.add("spinning");
+    setTimeout(function () { button.classList.remove("spinning"); }, 360);
+    toast(t("examplesBatch"));
+  }
+  $("refreshTiles").addEventListener("click", refreshSuggestionBatch);
 
   function renderModelPicker() {
     var selected = null;
@@ -2371,14 +2680,20 @@
     btn.classList.add("loading");
     btn.disabled = true;
     btn.setAttribute("aria-busy", "true");
-    var readiness = state.agnesConfigured === true ? Promise.resolve(true) : refreshAgnesConfig();
-    readiness.then(function (configured) {
-      if (!configured) {
-        toast(t("modelRequired"));
-        setModelMenu(true);
+    ensureSuggestionSkillReady().then(function (skillReady) {
+      if (!skillReady) {
+        toast(t("examplesSkillUnavailable"));
         return false;
       }
-      return createRealProject(v);
+      var readiness = state.agnesConfigured === true ? Promise.resolve(true) : refreshAgnesConfig();
+      return readiness.then(function (configured) {
+        if (!configured) {
+          toast(t("modelRequired"));
+          setModelMenu(true);
+          return false;
+        }
+        return createRealProject(v);
+      });
     }).finally(function () {
       btn.classList.remove("loading");
       btn.disabled = false;
@@ -3146,7 +3461,7 @@
     if (!/https?:\/\//i.test(prompt)) base.pendingPrompt = prompt;
     var extras = {};
     if (state.selDS) extras.designSystemId = state.selDS.id;
-    if (state.selSkill) extras.skillId = state.selSkill.id;
+    if (state.selSkill && !state.selSkill.pending) extras.skillId = state.selSkill.id;
     if (state.selPlugin) { extras.pluginId = state.selPlugin.id; extras.pluginSource = state.selPlugin.source; }
     var attempt = function (body) { return apiSend("/api/projects", "POST", body); };
     var withExtras = Object.keys(extras).length > 0;
@@ -4458,10 +4773,53 @@
       grid.appendChild(card);
     });
   }
+  var skillsLoadPromise = null;
+  function availableSuggestionSkill(candidates) {
+    if (!Array.isArray(state.realSkills)) return null;
+    for (var i = 0; i < candidates.length; i++) {
+      var wanted = candidates[i];
+      var found = state.realSkills.filter(function (skill) { return skill && skill.id === wanted; })[0];
+      if (found) return { id: found.id, name: found.name || found.title || found.id };
+    }
+    return null;
+  }
+  function reconcilePendingSuggestionSkill() {
+    var pending = state.selSkill;
+    if (!pending || !pending.pending) return !!pending;
+    var resolved = availableSuggestionSkill(pending.candidates || [pending.id]);
+    if (state.selSkill !== pending) return !!(state.selSkill && !state.selSkill.pending);
+    state.selSkill = resolved;
+    updateChips();
+    if (resolved) toast(t("examplesReady").replace("{skill}", resolved.name));
+    else toast(t("examplesSkillUnavailable"));
+    return !!resolved;
+  }
   function loadSkills() {
-    apiGet("/api/skills").then(function (d) {
-      state.realSkills = (d && d.skills) || [];
-    }).catch(function () {});
+    if (Array.isArray(state.realSkills) && state.realSkills.length) return Promise.resolve(state.realSkills);
+    if (skillsLoadPromise) return skillsLoadPromise;
+    skillsLoadPromise = apiGet("/api/skills").then(function (d) {
+      state.realSkills = (d && Array.isArray(d.skills)) ? d.skills : [];
+      reconcilePendingSuggestionSkill();
+      renderTiles();
+      return state.realSkills;
+    }).catch(function () {
+      state.realSkills = null;
+      if (state.selSkill && state.selSkill.pending) {
+        state.selSkill = null;
+        updateChips();
+        toast(t("examplesSkillUnavailable"));
+      }
+      return null;
+    }).finally(function () {
+      skillsLoadPromise = null;
+    });
+    return skillsLoadPromise;
+  }
+  function ensureSuggestionSkillReady() {
+    if (!state.selSkill || !state.selSkill.pending) return Promise.resolve(true);
+    return loadSkills().then(function () {
+      return !!(state.selSkill && !state.selSkill.pending);
+    });
   }
   function loadPlugins() {
     apiGet("/api/plugins").then(function (d) {
@@ -4508,7 +4866,6 @@
     $("roleDesc").textContent = L.desc;
     $("prompt").placeholder = L.ph;
     document.querySelector(".composer").classList.toggle("delegate", state.role === "admin");
-    $("homeRecent").hidden = state.role !== "designer";
     $("homeReview").hidden = state.role !== "pm" || !state.realReviews || !state.realReviews.length;
     $("homeArtifacts").hidden = true;
     $("homeAdmin").hidden = state.role !== "admin" || !state.realStats;
@@ -4694,6 +5051,17 @@
   }
   function renderAccountSurface(action) {
     currentAccountSurface = action;
+    var dialog = $("accountDialog");
+    dialog.classList.toggle("settings-workspace", action === "settings");
+    if (action === "settings") {
+      dialog.setAttribute("aria-label", accountL("设置", "Settings"));
+      dialog.removeAttribute("aria-labelledby");
+      dialog.removeAttribute("aria-describedby");
+    } else {
+      dialog.removeAttribute("aria-label");
+      dialog.setAttribute("aria-labelledby", "accountSurfaceTitle");
+      dialog.setAttribute("aria-describedby", "accountSurfaceSub");
+    }
     var meta = accountSurfaceMeta(action);
     $("accountSurfaceTitle").textContent = meta[0];
     $("accountSurfaceSub").textContent = meta[1];
@@ -4714,6 +5082,7 @@
   }
   function openAccountSurface(action) {
     closeAccountMenu();
+    if (action === "settings" && currentAccountSurface !== "settings") settingsSection = "models";
     if (modelMenuIsOpen()) closeModelMenu();
     if ($("accountSurface").hidden) accountSurfaceReturnFocus = document.activeElement;
     if (action === "fuel" && currentAccountSurface !== "fuel") accountFuelSuccess = "";
@@ -4725,7 +5094,10 @@
     surface.hidden = false;
     document.body.classList.add("account-surface-open");
     renderAccountSurface(action);
-    requestAnimationFrame(function () { $("accountSurfaceClose").focus(); });
+    requestAnimationFrame(function () {
+      var focusTarget = action === "settings" ? $("settingsClose") : $("accountSurfaceClose");
+      if (focusTarget) focusTarget.focus();
+    });
     if (action === "updates") setTimeout(function () { checkAccountUpdates(false); }, 80);
   }
   function closeAccountSurface() {
@@ -4898,13 +5270,157 @@
     });
   }
 
+  var settingsSection = "models";
+  function settingsNavGroups() {
+    return [
+      { label: "", items: [
+        ["general", accountL("通用", "General")],
+        ["profile", accountL("个人主页", "Profile")],
+        ["shortcuts", accountL("快捷键", "Shortcuts")]
+      ] },
+      { label: accountL("功能", "Features"), items: [
+        ["personalization", accountL("个性化", "Personalization")],
+        ["memory", accountL("记忆与进化", "Memory & evolution")],
+        ["agents", accountL("智能体", "Agents")],
+        ["models", accountL("模型", "Models")],
+        ["assistant", accountL("助理设置", "Assistant settings")]
+      ] },
+      { label: accountL("数据与安全", "Data & security"), items: [
+        ["data", accountL("数据管理", "Data management")],
+        ["security", accountL("安全中心", "Security center")]
+      ] },
+      { label: "__footer__", items: [
+        ["about", accountL("关于", "About")],
+        ["help", accountL("获取帮助", "Get help")]
+      ] }
+    ];
+  }
+  function settingsNavIcon(id) {
+    var paths = {
+      general: '<circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"/>',
+      profile: '<circle cx="12" cy="8" r="3.2"/><path d="M5.5 20c.8-4 2.9-5.8 6.5-5.8s5.7 1.8 6.5 5.8"/>',
+      shortcuts: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 10h.01M11 10h.01M15 10h2M7 14h5M14 14h3"/>',
+      personalization: '<path d="M12 3a9 9 0 0 0 0 18c1.4 0 2-.9 2-1.8 0-1.5-1.7-1.8-1.7-3.1 0-1 .8-1.7 2-1.7h1.2A5.5 5.5 0 0 0 21 9c0-3.5-4-6-9-6Z"/><circle cx="7.5" cy="11" r=".8" fill="currentColor"/><circle cx="10" cy="7.5" r=".8" fill="currentColor"/>',
+      memory: '<path d="M8.2 16c-1.2-1.1-1.9-2.6-1.9-4.4a5.7 5.7 0 1 1 11.4 0c0 1.8-.7 3.3-1.9 4.4-.7.6-1 1.2-1 2h-5.6c0-.8-.3-1.4-1-2Z"/><path d="M9.5 21h5"/>',
+      agents: '<circle cx="12" cy="12" r="8"/><path d="M9 10h.01M15 10h.01M8.5 15c2.3 1.6 4.7 1.6 7 0M12 2V.8"/>',
+      models: '<path d="m12 3 2.2 5L19 10l-4.8 2L12 17l-2.2-5L5 10l4.8-2L12 3Z"/><circle cx="18.5" cy="18.5" r="2.5"/>',
+      assistant: '<path d="M7 5h10a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3h-4l-4 3v-3H7a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3Z"/><path d="M9 11h.01M12 11h.01M15 11h.01"/>',
+      data: '<ellipse cx="12" cy="5.5" rx="7" ry="3"/><path d="M5 5.5v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6M5 11.5v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/>',
+      security: '<path d="M12 3 5 5.8v5c0 4.4 2.9 8 7 9.2 4.1-1.2 7-4.8 7-9.2v-5L12 3Z"/><path d="m9 11.7 2 2 4-4"/>',
+      about: '<circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/>',
+      help: '<circle cx="12" cy="12" r="9"/><path d="M9.7 9a2.4 2.4 0 1 1 3.5 2.2c-.8.4-1.2.9-1.2 1.8M12 17h.01"/>'
+    };
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (paths[id] || paths.general) + '</svg>';
+  }
+  function settingsPanelHead(title, description, action) {
+    return '<header class="settings-panel-head"><div><h2>' + esc(title) + '</h2><p>' + description + '</p></div>' + (action || "") + '</header>';
+  }
   function renderAccountSettings() {
+    var groups = settingsNavGroups();
+    var nav = groups.map(function (group) {
+      var items = group.items.map(function (item) {
+        return '<button type="button" class="settings-nav-button' + (settingsSection === item[0] ? ' active' : '') + '" data-settings-section="' + item[0] + '"' + (settingsSection === item[0] ? ' aria-current="page"' : '') + '>' + settingsNavIcon(item[0]) + '<span>' + esc(item[1]) + '</span></button>';
+      }).join("");
+      if (group.label === "__footer__") return '<div class="settings-nav-divider"></div><div class="settings-nav-group"><div class="settings-nav">' + items + '</div></div>';
+      return '<div class="settings-nav-group">' + (group.label ? '<span class="settings-nav-label">' + esc(group.label) + '</span>' : '') + '<div class="settings-nav">' + items + '</div></div>';
+    }).join("");
+    $("accountSurfaceBody").innerHTML = '<div class="settings-shell"><aside class="settings-sidebar"><div class="settings-window-row"><button type="button" class="settings-close-dot" id="settingsClose" aria-label="' + accountEscapeAttr(accountL("关闭设置", "Close settings")) + '"></button></div><div class="settings-sidebar-title">' + accountL("设置", "Settings") + '</div><div class="settings-nav-groups">' + nav + '</div></aside><main class="settings-main" id="settingsContent"></main></div>';
+    $("settingsClose").addEventListener("click", closeAccountSurface);
+    Array.prototype.forEach.call($("accountSurfaceBody").querySelectorAll("[data-settings-section]"), function (button) {
+      button.addEventListener("click", function () {
+        settingsSection = button.getAttribute("data-settings-section") || "models";
+        renderAccountSettings();
+        requestAnimationFrame(function () {
+          var selected = $("accountSurfaceBody").querySelector('[data-settings-section="' + settingsSection + '"]');
+          if (selected) selected.focus();
+        });
+      });
+    });
+    renderSettingsSection(settingsSection);
+  }
+  function renderSettingsSection(section) {
+    if (section === "general") renderSettingsGeneral();
+    else if (section === "profile") renderSettingsProfile();
+    else if (section === "shortcuts") renderSettingsShortcuts();
+    else if (section === "personalization") renderSettingsPersonalization();
+    else if (section === "memory") renderSettingsMemory();
+    else if (section === "agents") renderSettingsAgents();
+    else if (section === "assistant") renderSettingsAssistant();
+    else if (section === "data") renderSettingsData();
+    else if (section === "security") renderSettingsSecurity();
+    else if (section === "about") renderSettingsAbout();
+    else if (section === "help") renderSettingsHelp();
+    else renderSettingsModels();
+  }
+  function renderSettingsModels() {
+    var models = state.account.customModels || [];
+    var rows = models.map(function (model, index) {
+      return '<div class="settings-model-row"><span class="settings-model-spark">✧</span><div class="settings-model-name">' + esc(model.id) + '<small>' + accountL("自定义", "Custom") + '</small></div><div class="settings-model-actions"><button type="button" class="settings-icon-button" data-model-edit="' + index + '" title="' + accountEscapeAttr(accountL("编辑", "Edit")) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m4 20 4.3-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z"/><path d="m13.8 7.2 3 3"/></svg></button><button type="button" class="settings-icon-button' + (model.linked ? ' is-linked' : '') + '" data-model-link="' + index + '" title="' + accountEscapeAttr(accountL("复制标识并切换链接", "Copy ID and toggle link")) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 13a4 4 0 0 0 5.7.1l2.2-2.2a4 4 0 0 0-5.7-5.7L11 6.4"/><path d="M14 11a4 4 0 0 0-5.7-.1L6.1 13a4 4 0 0 0 5.7 5.7l1.2-1.2"/></svg></button><button type="button" class="settings-icon-button danger" data-model-delete="' + index + '" title="' + accountEscapeAttr(accountL("删除", "Delete")) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></button></div></div>';
+    }).join("");
+    if (!rows) rows = '<div class="acc-note" style="margin:12px">' + accountL("还没有自定义模型，点击右上角添加。", "No custom models yet. Add one from the top right.") + '</div>';
+    $("settingsContent").innerHTML = '<section class="settings-panel">' + settingsPanelHead(accountL("自定义模型", "Custom models"), accountL("模型添加后会自动保存到当前本地工作区的 ", "Models are saved automatically to the current local workspace at ") + '<span class="settings-path">~/.workbuddy-ai/models.json</span>', '<button type="button" class="acc-btn" id="settingsAddModel">' + accountL("添加模型", "Add model") + '</button>') + '<div class="settings-card"><form class="settings-add-model" id="settingsAddModelForm" hidden><input id="settingsAddModelName" maxlength="120" autocomplete="off" placeholder="provider/model-name"><button type="submit" class="acc-btn primary">' + accountL("保存", "Save") + '</button><button type="button" class="acc-btn" id="settingsAddModelCancel">' + accountL("取消", "Cancel") + '</button></form><div class="settings-model-list">' + rows + '</div></div></section>';
+    $("settingsAddModel").addEventListener("click", function () {
+      $("settingsAddModelForm").hidden = false;
+      $("settingsAddModelName").focus();
+    });
+    $("settingsAddModelCancel").addEventListener("click", function () { $("settingsAddModelForm").hidden = true; });
+    $("settingsAddModelForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var id = $("settingsAddModelName").value.trim().replace(/\s+/g, "-").slice(0, 120);
+      if (!id) { $("settingsAddModelName").focus(); return; }
+      if (models.some(function (model) { return model.id.toLowerCase() === id.toLowerCase(); })) {
+        toast(accountL("该模型已经存在", "That model already exists"));
+        return;
+      }
+      state.account.customModels.push({ id: id, linked: false });
+      saveAccountState();
+      renderSettingsModels();
+      toast(accountL("模型已添加到本地配置", "Model added to local configuration"));
+    });
+    Array.prototype.forEach.call($("settingsContent").querySelectorAll("[data-model-edit]"), function (button) {
+      button.addEventListener("click", function () {
+        var index = Number(button.getAttribute("data-model-edit"));
+        var model = state.account.customModels[index];
+        if (!model) return;
+        var next = window.prompt(accountL("编辑模型标识", "Edit model ID"), model.id);
+        if (next == null) return;
+        next = next.trim().replace(/\s+/g, "-").slice(0, 120);
+        if (!next) return;
+        model.id = next;
+        saveAccountState();
+        renderSettingsModels();
+        toast(accountL("模型已更新", "Model updated"));
+      });
+    });
+    Array.prototype.forEach.call($("settingsContent").querySelectorAll("[data-model-link]"), function (button) {
+      button.addEventListener("click", function () {
+        var model = state.account.customModels[Number(button.getAttribute("data-model-link"))];
+        if (!model) return;
+        model.linked = !model.linked;
+        saveAccountState();
+        copyText(model.id, function () { toast(accountL("模型标识已复制", "Model ID copied")); });
+        renderSettingsModels();
+      });
+    });
+    Array.prototype.forEach.call($("settingsContent").querySelectorAll("[data-model-delete]"), function (button) {
+      button.addEventListener("click", function () {
+        var index = Number(button.getAttribute("data-model-delete"));
+        var model = state.account.customModels[index];
+        if (!model || !window.confirm(accountL("删除模型“" + model.id + "”？", "Delete model “" + model.id + "”?"))) return;
+        state.account.customModels.splice(index, 1);
+        saveAccountState();
+        renderSettingsModels();
+        toast(accountL("模型已删除", "Model deleted"));
+      });
+    });
+  }
+  function renderSettingsGeneral() {
     var roleOptions = ["designer", "pm", "dev", "admin"].map(function (id) {
       return '<option value="' + id + '"' + (state.role === id ? ' selected' : '') + '>' + esc(ROLES[id][state.lang].name) + '</option>';
     }).join("");
-    var modelNames = { "agnes-3.0-flash": "agnes-3.0-flash", "agnes-image-2.5-flash": "agnes-image-2.5-flash", "agnes-video-2.5-flash": "agnes-video-2.5-flash" };
-    var modelOptions = Object.keys(modelNames).map(function (id) { return '<option value="' + id + '"' + (state.model === id ? ' selected' : '') + '>' + modelNames[id] + '</option>'; }).join("");
-    $("accountSurfaceBody").innerHTML = '<form class="acc-stack" id="accountSettingsForm"><div class="acc-grid"><label class="acc-field"><span>' + accountL("显示名称", "Display name") + '</span><input id="accountSettingsName" maxlength="60" value="' + accountEscapeAttr(state.userName || accountL("用户", "User")) + '"></label><label class="acc-field"><span>' + accountL("注册角色", "Workspace role") + '</span><select id="accountSettingsRole">' + roleOptions + '</select></label><label class="acc-field"><span>' + accountL("界面语言", "Language") + '</span><select id="accountSettingsLang"><option value="zh"' + (state.lang === "zh" ? ' selected' : '') + '>简体中文</option><option value="en"' + (state.lang === "en" ? ' selected' : '') + '>English</option></select></label><label class="acc-field"><span>' + accountL("默认大模型", "Default model") + '</span><select id="accountSettingsModel">' + modelOptions + '</select></label></div><div class="acc-card"><div class="acc-setting"><span><b>' + accountL("任务完成通知", "Completion notifications") + '</b><small>' + accountL("生成或导出结束时提醒我", "Notify me when generations or exports finish") + '</small></span><label class="acc-switch"><input type="checkbox" id="accountSettingsNotify"' + (state.account.notifications ? ' checked' : '') + '><i></i></label></div><div class="acc-setting"><span><b>' + accountL("产品更新通知", "Product update notifications") + '</b><small>' + accountL("收到版本更新与新功能提示", "Receive release and feature announcements") + '</small></span><label class="acc-switch"><input type="checkbox" id="accountSettingsProduct"' + (state.account.productUpdates ? ' checked' : '') + '><i></i></label></div></div><div class="acc-actions" style="justify-content:flex-end"><button type="button" class="acc-btn" id="accountSettingsReset">' + accountL("恢复默认", "Reset defaults") + '</button><button type="submit" class="acc-btn primary">' + accountL("保存设置", "Save settings") + '</button></div></form>';
+    var models = ["agnes-3.0-flash", "agnes-image-2.5-flash", "agnes-video-2.5-flash"];
+    var modelOptions = models.map(function (id) { return '<option value="' + id + '"' + (state.model === id ? ' selected' : '') + '>' + id + '</option>'; }).join("");
+    $("settingsContent").innerHTML = '<section class="settings-panel">' + settingsPanelHead(accountL("通用", "General"), accountL("管理工作区角色、语言、默认模型与通知。", "Manage workspace role, language, default model, and notifications.")) + '<form class="acc-stack" id="accountSettingsForm"><div class="settings-card" style="padding:16px"><div class="acc-grid"><label class="acc-field"><span>' + accountL("显示名称", "Display name") + '</span><input id="accountSettingsName" maxlength="60" value="' + accountEscapeAttr(state.userName || accountL("用户", "User")) + '"></label><label class="acc-field"><span>' + accountL("注册角色", "Workspace role") + '</span><select id="accountSettingsRole">' + roleOptions + '</select></label><label class="acc-field"><span>' + accountL("界面语言", "Language") + '</span><select id="accountSettingsLang"><option value="zh"' + (state.lang === "zh" ? ' selected' : '') + '>简体中文</option><option value="en"' + (state.lang === "en" ? ' selected' : '') + '>English</option></select></label><label class="acc-field"><span>' + accountL("默认大模型", "Default model") + '</span><select id="accountSettingsModel">' + modelOptions + '</select></label></div></div><div class="settings-card" style="padding:5px 16px"><div class="acc-setting"><span><b>' + accountL("任务完成通知", "Completion notifications") + '</b><small>' + accountL("生成或导出结束时提醒我", "Notify me when generations or exports finish") + '</small></span><label class="acc-switch"><input type="checkbox" id="accountSettingsNotify"' + (state.account.notifications ? ' checked' : '') + '><i></i></label></div><div class="acc-setting"><span><b>' + accountL("产品更新通知", "Product update notifications") + '</b><small>' + accountL("收到版本更新与新功能提示", "Receive release and feature announcements") + '</small></span><label class="acc-switch"><input type="checkbox" id="accountSettingsProduct"' + (state.account.productUpdates ? ' checked' : '') + '><i></i></label></div></div><div class="acc-actions" style="justify-content:flex-end"><button type="button" class="acc-btn" id="accountSettingsReset">' + accountL("恢复默认", "Reset defaults") + '</button><button type="submit" class="acc-btn primary">' + accountL("保存设置", "Save settings") + '</button></div></form></section>';
     $("accountSettingsForm").addEventListener("submit", function (e) {
       e.preventDefault();
       var name = $("accountSettingsName").value.trim().replace(/\s+/g, " ").slice(0, 60);
@@ -4914,23 +5430,17 @@
       var roleChanged = nextRole !== state.role;
       var nextLang = $("accountSettingsLang").value === "en" ? "en" : "zh";
       var nextModel = $("accountSettingsModel").value;
-      var nextNotifications = $("accountSettingsNotify").checked;
-      var nextProductUpdates = $("accountSettingsProduct").checked;
       var submit = e.currentTarget.querySelector('button[type="submit"]');
-      if (submit) { submit.disabled = true; submit.setAttribute("aria-busy", "true"); }
+      if (submit) submit.disabled = true;
       var writes = [apiSend("/api/db/profile", "PUT", { displayName: name })];
       if (roleChanged) writes.push(apiSend("/api/db/role", "PUT", { role: nextRole }));
       Promise.all(writes).then(function () {
         state.userName = name;
         state.lang = nextLang;
         state.model = nextModel;
-        state.account.notifications = nextNotifications;
-        state.account.productUpdates = nextProductUpdates;
-        try {
-          localStorage.setItem("db-user-name", name);
-          localStorage.setItem("db-lang", state.lang);
-          localStorage.setItem("db-model", state.model);
-        } catch (err) {}
+        state.account.notifications = $("accountSettingsNotify").checked;
+        state.account.productUpdates = $("accountSettingsProduct").checked;
+        try { localStorage.setItem("db-user-name", name); localStorage.setItem("db-lang", state.lang); localStorage.setItem("db-model", state.model); } catch (err) {}
         if (roleChanged) {
           state.role = nextRole;
           state.starterInitialized = true;
@@ -4942,11 +5452,11 @@
         saveAccountState();
         applyLang();
         renderModelPicker();
-        renderAccountSurface("settings");
+        renderAccountSettings();
         if (roleChanged) loadProjects();
         toast(accountL("设置已保存到本地服务", "Settings saved to the local service"));
       }).catch(function (error) {
-        if (submit) { submit.disabled = false; submit.removeAttribute("aria-busy"); }
+        if (submit) submit.disabled = false;
         toast(accountL("设置保存失败，请重试", "Could not save settings. Try again") + (error && error.message ? " · " + cleanErrorMessage(error.message) : ""));
       });
     });
@@ -4957,9 +5467,80 @@
       saveAccountState();
       try { localStorage.setItem("db-model", state.model); } catch (e) {}
       renderModelPicker();
-      renderAccountSettings();
+      renderSettingsGeneral();
       toast(accountL("已恢复默认偏好", "Default preferences restored"));
     });
+  }
+  function renderSettingsProfile() {
+    $("settingsContent").innerHTML = '<section class="settings-panel">' + settingsPanelHead(accountL("个人主页", "Profile"), accountL("管理其他成员在工作区中看到的身份信息。", "Manage the identity other workspace members see.")) + '<form class="acc-stack" id="settingsProfileForm"><div class="settings-card" style="padding:16px"><div class="acc-grid"><label class="acc-field"><span>' + accountL("显示名称", "Display name") + '</span><input id="settingsProfileName" maxlength="60" value="' + accountEscapeAttr(state.userName || accountL("用户", "User")) + '"></label><label class="acc-field"><span>' + accountL("当前角色", "Current role") + '</span><input value="' + accountEscapeAttr(ROLES[state.role][state.lang].name) + '" disabled></label></div><label class="acc-field" style="margin-top:12px"><span>' + accountL("个人简介", "Bio") + '</span><textarea id="settingsProfileBio" maxlength="240" placeholder="' + accountEscapeAttr(accountL("介绍你的工作方向…", "Describe what you work on…")) + '">' + esc(state.account.profileBio || "") + '</textarea></label></div><div class="acc-actions" style="justify-content:flex-end"><button type="submit" class="acc-btn primary">' + accountL("保存个人主页", "Save profile") + '</button></div></form></section>';
+    $("settingsProfileForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var name = $("settingsProfileName").value.trim().replace(/\s+/g, " ").slice(0, 60);
+      if (!name) return $("settingsProfileName").focus();
+      apiSend("/api/db/profile", "PUT", { displayName: name }).then(function () {
+        state.userName = name;
+        state.account.profileBio = $("settingsProfileBio").value.trim().slice(0, 240);
+        try { localStorage.setItem("db-user-name", name); } catch (err) {}
+        saveAccountState();
+        applyRole();
+        toast(accountL("个人主页已保存", "Profile saved"));
+      }).catch(function () { toast(accountL("个人主页保存失败", "Could not save profile")); });
+    });
+  }
+  function renderSettingsShortcuts() {
+    var shortcuts = state.lang === "zh" ? [["发送提示词", "⌘/Ctrl ↵"], ["打开设置", "⌘/Ctrl ,"], ["关闭当前面板", "Esc"], ["在面板中移动", "Tab"], ["界面语言", "设置 → 通用"]] : [["Send prompt", "⌘/Ctrl ↵"], ["Open settings", "⌘/Ctrl ,"], ["Close current panel", "Esc"], ["Move through controls", "Tab"], ["Switch language", "Settings → General"]];
+    var rows = shortcuts.map(function (item) { return '<div class="settings-shortcut"><span>' + esc(item[0]) + '</span><kbd>' + esc(item[1]) + '</kbd></div>'; }).join("");
+    $("settingsContent").innerHTML = '<section class="settings-panel">' + settingsPanelHead(accountL("快捷键", "Shortcuts"), accountL("快速操作 DesignBuddy 工作台。", "Move quickly through the DesignBuddy workspace."), '<button type="button" class="acc-btn" id="settingsCopyShortcuts">' + accountL("复制清单", "Copy list") + '</button>') + '<div class="settings-card">' + rows + '</div></section>';
+    $("settingsCopyShortcuts").addEventListener("click", function () { copyText(shortcuts.map(function (item) { return item.join(": "); }).join("\n"), function () { toast(accountL("快捷键清单已复制", "Shortcut list copied")); }); });
+  }
+  function renderSettingsPersonalization() {
+    var themes = [
+      { id: "paper", name: accountL("暖纸", "Warm Paper"), bg: "linear-gradient(135deg,#f7f3ec,#efe9dd)", rail: "#dfe7d8" },
+      { id: "mint", name: accountL("薄荷", "Mint"), bg: "linear-gradient(135deg,#edf7f1,#dfeee5)", rail: "#bfe4cf" },
+      { id: "violet", name: accountL("暮紫", "Violet Dusk"), bg: "linear-gradient(135deg,#f2eef8,#e7dff2)", rail: "#cfc2e3" }
+    ];
+    var cards = themes.map(function (theme) { return '<button type="button" class="acc-theme' + (state.account.appearance === theme.id ? ' selected' : '') + '" data-settings-theme="' + theme.id + '"><div class="acc-theme-preview" style="background:' + theme.bg + '"><i style="background:' + theme.rail + '"></i><span></span></div><b>' + esc(theme.name) + '</b></button>'; }).join("");
+    $("settingsContent").innerHTML = '<section class="settings-panel">' + settingsPanelHead(accountL("个性化", "Personalization"), accountL("调整设置中心与工作台的主题和动态效果。", "Tune the theme and motion of Settings and the Studio.")) + '<div class="acc-stack"><div class="acc-theme-grid">' + cards + '</div><div class="settings-card" style="padding:5px 16px"><div class="acc-setting"><span><b>' + accountL("减少动态效果", "Reduce motion") + '</b><small>' + accountL("停用漂浮光标、光晕和大部分过渡动画", "Disable ambient motion and most transitions") + '</small></span><label class="acc-switch"><input type="checkbox" id="settingsReduceMotion"' + (state.account.reduceEffects ? ' checked' : '') + '><i></i></label></div></div></div></section>';
+    Array.prototype.forEach.call($("settingsContent").querySelectorAll("[data-settings-theme]"), function (button) { button.addEventListener("click", function () { state.account.appearance = button.getAttribute("data-settings-theme"); saveAccountState(); renderSettingsPersonalization(); toast(accountL("外观已更新", "Appearance updated")); }); });
+    $("settingsReduceMotion").addEventListener("change", function () { state.account.reduceEffects = this.checked; saveAccountState(); renderSettingsPersonalization(); });
+  }
+  function renderSettingsMemory() {
+    $("settingsContent").innerHTML = '<section class="settings-panel">' + settingsPanelHead(accountL("记忆与进化", "Memory & evolution"), accountL("控制 Buddy 如何沉淀上下文并持续了解你。", "Control how Buddy remembers context and learns your preferences.")) + '<div class="settings-card" style="padding:5px 16px"><div class="acc-setting"><span><b>' + accountL("自动沉淀创作记忆", "Capture creative memories") + '</b><small>' + accountL("从项目对话中提取灵感、决策和素材", "Extract ideas, decisions, and materials from projects") + '</small></span><label class="acc-switch"><input type="checkbox" id="settingsMemoryAuto"' + (state.account.autoMemory ? ' checked' : '') + '><i></i></label></div><div class="acc-setting"><span><b>' + accountL("个性化生成", "Personalized generations") + '</b><small>' + accountL("生成时使用你的排版、配色与内容偏好", "Use your layout, color, and content preferences") + '</small></span><label class="acc-switch"><input type="checkbox" id="settingsMemoryPersonal"' + (state.account.personalizedMemory ? ' checked' : '') + '><i></i></label></div></div></section>';
+    $("settingsMemoryAuto").addEventListener("change", function () { state.account.autoMemory = this.checked; saveAccountState(); });
+    $("settingsMemoryPersonal").addEventListener("change", function () { state.account.personalizedMemory = this.checked; saveAccountState(); });
+  }
+  function renderSettingsAgents() {
+    var roles = ["designer", "pm", "dev", "admin"].map(function (role) { return '<div class="acc-list-row"><span class="acc-list-ic">' + ROLE_ICONS[role] + '</span><span><b>' + esc(ROLES[role][state.lang].name) + '</b><small>' + esc(ROLES[role][state.lang].desc) + '</small></span><span class="amount plus">' + accountL("可用", "Ready") + '</span></div>'; }).join("");
+    $("settingsContent").innerHTML = '<section class="settings-panel">' + settingsPanelHead(accountL("智能体", "Agents"), accountL("管理 Buddy 在不同角色工作区中的自动协作能力。", "Manage Buddy automation across role-based workspaces.")) + '<div class="acc-stack"><div class="settings-card" style="padding:5px 16px"><div class="acc-setting"><span><b>' + accountL("自动执行下一步", "Automatic next actions") + '</b><small>' + accountL("允许智能体在明确任务中继续执行低风险步骤", "Allow agents to continue low-risk steps in explicit tasks") + '</small></span><label class="acc-switch"><input type="checkbox" id="settingsAgentAutomation"' + (state.account.agentAutomation ? ' checked' : '') + '><i></i></label></div></div><div class="acc-list">' + roles + '</div></div></section>';
+    $("settingsAgentAutomation").addEventListener("change", function () { state.account.agentAutomation = this.checked; saveAccountState(); toast(accountL("智能体设置已保存", "Agent setting saved")); });
+  }
+  function renderSettingsAssistant() {
+    $("settingsContent").innerHTML = '<section class="settings-panel">' + settingsPanelHead(accountL("助理设置", "Assistant settings"), accountL("调整 Buddy 的主动建议与通知方式。", "Tune Buddy suggestions and notifications.")) + '<div class="settings-card" style="padding:5px 16px"><div class="acc-setting"><span><b>' + accountL("主动提供下一步建议", "Suggest next steps") + '</b><small>' + accountL("根据当前项目显示相关操作建议", "Show relevant actions for the current project") + '</small></span><label class="acc-switch"><input type="checkbox" id="settingsAssistantSuggestions"' + (state.account.assistantSuggestions ? ' checked' : '') + '><i></i></label></div><div class="acc-setting"><span><b>' + accountL("任务完成通知", "Completion notifications") + '</b><small>' + accountL("生成和导出结束时提醒我", "Notify me when generations and exports finish") + '</small></span><label class="acc-switch"><input type="checkbox" id="settingsAssistantNotify"' + (state.account.notifications ? ' checked' : '') + '><i></i></label></div></div></section>';
+    $("settingsAssistantSuggestions").addEventListener("change", function () { state.account.assistantSuggestions = this.checked; saveAccountState(); });
+    $("settingsAssistantNotify").addEventListener("change", function () { state.account.notifications = this.checked; saveAccountState(); });
+  }
+  function renderSettingsData() {
+    $("settingsContent").innerHTML = '<section class="settings-panel">' + settingsPanelHead(accountL("数据管理", "Data management"), accountL("导出本地偏好，或恢复账户面板的默认状态。", "Export local preferences or reset account-panel data.")) + '<div class="settings-simple-grid"><div class="acc-card"><span class="acc-eyebrow">EXPORT</span><h3 style="margin-top:8px">' + accountL("导出设置", "Export settings") + '</h3><p>' + accountL("下载包含模型、主题与助理偏好的 JSON 文件。", "Download models, theme, and assistant preferences as JSON.") + '</p><button type="button" class="acc-btn" id="settingsExportData" style="margin-top:13px">' + accountL("导出 JSON", "Export JSON") + '</button></div><div class="acc-card"><span class="acc-eyebrow">RESET</span><h3 style="margin-top:8px">' + accountL("恢复本地偏好", "Reset local preferences") + '</h3><p>' + accountL("不会删除项目、模板或生成记录。", "Projects, templates, and generation history are not deleted.") + '</p><button type="button" class="acc-btn danger" id="settingsResetData" style="margin-top:13px">' + accountL("恢复默认", "Reset defaults") + '</button></div></div></section>';
+    $("settingsExportData").addEventListener("click", function () {
+      var content = JSON.stringify({ exportedAt: new Date().toISOString(), userName: state.userName, role: state.role, language: state.lang, account: state.account }, null, 2);
+      try { var blob = new Blob([content], { type: "application/json" }); var url = URL.createObjectURL(blob), link = document.createElement("a"); link.href = url; link.download = "designbuddy-settings.json"; document.body.appendChild(link); link.click(); link.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 1000); toast(accountL("设置文件已导出", "Settings exported")); } catch (e) { copyText(content, function () { toast(accountL("设置 JSON 已复制", "Settings JSON copied")); }); }
+    });
+    $("settingsResetData").addEventListener("click", function () { if (!window.confirm(accountL("恢复账户与界面偏好的默认值？", "Reset account and interface preferences?"))) return; state.account = accountDefaults(); saveAccountState(); applyAccountAppearance(); renderAccountSettings(); toast(accountL("本地偏好已恢复默认", "Local preferences reset")); });
+  }
+  function renderSettingsSecurity() {
+    $("settingsContent").innerHTML = '<section class="settings-panel">' + settingsPanelHead(accountL("安全中心", "Security center"), accountL("查看当前本地会话并管理登录状态。", "Review the current local session and manage sign-in state.")) + '<div class="acc-stack"><div class="settings-card"><div class="acc-list-row"><span class="settings-status-dot"></span><span><b>' + accountL("本地工作区会话", "Local workspace session") + '</b><small>' + esc(state.userName || accountL("当前用户", "Current user")) + ' · ' + esc(ROLES[state.role][state.lang].name) + '</small></span><span class="amount plus">' + accountL("当前", "Current") + '</span></div></div><div class="acc-actions"><button type="button" class="acc-btn" id="settingsSecurityRefresh">' + accountL("重新检查会话", "Recheck session") + '</button><button type="button" class="acc-btn danger" id="settingsSecuritySignout">' + accountL("退出当前账号", "Sign out") + '</button></div></div></section>';
+    $("settingsSecurityRefresh").addEventListener("click", function () { apiGet("/api/health").then(function () { toast(accountL("本地会话连接正常", "Local session is healthy")); }).catch(function () { toast(accountL("当前无法连接本地服务", "Local service is unavailable")); }); });
+    $("settingsSecuritySignout").addEventListener("click", function () { if (window.confirm(accountL("确定退出当前账号吗？", "Sign out of this account?"))) signOut(); });
+  }
+  function renderSettingsAbout() {
+    $("settingsContent").innerHTML = '<section class="settings-panel">' + settingsPanelHead(accountL("关于", "About"), accountL("本地优先的 AI 设计工作台。", "A local-first AI design workspace.")) + '<div class="acc-hero"><small>OPENDESIGN</small><h3>DesignBuddy</h3><p id="settingsAboutVersion">' + accountL("正在读取当前版本…", "Loading the current version…") + '</p></div></section>';
+    Promise.all([apiGet("/api/version").catch(function () { return null; }), apiGet("/api/health").catch(function () { return null; })]).then(function (result) { var node = $("settingsAboutVersion"); if (!node) return; var versionPayload = result[0] && result[0].version; var version = typeof versionPayload === "string" ? versionPayload : versionPayload && versionPayload.version; node.textContent = "v" + String(version || (result[1] && result[1].version) || "—") + " · " + accountL("本地服务", "Local service"); });
+  }
+  function renderSettingsHelp() {
+    var questions = state.lang === "zh" ? [["如何切换工作角色？", "在“通用”中选择注册角色并保存。"], ["自定义模型保存在哪里？", "模型列表保存在当前本地工作区配置中。"], ["项目会被设置重置删除吗？", "不会，数据管理中的恢复默认仅影响账户与界面偏好。"]] : [["How do I switch roles?", "Choose a workspace role under General and save."], ["Where are custom models stored?", "The model list is stored in the current local workspace configuration."], ["Does resetting settings delete projects?", "No. Reset defaults only affects account and interface preferences."]];
+    var details = questions.map(function (item, index) { return '<details' + (index === 0 ? ' open' : '') + '><summary>' + esc(item[0]) + '</summary><p>' + esc(item[1]) + '</p></details>'; }).join("");
+    $("settingsContent").innerHTML = '<section class="settings-panel">' + settingsPanelHead(accountL("获取帮助", "Get help"), accountL("查看常见问题或复制诊断信息。", "Review common questions or copy diagnostics."), '<button type="button" class="acc-btn" id="settingsCopyDiagnostics">' + accountL("复制诊断信息", "Copy diagnostics") + '</button>') + '<div class="settings-card acc-faq" style="padding:4px 16px">' + details + '</div></section>';
+    $("settingsCopyDiagnostics").addEventListener("click", function () { Promise.all([apiGet("/api/version").catch(function () { return null; }), apiGet("/api/health").catch(function () { return null; })]).then(function (result) { copyText(JSON.stringify({ at: new Date().toISOString(), role: state.role, language: state.lang, model: state.model, version: result[0], health: result[1] }, null, 2), function () { toast(accountL("诊断信息已复制", "Diagnostics copied")); }); }); });
   }
 
   function renderAccountMemory() {
@@ -5130,7 +5711,9 @@
       $("roleSw").focus();
     }
     if (e.key === "Tab" && !$("accountSurface").hidden) {
-      var focusable = $("accountSurface").querySelectorAll('button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])');
+      var focusable = Array.prototype.filter.call($("accountSurface").querySelectorAll('button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])'), function (node) {
+        return node.getClientRects().length > 0;
+      });
       if (!focusable.length) return;
       var first = focusable[0], last = focusable[focusable.length - 1];
       if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }

@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { JSDOM } from 'jsdom';
@@ -77,6 +77,127 @@ describe('DesignBuddy Studio reliability contracts', () => {
     expect(menu).toContain('k: "plugin"');
     expect(menu).not.toMatch(/k: "(?:attach|link|figma|conn|mcp)"/);
     expect(studio).toContain('<div class="cp-dir" hidden>');
+  });
+
+  it('rotates role-aware suggestions, expands every prompt, and binds a real skill', () => {
+    expect(studio).toContain('id="refreshTiles"');
+    expect(studio).toContain('data-i18n="examplesRefresh">换一批</span>');
+    expect(studio.indexOf('data-i18n="examplesTitle"')).toBeLessThan(studio.indexOf('id="refreshTiles"'));
+
+    const suggestionsStart = studio.indexOf('var SUGGESTION_BATCH_SIZE');
+    const suggestionsEnd = studio.indexOf('/* 项目中心跟随注册角色变化', suggestionsStart);
+    expect(suggestionsStart).toBeGreaterThan(-1);
+    expect(suggestionsEnd).toBeGreaterThan(suggestionsStart);
+    const suggestionContract = Function(
+      `${studio.slice(suggestionsStart, suggestionsEnd)}; return { SUGGESTION_BATCH_SIZE, SUGGESTION_SKILL_IDS, buildSuggestionPrompt };`,
+    )() as {
+      SUGGESTION_BATCH_SIZE: number;
+      SUGGESTION_SKILL_IDS: Record<string, string[][]>;
+      buildSuggestionPrompt: (tile: { p: string }, role: string, lang: string) => string;
+    };
+    expect(suggestionContract.SUGGESTION_BATCH_SIZE).toBe(6);
+
+    const rolesStart = studio.indexOf('var ROLES = {');
+    const roleData = Function(
+      'ROLE_ICONS',
+      `${studio.slice(rolesStart, suggestionsStart)}; return ROLES;`,
+    )({ designer: '', pm: '', dev: '', admin: '' }) as Record<
+      string,
+      Record<'zh' | 'en', { tiles: Array<{ p: string }> }>
+    >;
+    const roleNames = ['designer', 'pm', 'dev', 'admin'];
+    roleNames.forEach((roleName) => {
+      const skillRows = suggestionContract.SUGGESTION_SKILL_IDS[roleName]!;
+      expect(skillRows).toHaveLength(12);
+      skillRows.flat().forEach((skillId) => {
+        expect(existsSync(resolve(repoRoot, 'skills', skillId, 'SKILL.md')), skillId).toBe(true);
+      });
+      (['zh', 'en'] as const).forEach((lang) => {
+        const tiles = roleData[roleName]![lang].tiles;
+        expect(tiles).toHaveLength(skillRows.length);
+        tiles.forEach((tile) => {
+          const prompt = suggestionContract.buildSuggestionPrompt(tile, roleName, lang);
+          expect(prompt.startsWith(tile.p)).toBe(true);
+          expect(prompt).toContain('\n\n');
+          expect(prompt.length).toBeGreaterThan(tile.p.length + 150);
+        });
+      });
+    });
+
+    const apply = functionBody(studio, 'applySuggestion', 'renderTiles');
+    expect(apply).toContain('prompt.value = buildSuggestionPrompt(tile, state.role, state.lang)');
+    expect(apply).toContain('state.selSkill = resolved');
+    expect(apply).toContain('pending: true');
+    expect(apply).toContain('updateChips()');
+    const render = functionBody(studio, 'renderTiles', 'refreshSuggestionBatch');
+    expect(render).toContain('tiles.slice(start, start + SUGGESTION_BATCH_SIZE)');
+    expect(render).toContain('data-skill-id');
+    expect(render).toContain('applySuggestion(tl, index)');
+    const refresh = functionBody(studio, 'refreshSuggestionBatch', 'renderModelPicker');
+    expect(refresh).toContain('state.tileBatch = (state.tileBatch + 1) % batchCount');
+    expect(refresh).toContain('renderTiles()');
+
+    const loadSkills = functionBody(studio, 'loadSkills', 'ensureSuggestionSkillReady');
+    expect(loadSkills).toContain('apiGet("/api/skills")');
+    expect(loadSkills).toContain('reconcilePendingSuggestionSkill()');
+    const readiness = functionBody(studio, 'ensureSuggestionSkillReady', 'loadPlugins');
+    expect(readiness).toContain('!state.selSkill.pending');
+    const submit = functionBody(studio, 'submitPrompt', 'esc');
+    expect(submit.indexOf('ensureSuggestionSkillReady()')).toBeLessThan(submit.indexOf('createRealProject(v)'));
+    const create = functionBody(studio, 'createRealProject', 'currentTemplateRoute');
+    expect(create).toContain('extras.skillId = state.selSkill.id');
+  });
+
+  it('removes the home recent-project block and opens the reference-style settings workspace', () => {
+    expect(studio).not.toContain('id="homeRecent"');
+    expect(studio).not.toContain('id="homeProjGrid"');
+    expect(studio).toContain('.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));');
+    const applyRole = functionBody(studio, 'applyRole', 'accountMenuIsOpen');
+    expect(applyRole).not.toContain('homeRecent');
+
+    expect(studio).toContain('id="accountDialog"');
+    expect(studio).toContain('.account-dialog.settings-workspace');
+    expect(studio).toContain('grid-template-columns: 220px minmax(0,1fr)');
+    const openSettings = functionBody(studio, 'openAccountSurface', 'closeAccountSurface');
+    expect(openSettings).toContain('settingsSection = "models"');
+    const surface = functionBody(studio, 'renderAccountSurface', 'openAccountSurface');
+    expect(surface).toContain('dialog.classList.toggle("settings-workspace", action === "settings")');
+
+    const navSource = functionBody(studio, 'settingsNavGroups', 'settingsNavIcon');
+    const groups = Function(
+      'accountL',
+      `${navSource}; return settingsNavGroups();`,
+    )((zh: string) => zh) as Array<{ items: string[][] }>;
+    expect(groups.flatMap((group) => group.items.map((item) => item[0]))).toEqual([
+      'general', 'profile', 'shortcuts', 'personalization', 'memory', 'agents',
+      'models', 'assistant', 'data', 'security', 'about', 'help',
+    ]);
+    const sections = functionBody(studio, 'renderSettingsSection', 'renderSettingsModels');
+    [
+      'renderSettingsGeneral', 'renderSettingsProfile', 'renderSettingsShortcuts',
+      'renderSettingsPersonalization', 'renderSettingsMemory', 'renderSettingsAgents',
+      'renderSettingsAssistant', 'renderSettingsData', 'renderSettingsSecurity',
+      'renderSettingsAbout', 'renderSettingsHelp', 'renderSettingsModels',
+    ].forEach((renderer) => expect(sections).toContain(renderer));
+
+    const defaultsSource = functionBody(studio, 'accountDefaults', 'readAccountState');
+    const defaults = Function(`${defaultsSource}; return accountDefaults();`)() as {
+      customModels: Array<{ id: string }>;
+    };
+    expect(defaults.customModels.map((model) => model.id)).toEqual([
+      'auto',
+      'claude-haiku-4-5',
+      'claude-opus-4-8',
+      'claude-opus-5.5',
+      'deepseek/deepseek-v4.1-flash:free',
+      'stealth/space-bunny-alpha',
+    ]);
+    const models = functionBody(studio, 'renderSettingsModels', 'renderSettingsGeneral');
+    expect(models).toContain('id="settingsAddModel"');
+    expect(models).toContain('data-model-edit');
+    expect(models).toContain('data-model-link');
+    expect(models).toContain('data-model-delete');
+    expect(models).toContain('saveAccountState()');
   });
 
   it('scopes persisted projects to the active role and initializes all roles', () => {
