@@ -1171,6 +1171,7 @@
   }
 </style>
 <link rel="stylesheet" href="/studio-templates.css" />
+<link rel="stylesheet" href="/studio-experts.css" />
 </head>
 <body>
   <div class="scene" aria-hidden="true">
@@ -1467,6 +1468,75 @@
           </div>
         </section>
 
+        <section class="view" id="view-experts">
+          <div class="expert-hub" id="expertHub">
+            <header class="expert-hub-top">
+              <nav class="expert-primary-tabs" aria-label="Expert resources" role="tablist">
+                <button type="button" class="expert-primary-tab active" data-expert-mode="experts" role="tab" aria-selected="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="9" r="3"/><path d="M3.5 19c.7-3.2 2.5-4.8 5.5-4.8 2.3 0 4 1 5 2.9M15.5 5.5l.8 1.8 1.9.3-1.4 1.3.4 1.9-1.7-.9-1.7.9.3-1.9-1.3-1.3 1.9-.3.8-1.8Z"/></svg>
+                  <span>专家</span>
+                </button>
+                <button type="button" class="expert-primary-tab" data-expert-mode="skills" role="tab" aria-selected="false">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 19.5 18 6l-3-3L1.5 16.5v3h3ZM12 6l3 3M16.5 13.5l2 2M15 18l2 2M7 4l2 2"/></svg>
+                  <span>技能</span>
+                </button>
+                <button type="button" class="expert-primary-tab" data-expert-mode="connectors" role="tab" aria-selected="false">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9.5 14.5 5-5M7.2 17.8l-1 1a3.5 3.5 0 0 1-5-5l4-4a3.5 3.5 0 0 1 5 0M16.8 6.2l1-1a3.5 3.5 0 0 1 5 5l-4 4a3.5 3.5 0 0 1-5 0"/></svg>
+                  <span>连接器</span>
+                </button>
+              </nav>
+              <div class="expert-hub-actions">
+                <label class="expert-search">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.3"/><path d="m16 16 4.4 4.4"/></svg>
+                  <input id="expertSearch" type="search" autocomplete="off" placeholder="搜索专家" />
+                </label>
+                <button type="button" class="expert-mine" id="expertMine" data-action="mine" aria-pressed="false">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="9" r="3"/><path d="M3.5 19c.7-3.2 2.5-4.8 5.5-4.8 2.5 0 4.3 1.1 5.3 3.2M17 8v6M14 11h6"/></svg>
+                  <span class="expert-mine-label" id="expertMineLabel">我的专家</span>
+                  <span class="expert-mine-count" id="expertMineCount">0</span>
+                </button>
+              </div>
+            </header>
+
+            <section class="expert-spotlight-shell" id="expertSpotlightShell" aria-label="Expert categories">
+              <div class="expert-spotlight-viewport" id="expertSpotlightViewport"><div class="expert-spotlights" id="expertSpotlights"></div></div>
+              <button type="button" class="expert-spotlight-prev" data-action="spot-prev" aria-label="Previous categories"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg></button>
+              <button type="button" class="expert-spotlight-next" data-action="spot-next" aria-label="Next categories"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg></button>
+            </section>
+
+            <section class="expert-catalog" aria-live="polite">
+              <header class="expert-catalog-head" id="expertCatalogHead">
+                <nav class="expert-catalog-tabs" id="expertCatalogTabs" aria-label="Expert catalog">
+                  <button type="button" class="expert-catalog-tab active" data-expert-catalog="people"><span id="expertPeopleLabel">专家</span></button>
+                  <button type="button" class="expert-catalog-tab" data-expert-catalog="teams"><span id="expertTeamsLabel">专家团</span></button>
+                </nav>
+                <div class="expert-context-copy" id="expertContextCopy" hidden></div>
+                <span class="expert-results-count" id="expertResultsCount">0</span>
+                <div class="expert-sort" id="expertSort" role="group" aria-label="Sort experts">
+                  <button type="button" class="active" data-expert-sort="smart" id="expertSortSmart">综合</button>
+                  <button type="button" data-expert-sort="hot" id="expertSortHot">最热</button>
+                  <button type="button" data-expert-sort="new" id="expertSortNew">最新</button>
+                </div>
+              </header>
+              <nav class="expert-categories" id="expertCategories" aria-label="Expert category filters"></nav>
+              <div class="expert-grid" id="expertGrid"></div>
+            </section>
+
+            <div class="expert-detail-overlay" id="expertDetail" role="dialog" aria-modal="true" aria-hidden="true" hidden>
+              <section class="expert-detail-panel" aria-labelledby="expertDetailTitle">
+                <header class="expert-detail-head">
+                  <button type="button" class="expert-detail-close" id="expertDetailClose" data-action="close-detail" aria-label="关闭专家详情"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+                </header>
+                <div class="expert-detail-body" id="expertDetailBody"></div>
+                <footer class="expert-detail-foot">
+                  <button type="button" class="expert-detail-save" id="expertDetailSave" data-action="detail-save" aria-label="收藏专家">☆</button>
+                  <button type="button" class="expert-detail-use" id="expertDetailUse" data-action="use">立即召唤</button>
+                </footer>
+              </section>
+            </div>
+          </div>
+        </section>
+
         <section class="view" id="view-templates">
           <div class="page-head">
             <div>
@@ -1652,13 +1722,14 @@
   </div>
 
 <script src="/studio-templates.js"></script>
+<script src="/studio-experts.js"></script>
 <script>
 (function () {
   "use strict";
   var I18N = {
     zh: {
       title: "DesignBuddy · 工作台",
-      navHome: "首页", navProjects: "项目", navTemplates: "模板", navSystems: "设计系统", navCommunity: "示例画廊", navBrain: "第二大脑",
+      navHome: "首页", navProjects: "项目", navExperts: "专家", navTemplates: "模板", navSystems: "设计系统", navCommunity: "示例画廊", navBrain: "第二大脑",
       accountTrial: "体验版", accountUpgrade: "升级套餐", accountPoints: "积分余额", accountFuel: "Buddy加油站",
       accountInvite: "去邀约", accountInviteMeta: "最高得 650 积分/人", accountGrowth: "成长计划", accountGrowthMeta: "连登抽取 Buddy 周边",
       accountSettings: "设置", accountMemory: "记忆与进化", accountAppearance: "外观", accountAppearanceMeta: "外观上新",
@@ -1887,7 +1958,7 @@
     },
     en: {
       title: "DesignBuddy · Studio",
-      navHome: "Home", navProjects: "Projects", navTemplates: "Templates", navSystems: "Design systems", navCommunity: "Example gallery", navBrain: "Second brain",
+      navHome: "Home", navProjects: "Projects", navExperts: "Experts", navTemplates: "Templates", navSystems: "Design systems", navCommunity: "Example gallery", navBrain: "Second brain",
       accountTrial: "Trial", accountUpgrade: "Upgrade", accountPoints: "Points", accountFuel: "Buddy Fuel Station",
       accountInvite: "Invite friends", accountInviteMeta: "Earn up to 650 points each", accountGrowth: "Growth plan", accountGrowthMeta: "Sign in to win Buddy gifts",
       accountSettings: "Settings", accountMemory: "Memory & evolution", accountAppearance: "Appearance", accountAppearanceMeta: "New looks",
@@ -2141,6 +2212,7 @@
     home: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 10.5 12 3.5l8.5 7v9a1.5 1.5 0 0 1-1.5 1.5h-4v-6h-6v6H5a1.5 1.5 0 0 1-1.5-1.5z"/></svg>',
     projects: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="6.5" width="12.5" height="12.5" rx="3"/><path d="M8 6.5V5a1.5 1.5 0 0 1 1.5-1.5H19A1.5 1.5 0 0 1 20.5 5v9.5A1.5 1.5 0 0 1 19 16h-1.5"/></svg>',
     brain: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6.5" r="2.5"/><circle cx="17.5" cy="6" r="2.2"/><circle cx="12" cy="13" r="2.8"/><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="18.5" r="2.5"/><path d="M8.2 7.6 9.8 11M15.4 7.3 14 10.6M10.4 15.2l-2.6 2.4M13.8 15.4l2.6 1.9"/></svg>',
+    experts: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="9" r="3"/><path d="M3 19c.8-3.2 2.6-4.8 5.5-4.8 2.2 0 3.9.9 4.9 2.7M17.2 4.2l.9 2 2.2.3-1.6 1.5.4 2.2-1.9-1-2 1 .4-2.2L14 6.5l2.2-.3 1-2Z"/></svg>',
     templates: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><path d="M17 13.8v6.4M13.8 17h6.4"/></svg>',
     systems: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="7" cy="7" r="3.2"/><circle cx="17" cy="7" r="3.2" fill="currentColor" stroke="none" opacity="0.35"/><circle cx="7" cy="17" r="3.2" fill="currentColor" stroke="none" opacity="0.35"/><circle cx="17" cy="17" r="3.2" fill="currentColor" stroke="none" opacity="0.7"/></svg>',
     community: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="9" cy="8.5" r="3.4"/><path d="M2.8 20c1.4-3 3.6-4.4 6.2-4.4s4.8 1.4 6.2 4.4"/><circle cx="17" cy="9.5" r="2.6"/><path d="M15.5 15.7c2.5.2 4.5 1.5 5.7 4.3"/></svg>',
@@ -2149,13 +2221,13 @@
     members: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="9" cy="8.5" r="3.4"/><path d="M2.8 20c1.4-3 3.6-4.4 6.2-4.4s4.8 1.4 6.2 4.4"/><path d="M16 4.9a3.4 3.4 0 0 1 0 7.2M17.8 15.9c1.7.6 2.9 1.9 3.5 4.1"/></svg>',
     approvals: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 5.5v5c0 4.4 3 8.4 7 9.5 4-1.1 7-5.1 7-9.5v-5L12 3z"/><path d="m9 11.5 2 2 4-4"/></svg>'
   };
-  var NAV_KEYS = { home: "navHome", projects: "navProjects", templates: "navTemplates", systems: "navSystems", community: "navCommunity", brain: "navBrain", review: "navReview", artifacts: "navArtifacts", members: "navMembers", approvals: "navApprovals" };
+  var NAV_KEYS = { home: "navHome", projects: "navProjects", experts: "navExperts", templates: "navTemplates", systems: "navSystems", community: "navCommunity", brain: "navBrain", review: "navReview", artifacts: "navArtifacts", members: "navMembers", approvals: "navApprovals" };
   var ROLES = {
     designer: {
       grad: "#d9f2c9,#8fd483", icon: ROLE_ICONS.designer,
       zh: {
         name: "设计师", desc: "视觉与原型创作",
-        nav: ["home", "projects", "templates", "systems", "community", "brain"],
+        nav: ["home", "projects", "experts", "templates", "systems", "community", "brain"],
         greetPre: "让我们创建", subPre: "好的作品，从这里开始 —— ", subSig: "和你的 AI 设计搭子一起。",
         ph: "描述你想生成的内容…",
         modes: [
@@ -2188,7 +2260,7 @@
       },
       en: {
         name: "Designer", desc: "Visuals & prototypes",
-        nav: ["home", "projects", "templates", "systems", "community", "brain"],
+        nav: ["home", "projects", "experts", "templates", "systems", "community", "brain"],
         greetPre: "Let's create a ", subPre: "Great work starts here — ", subSig: "with your AI design buddy.",
         ph: "Describe what you want to make…",
         modes: [
@@ -2224,7 +2296,7 @@
       grad: "#d6ecff,#7cb8ee", icon: ROLE_ICONS.pm,
       zh: {
         name: "产品经理", desc: "需求与团队评审",
-        nav: ["home", "review", "projects", "templates", "community"],
+        nav: ["home", "review", "projects", "experts", "templates", "community"],
         greetPre: "今天，让我们对齐", greetWord: "需求", subPre: "把想法变成清晰的简报 —— ", subSig: "Buddy 起草，你来拍板。",
         ph: "描述你想推进的需求，或让 Buddy 起草一份简报…",
         modes: [
@@ -2257,7 +2329,7 @@
       },
       en: {
         name: "Product Manager", desc: "Briefs & team reviews",
-        nav: ["home", "review", "projects", "templates", "community"],
+        nav: ["home", "review", "projects", "experts", "templates", "community"],
         greetPre: "Today, let's align on ", greetWord: "requirements", subPre: "Turn ideas into crisp briefs — ", subSig: "Buddy drafts, you decide.",
         ph: "Describe a requirement, or ask Buddy to draft a brief…",
         modes: [
@@ -2293,7 +2365,7 @@
       grad: "#eadcff,#b39aec", icon: ROLE_ICONS.dev,
       zh: {
         name: "开发者", desc: "代码与交付",
-        nav: ["home", "artifacts", "projects", "templates", "community"],
+        nav: ["home", "artifacts", "projects", "experts", "templates", "community"],
         greetPre: "让我们把设计变成", greetWord: "代码", subPre: "设计稿自动变成前端资产 —— ", subSig: "你只管 review 与合并。",
         ph: "描述你想交付的页面，Buddy 会生成前端代码…",
         modes: [
@@ -2326,7 +2398,7 @@
       },
       en: {
         name: "Developer", desc: "Code & delivery",
-        nav: ["home", "artifacts", "projects", "templates", "community"],
+        nav: ["home", "artifacts", "projects", "experts", "templates", "community"],
         greetPre: "Let's turn designs into ", greetWord: "code", subPre: "Designs become frontend assets — ", subSig: "you review and merge.",
         ph: "Describe the page to deliver — Buddy generates frontend code…",
         modes: [
@@ -2362,7 +2434,7 @@
       grad: "#ffe6cf,#f5b183", icon: ROLE_ICONS.admin,
       zh: {
         name: "管理者", desc: "团队与用量",
-        nav: ["home", "members", "approvals", "projects", "community"],
+        nav: ["home", "members", "approvals", "projects", "experts", "community"],
         greetPre: "团队的一切，", greetWord: "尽在掌握", subPre: "用量、成员与审批 —— ", subSig: "一个页面全部搞定。",
         ph: "想了解团队的什么情况？问 Buddy…",
         modes: [
@@ -2395,7 +2467,7 @@
       },
       en: {
         name: "Admin", desc: "Team & usage",
-        nav: ["home", "members", "approvals", "projects", "community"],
+        nav: ["home", "members", "approvals", "projects", "experts", "community"],
         greetPre: "Your whole team, ", greetWord: "at a glance", subPre: "Usage, members and approvals — ", subSig: "all in one place.",
         ph: "Ask Buddy about your team's activity…",
         modes: [
@@ -3076,6 +3148,9 @@
     try { localStorage.setItem("db-lang", state.lang); } catch (e) {}
     if (window.StudioWorkbench && typeof window.StudioWorkbench.onLanguageChange === "function") {
       window.StudioWorkbench.onLanguageChange();
+    }
+    if (window.StudioExperts && typeof window.StudioExperts.setLanguage === "function") {
+      window.StudioExperts.setLanguage(state.lang);
     }
   }
 
@@ -4335,7 +4410,7 @@
   /* Unbacked artifact/member/approval demos stay out of routing until their
      daemon contracts exist. Keeping their dormant markup avoids pretending a
      local toast is a persisted workflow. */
-  var VIEWS = ["home", "projects", "gen", "brain", "templates", "systems", "community", "review"];
+  var VIEWS = ["home", "projects", "gen", "brain", "experts", "templates", "systems", "community", "review"];
   function currentTemplateRoute() {
     var hash = (location.hash || "").replace(/^#\/?/, "");
     var match = /^templates\/([^/]+)(?:\/(\d+))?$/.exec(hash);
@@ -4365,11 +4440,13 @@
     if (inner) {
       inner.classList.toggle("wide", v === "gen");
       inner.classList.toggle("project-wall", v === "projects");
+      inner.classList.toggle("expert-wall", v === "experts");
       inner.classList.toggle("generation-wall", v === "gen");
     }
     var main = document.querySelector(".main");
     if (main) {
       main.classList.toggle("projects-wall", v === "projects");
+      main.classList.toggle("experts-wall", v === "experts");
       main.classList.toggle("generation-workspace", v === "gen");
     }
     var navV = v === "gen" ? "projects" : v;
