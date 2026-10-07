@@ -55,7 +55,8 @@ describe('Agnes text integration', () => {
     const body = JSON.parse(String(init?.body));
     expect(body.model).toBe(AGNES_TEXT_MODEL);
     expect(body.stream).toBe(false);
-    expect(body.messages[1].content).toContain('Create a polished landing page');
+    expect(body.messages[1].content).toContain('Existing project label (context only; never substitute it for the current request): Launch site.');
+    expect(body.messages[1].content).toContain('Current user request (authoritative):\nCreate a polished landing page');
     expect(result.html).toContain('Content-Security-Policy');
     expect(result.html).toContain('Hello Agnes');
     expect(result.html).not.toContain('<script');
@@ -96,6 +97,33 @@ describe('Agnes text integration', () => {
       status: 502,
     } satisfies Partial<AgnesIntegrationError>);
     expect(error?.message).not.toMatch(/DOCTYPE|Cloud gateway/i);
+  });
+
+  it('redacts HTML even when a JSON error envelope contains the gateway document', async () => {
+    const fetchMock = vi.fn(async () => new Response(
+      JSON.stringify({
+        error: {
+          message: '<!DOCTYPE html><!--[if lt IE 7]><html class="oldie"><body>Cloudflare Ray ID secret</body></html>',
+        },
+      }),
+      { status: 502, headers: { 'content-type': 'application/json' } },
+    ));
+
+    let error: AgnesIntegrationError | null = null;
+    try {
+      await generateAgnesDesign({
+        prompt: 'Create a page',
+        fetchImpl: fetchMock as typeof fetch,
+      });
+    } catch (reason) {
+      error = reason as AgnesIntegrationError;
+    }
+    expect(error).toMatchObject({
+      code: 'AGNES_UPSTREAM_ERROR',
+      status: 502,
+    } satisfies Partial<AgnesIntegrationError>);
+    expect(error?.message).toContain('HTML error page');
+    expect(error?.message).not.toMatch(/DOCTYPE|oldie|Cloudflare Ray ID secret/i);
   });
 
   it('reports outbound TLS failures as actionable Agnes network errors', async () => {

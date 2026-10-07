@@ -84,6 +84,8 @@ async function readResponseTextLimited(response: Response): Promise<string> {
   return new TextDecoder().decode(bytes);
 }
 
+const HTML_GATEWAY_RESPONSE_PATTERN = /(?:<!doctype\s+html\b|<html\b|<head\b|<body\b|<!--\s*\[if\s+[^\]]*\bie\b|&lt;!doctype\s+html\b|&lt;html\b|cf-error-details|cloudflare\s+ray\s+id)/i;
+
 function sanitizedUpstreamMessage(payload: unknown, apiKey: string): string {
   let value = '';
   if (payload && typeof payload === 'object') {
@@ -98,6 +100,9 @@ function sanitizedUpstreamMessage(payload: unknown, apiKey: string): string {
   }
   if (!value) return 'The Agnes service rejected the request.';
   if (apiKey) value = value.split(apiKey).join('[redacted]');
+  if (HTML_GATEWAY_RESPONSE_PATTERN.test(value)) {
+    return 'The Agnes upstream gateway returned an HTML error page instead of JSON.';
+  }
   return value.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300)
     || 'The Agnes service rejected the request.';
 }
@@ -270,9 +275,11 @@ export async function generateAgnesDesign(options: {
   const context = [
     `User language: ${options.locale === 'en' ? 'English' : 'Simplified Chinese'}.`,
     options.mode ? `Artifact type: ${options.mode.slice(0, 80)}.` : '',
-    options.projectName ? `Project name: ${options.projectName.slice(0, 120)}.` : '',
-    `Request:\n${prompt}`,
-    previous ? `Revise the following existing artifact instead of starting over. Preserve good decisions while applying the request:\n${previous}` : '',
+    options.projectName
+      ? `Existing project label (context only; never substitute it for the current request): ${options.projectName.slice(0, 120)}.`
+      : '',
+    `Current user request (authoritative):\n${prompt}`,
+    previous ? `Revise the following existing artifact instead of starting over. Preserve good decisions while applying the current request:\n${previous}` : '',
   ].filter(Boolean).join('\n\n');
   const result = await callAgnesChat({
     messages: [

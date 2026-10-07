@@ -93,6 +93,45 @@ export interface DesignBuddyGenSummary {
   updatedAt: number;
 }
 
+const DESIGNBUDDY_HTML_ERROR_PATTERN = /(?:<!doctype\s+html\b|<html\b|<head\b|<body\b|<!--\s*\[if\s+[^\]]*\bie\b|&lt;!doctype\s+html\b|&lt;html\b|cf-error-details|cloudflare\s+ray\s+id)/i;
+const DESIGNBUDDY_HTML_ERROR_MESSAGE = 'The upstream gateway returned an HTML error page instead of a model response.';
+
+/**
+ * Old Studio builds persisted reverse-proxy HTML in failed generation events.
+ * Keep artifact HTML untouched, but normalize error-only payloads both when
+ * writing and replaying so legacy conversations can never surface that page.
+ */
+function sanitizeDesignBuddyGenPayload(
+  type: DesignBuddyGenEventType,
+  payload: Record<string, any> | null,
+): Record<string, any> | null {
+  if (!payload) return payload;
+  const isError = (type === 'ai' && payload.error === true)
+    || (type === 'stop' && payload.reason === 'error');
+  if (!isError) return payload;
+  const candidates = [payload.text, payload.message, payload.detail, payload.error]
+    .filter((value): value is string => typeof value === 'string');
+  if (!candidates.some((value) => DESIGNBUDDY_HTML_ERROR_PATTERN.test(value))) return payload;
+
+  const safe: Record<string, any> = {
+    ...payload,
+    code: 'HTML_GATEWAY_RESPONSE',
+    status: Number(payload.status) || 502,
+    message: DESIGNBUDDY_HTML_ERROR_MESSAGE,
+  };
+  for (const field of ['text', 'message', 'detail', 'error'] as const) {
+    const candidate = payload[field];
+    if (typeof candidate === 'string' && DESIGNBUDDY_HTML_ERROR_PATTERN.test(candidate)) {
+      safe[field] = DESIGNBUDDY_HTML_ERROR_MESSAGE;
+    }
+  }
+  if (type === 'ai') {
+    safe.error = true;
+    safe.text = `Agnes generation failed: ${DESIGNBUDDY_HTML_ERROR_MESSAGE}`;
+  }
+  return safe;
+}
+
 export interface DesignBuddyStarterStatus {
   role: DesignBuddyRole;
   initialized: boolean;
@@ -795,17 +834,19 @@ export function setDesignBuddyReviewStatus(
 }
 
 function genEventFromRow(row: DbRow): DesignBuddyGenEvent {
+  const type = row.type as DesignBuddyGenEventType;
   let payload: Record<string, any> | null = null;
   try {
     payload = row.payload == null ? null : (JSON.parse(String(row.payload)) as Record<string, any>);
   } catch {
     payload = null;
   }
+  payload = sanitizeDesignBuddyGenPayload(type, payload);
   return {
     id: String(row.id),
     projectId: String(row.project_id),
     seq: Number(row.seq),
-    type: row.type as DesignBuddyGenEventType,
+    type,
     payload,
     createdAt: Number(row.created_at),
   };
@@ -888,6 +929,7 @@ export function appendDesignBuddyGenEvent(
 ): DesignBuddyGenEvent {
   const now = Date.now();
   const id = randomUUID();
+  const safePayload = sanitizeDesignBuddyGenPayload(type, payload);
   const lastSeq = (
     db
       .prepare(`SELECT COALESCE(MAX(seq), 0) AS s FROM designbuddy_gen WHERE project_id = ?`)
@@ -897,9 +939,9 @@ export function appendDesignBuddyGenEvent(
   db.prepare(
     `INSERT INTO designbuddy_gen (id, project_id, seq, type, payload, created_at)
      VALUES (?, ?, ?, ?, ?, ?)`,
-  ).run(id, projectId, seq, type, JSON.stringify(payload ?? null), now);
+  ).run(id, projectId, seq, type, JSON.stringify(safePayload ?? null), now);
   db.prepare(`UPDATE projects SET updated_at = ? WHERE id = ?`).run(now, projectId);
-  return { id, projectId, seq, type, payload, createdAt: now };
+  return { id, projectId, seq, type, payload: safePayload, createdAt: now };
 }
 
 export function designBuddyStats(db: SqliteDb): DesignBuddyStats {

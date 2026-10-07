@@ -564,6 +564,54 @@ describe('DesignBuddy real starter projects', () => {
     db.close();
   });
 
+  it('redacts legacy HTML gateway pages from persisted generation errors without touching artifacts', () => {
+    const db = fixtureDb();
+    const initialized = initializeDesignBuddyStarterProjects(db, 'designer');
+    const projectId = initialized.projectIds[0]!;
+    const gatewayHtml = '<!DOCTYPE html><!--[if lt IE 7]><html class="oldie"><body>Cloudflare Ray ID private</body></html>';
+
+    const written = appendDesignBuddyGenEvent(db, projectId, 'ai', {
+      text: `Agnes 生成失败：${gatewayHtml}`,
+      error: true,
+    });
+    const stored = db.prepare('SELECT payload FROM designbuddy_gen WHERE id = ?').get(written.id) as {
+      payload: string;
+    };
+    expect(stored.payload).not.toMatch(/DOCTYPE|oldie|Cloudflare Ray ID private/i);
+    expect(JSON.parse(stored.payload)).toMatchObject({
+      code: 'HTML_GATEWAY_RESPONSE',
+      error: true,
+    });
+
+    // Simulate an event persisted by a pre-fix Studio build; replay must still redact it.
+    db.prepare('UPDATE designbuddy_gen SET payload = ? WHERE id = ?').run(JSON.stringify({
+      text: `Agnes 生成失败：${gatewayHtml}`,
+      error: true,
+    }), written.id);
+    const replayed = listDesignBuddyGenEvents(db, projectId).find((event) => event.id === written.id);
+    expect(JSON.stringify(replayed?.payload)).not.toMatch(/DOCTYPE|oldie|Cloudflare Ray ID private/i);
+    expect(replayed?.payload).toMatchObject({
+      code: 'HTML_GATEWAY_RESPONSE',
+      message: expect.stringContaining('HTML error page'),
+    });
+
+    const stopped = appendDesignBuddyGenEvent(db, projectId, 'stop', {
+      reason: 'error',
+      message: gatewayHtml,
+    });
+    expect(JSON.stringify(stopped.payload)).not.toMatch(/DOCTYPE|oldie|Cloudflare Ray ID private/i);
+    expect(stopped.payload).toMatchObject({ code: 'HTML_GATEWAY_RESPONSE' });
+
+    const artifact = appendDesignBuddyGenEvent(db, projectId, 'artifact', {
+      name: 'Safe generated page',
+      version: 2,
+      kind: 'landing',
+      html: '<!doctype html><html><body>real artifact</body></html>',
+    });
+    expect(artifact.payload?.html).toContain('<!doctype html>');
+    db.close();
+  });
+
   it('derives live status from appended generation events', () => {
     const db = fixtureDb();
     const initialized = initializeDesignBuddyStarterProjects(db, 'designer');

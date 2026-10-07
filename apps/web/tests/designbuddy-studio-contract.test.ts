@@ -9,6 +9,7 @@ const repoRoot = resolve(__dirname, '../../..');
 const login = readFileSync(resolve(publicRoot, 'login.html'), 'utf8');
 const role = readFileSync(resolve(publicRoot, 'role.html'), 'utf8');
 const studio = readFileSync(resolve(publicRoot, 'studio.html'), 'utf8');
+const workbench = readFileSync(resolve(publicRoot, 'studio-workbench.js'), 'utf8');
 const templates = readFileSync(resolve(publicRoot, 'studio-templates.js'), 'utf8');
 const templateStyles = readFileSync(resolve(publicRoot, 'studio-templates.css'), 'utf8');
 const previewScript = readFileSync(resolve(repoRoot, 'scripts/preview-studio.mjs'), 'utf8');
@@ -118,6 +119,46 @@ describe('DesignBuddy Studio reliability contracts', () => {
     const request = functionBody(studio, 'apiRequest', 'apiGet');
     expect(request).toContain('HTML_GATEWAY_RESPONSE');
     expect(request).not.toContain('data = { error: raw }');
+  });
+
+  it('binds every generation turn to the newly submitted prompt and redacts legacy gateway HTML', () => {
+    const startTurn = functionBody(studio, 'startGenTurn', 'stopGen');
+    expect(startTurn).toContain('var requestPrompt = String(prompt || "").trim()');
+    expect(startTurn).toContain('text: requestPrompt');
+    expect(startTurn).toContain('.replace("{prompt}", generationPromptLabel(requestPrompt))');
+    expect(startTurn).toContain('invokeAgnesText(requestPrompt');
+    expect(startTurn).not.toContain('.replace("{name}", state.gen.name)');
+    expect(startTurn).toContain('message: message');
+    expect(startTurn).toContain('code: errorCode');
+
+    const promptLabelSource = functionBody(studio, 'generationPromptLabel', 'startGenTurn').replace(/\s*async\s*$/, '');
+    const promptLabel = Function(`${promptLabelSource}; return generationPromptLabel;`)() as (value: string) => string;
+    expect(promptLabel('帮我生成一套wordpress主题模版')).toBe('帮我生成一套wordpress主题模版');
+
+    const htmlDetectorSource = functionBody(studio, 'isHtmlGatewayErrorText', 'htmlGatewayErrorMessage');
+    const detectsHtmlGateway = Function(`${htmlDetectorSource}; return isHtmlGatewayErrorText;`)() as (
+      value: string,
+    ) => boolean;
+    const legacyGatewayPage = '<!DOCTYPE html><!--[if lt IE 7]><html>Cloudflare</html>';
+    expect(detectsHtmlGateway(legacyGatewayPage)).toBe(true);
+    expect(detectsHtmlGateway('Agnes generation timed out')).toBe(false);
+    const displaySource = functionBody(studio, 'generationAiDisplayText', 'renderGen');
+    const displayGenerationError = Function(
+      'isHtmlGatewayErrorText',
+      'cleanErrorMessage',
+      't',
+      `${displaySource}; return generationAiDisplayText;`,
+    )(
+      detectsHtmlGateway,
+      () => '已安全清理网关错误',
+      () => 'Agnes 生成失败：{message}',
+    ) as (payload: Record<string, unknown>) => string;
+    expect(displayGenerationError({ text: `Agnes 生成失败：${legacyGatewayPage}`, error: true })).toBe(
+      'Agnes 生成失败：已安全清理网关错误',
+    );
+    expect(studio).toContain('aiTexts.push(generationAiDisplayText(e.payload))');
+    expect(workbench).toContain('stopMessage = cleanError({');
+    expect(workbench).not.toContain("E(stop.payload && (stop.payload.detail || stop.payload.message || stop.payload.error)");
   });
 
   it('exposes sixteen non-repeating templates with twenty interactive screens each', () => {

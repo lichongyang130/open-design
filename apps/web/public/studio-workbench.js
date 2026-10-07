@@ -381,9 +381,17 @@
       }
       if (stop) {
         var failed = stop.payload && stop.payload.reason === "error";
+        var stopMessage = stop.payload && (stop.payload.detail || stop.payload.message || stop.payload.error) || "";
+        if (failed) {
+          stopMessage = cleanError({
+            message: stopMessage,
+            code: stop.payload && stop.payload.code || "",
+            status: Number(stop.payload && stop.payload.status) || 0
+          });
+        }
         var stoppedCard = document.createElement("div");
         stoppedCard.className = "gf-generating " + (failed ? "failed" : "stopped");
-        stoppedCard.innerHTML = '<div class="gf-generating-head"><span class="gf-generating-state">' + (failed ? "!" : "■") + '</span><div class="gf-generating-copy"><b>' + E(failed ? L("生成失败", "Generation failed") : L("生成已停止", "Generation stopped")) + '</b><span>' + E(stop.payload && (stop.payload.detail || stop.payload.message || stop.payload.error) || L("没有创建未完成的设计文件", "No incomplete design file was created")) + '</span></div>' + (lastPrompt ? '<button type="button" class="gw-btn danger gf-retry">' + ICON.retry + E(L("重试", "Retry")) + '</button>' : "") + '</div>';
+        stoppedCard.innerHTML = '<div class="gf-generating-head"><span class="gf-generating-state">' + (failed ? "!" : "■") + '</span><div class="gf-generating-copy"><b>' + E(failed ? L("生成失败", "Generation failed") : L("生成已停止", "Generation stopped")) + '</b><span>' + E(stopMessage || L("没有创建未完成的设计文件", "No incomplete design file was created")) + '</span></div>' + (lastPrompt ? '<button type="button" class="gw-btn danger gf-retry">' + ICON.retry + E(L("重试", "Retry")) + '</button>' : "") + '</div>';
         var retryButton = stoppedCard.querySelector(".gf-retry");
         if (retryButton) retryButton.addEventListener("click", function () { H.startGenTurn(lastPrompt); });
         grid.insertBefore(stoppedCard, grid.firstChild);

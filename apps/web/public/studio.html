@@ -1401,8 +1401,8 @@
       genStepMod: "理解修改请求：{mods}",
       genStepApply: "调整设计，生成 v{v}",
       genStepInvoke: "调用真实模型：{model}", genStepMediaWait: "等待异步媒体任务：{model}",
-      genAiIntro1: "收到！我来为「{name}」生成第一版设计。",
-      genAiIntro2: "收到，我在现有版本上继续调整。",
+      genAiIntro1: "收到！我会按「{prompt}」生成第一版设计。",
+      genAiIntro2: "收到！我会按「{prompt}」继续调整现有设计。",
       genAiOutro: "v{v} 已由 Agnes 生成，在右侧「设计文件」可直接预览。想继续打磨，随时发我。",
       genAiOutroMedia: "v{v} 已由 Agnes 生成并保存到项目文件，可在右侧直接预览。",
       genToastDone: "✦ Agnes 已生成 v{v}",
@@ -1627,8 +1627,8 @@
       genStepMod: "Understanding change: {mods}",
       genStepApply: "Applying changes → v{v}",
       genStepInvoke: "Calling live model: {model}", genStepMediaWait: "Waiting for asynchronous media task: {model}",
-      genAiIntro1: "Got it! Generating the first version of \"{name}\".",
-      genAiIntro2: "Got it — refining the existing version.",
+      genAiIntro1: "Got it! I’ll create the first version from \"{prompt}\".",
+      genAiIntro2: "Got it! I’ll refine the existing design using \"{prompt}\".",
       genAiOutro: "Agnes generated v{v} — preview it in Design files. Keep refining anytime.",
       genAiOutroMedia: "Agnes generated and saved v{v} to the project. Preview it on the right.",
       genToastDone: "✦ Agnes generated v{v}",
@@ -2624,8 +2624,14 @@
     throw new Error("Agnes media generation timed out");
   }
 
+  function generationPromptLabel(value) {
+    var prompt = String(value || "").replace(/\s+/g, " ").trim();
+    return prompt.length > 120 ? prompt.slice(0, 117) + "…" : prompt;
+  }
+
   async function startGenTurn(prompt) {
-    if (!state.gen.pid || state.gen.status === "run") return;
+    var requestPrompt = String(prompt || "").trim();
+    if (!state.gen.pid || !requestPrompt || state.gen.status === "run") return;
     var configured = state.agnesConfigured === true ? true : await refreshAgnesConfig();
     if (!configured) {
       toast(t("modelRequired"));
@@ -2644,11 +2650,11 @@
     var hadArtifact = state.gen.events.some(function (e) { return e.type === "artifact"; });
     var model = state.model;
     var surface = selectedModelSurface(model);
-    var kind = modeKind(state.genMode) || genKindOf(prompt + " " + state.gen.name);
+    var kind = modeKind(state.genMode) || genKindOf(requestPrompt + " " + state.gen.name);
     var version = genNextVersion();
-    genPersist("user", { text: prompt, model: model, surface: surface });
+    genPersist("user", { text: requestPrompt, model: model, surface: surface });
     genPersist("ai", {
-      text: t(hadArtifact ? "genAiIntro2" : "genAiIntro1").replace("{name}", state.gen.name),
+      text: t(hadArtifact ? "genAiIntro2" : "genAiIntro1").replace("{prompt}", generationPromptLabel(requestPrompt)),
       model: model
     });
     genPersist("step", { text: t("genStepAnalyze").replace("{kind}", t(GEN_KIND_KEY[kind] || "gkPage")) });
@@ -2659,8 +2665,8 @@
       await genDelay(160);
       if (!genAlive(runId)) return;
       var artifact = surface === "text"
-        ? await invokeAgnesText(prompt, kind, version, model, controller.signal)
-        : await invokeAgnesMedia(prompt, kind, version, model, surface, controller.signal, runId);
+        ? await invokeAgnesText(requestPrompt, kind, version, model, controller.signal)
+        : await invokeAgnesMedia(requestPrompt, kind, version, model, surface, controller.signal, runId);
       if (!genAlive(runId)) return;
       genPersist("step", { text: t("genStepCheck") });
       genPersist("artifact", artifact);
@@ -2673,8 +2679,17 @@
     } catch (error) {
       if (!genAlive(runId) || controller.signal.aborted || (error && error.name === "AbortError")) return;
       var message = cleanErrorMessage(error);
-      genPersist("ai", { text: t("genToastError").replace("{message}", message), model: model, error: true });
-      genPersist("stop", { reason: "error", message: message, model: model });
+      var errorCode = error && error.code ? String(error.code) : "";
+      var errorStatus = Number(error && error.status) || 0;
+      genPersist("ai", {
+        text: t("genToastError").replace("{message}", message),
+        message: message,
+        code: errorCode,
+        status: errorStatus,
+        model: model,
+        error: true
+      });
+      genPersist("stop", { reason: "error", message: message, code: errorCode, status: errorStatus, model: model });
       state.gen.status = "stop";
       state.gen.mediaTaskId = null;
       renderGen();
@@ -2725,6 +2740,21 @@
     var d = new Date(at || Date.now());
     return ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
   }
+  function generationAiDisplayText(payload) {
+    if (!payload || typeof payload.text !== "string") return "";
+    if (payload.error !== true) return payload.text;
+    var hasHtmlError = isHtmlGatewayErrorText(payload.text)
+      || isHtmlGatewayErrorText(payload.message)
+      || isHtmlGatewayErrorText(payload.detail);
+    var code = typeof payload.code === "string" ? payload.code : (hasHtmlError ? "HTML_GATEWAY_RESPONSE" : "");
+    if (!code && !hasHtmlError) return payload.text;
+    var message = cleanErrorMessage({
+      message: typeof payload.message === "string" ? payload.message : payload.text,
+      code: code,
+      status: Number(payload.status) || 0
+    });
+    return t("genToastError").replace("{message}", message);
+  }
   function renderGen() {
     if (!state.gen.pid && !state.gen.welcome) return;
     var box = $("genChat");
@@ -2741,7 +2771,7 @@
       html += '<div class="gm-user">' + esc(turn.user.payload && turn.user.payload.text || "") + "</div>";
       var aiTexts = [], steps = [], arts = [], finish = null;
       turn.items.forEach(function (e) {
-        if (e.type === "ai" && e.payload && e.payload.text) aiTexts.push(e.payload.text);
+        if (e.type === "ai" && e.payload && e.payload.text) aiTexts.push(generationAiDisplayText(e.payload));
         else if (e.type === "step" && e.payload && e.payload.text) steps.push(e.payload.text);
         else if (e.type === "artifact" && e.payload) arts.push(e.payload);
         else if (e.type === "done" || e.type === "stop") finish = { type: e.type, at: e.at, payload: e.payload };
@@ -4100,8 +4130,17 @@
     }
     return fallback || "Request failed";
   }
+  function isHtmlGatewayErrorText(value) {
+    return /(?:<!doctype\s+html\b|<html\b|<head\b|<body\b|<!--\s*\[if\s+[^\]]*\bie\b|&lt;!doctype\s+html\b|&lt;html\b|cf-error-details|cloudflare\s+ray\s+id)/i.test(String(value || ""));
+  }
+  function htmlGatewayErrorMessage() {
+    return state.lang === "zh"
+      ? "上游代理返回了 HTML 错误页，未产生任何设计内容；请稍后重试。"
+      : "The upstream proxy returned an HTML error page, so no design content was produced. Please retry later.";
+  }
   function cleanErrorMessage(error) {
     var value = error && error.message ? String(error.message) : String(error || "Request failed");
+    if (isHtmlGatewayErrorText(value)) return htmlGatewayErrorMessage();
     value = value.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, 220) || "Request failed";
     var code = error && error.code ? String(error.code) : "";
     if (code === "PREVIEW_ONLY") {
@@ -4133,7 +4172,7 @@
       return state.lang === "zh" ? "Agnes 返回了无法解析的响应，请稍后重试；若持续发生，请检查上游网关。" : "Agnes returned an unreadable response. Retry later; if it persists, check the upstream gateway.";
     }
     if (code === "HTML_GATEWAY_RESPONSE") {
-      return state.lang === "zh" ? "代理网关中断了生成连接。文本生成已改为后台任务轮询，请重试一次。" : "The proxy interrupted generation. Text generation now uses a background job; please retry once.";
+      return htmlGatewayErrorMessage();
     }
     if (code === "AGNES_TIMEOUT") {
       return state.lang === "zh" ? "Agnes 生成超时，请稍后重试。" : "Agnes generation timed out. Please retry later.";
