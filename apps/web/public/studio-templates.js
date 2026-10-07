@@ -45,9 +45,9 @@
       tablet: "平板",
       mobile: "手机",
       featured: "本周商业精选",
-      featuredDescription: "完整的 13 页面品牌手册，覆盖策略、视觉规范、落地应用与资源下载。所有页面均为可点击、可交互 HTML，而不是静态占位图。",
-      previewScreens: "预览 13 个界面",
-      librarySub: "18 套商业级模板 · 每套 13 个可交互界面 · 共 234 个真实页面",
+      featuredDescription: "完整的 20 页面品牌手册，覆盖策略、视觉规范、落地应用与资源下载。所有页面均为可点击、可交互 HTML，而不是静态占位图。",
+      previewScreens: "预览 20 个界面",
+      librarySub: "16 套不重复的商业级模板 · 每套 20 个可交互界面 · 共 320 个真实页面",
       uses: "次使用"
     },
     en: {
@@ -83,9 +83,9 @@
       tablet: "Tablet",
       mobile: "Mobile",
       featured: "COMMERCIAL PICK",
-      featuredDescription: "A complete 13-screen brand playbook covering strategy, visual rules, applications, and downloadable assets. Every page is clickable HTML—not a placeholder image.",
-      previewScreens: "Preview 13 screens",
-      librarySub: "18 commercial-grade kits · 13 interactive screens each · 234 real pages",
+      featuredDescription: "A complete 20-screen brand playbook covering strategy, visual rules, applications, and downloadable assets. Every page is clickable HTML—not a placeholder image.",
+      previewScreens: "Preview 20 screens",
+      librarySub: "16 non-repeating commercial kits · 20 interactive screens each · 320 real pages",
       uses: "uses"
     }
   };
@@ -201,7 +201,74 @@
     }
   ];
 
-  /* Every commercial kit ships as a complete product, not a three-screen teaser. */
+  /* A duplicated renderer is represented once in the library. Historical ids
+     resolve to the canonical kit, while their domain content is retained as
+     pages and presets inside that kit. */
+  var TEMPLATE_ALIASES = {
+    "pulse-care-center": "northstar-saas-console",
+    "welcome-people-ops": "northstar-saas-console",
+    "muse-ai-workspace": "northstar-saas-console",
+    "orbit-venture-deck": "fieldnotes-digital-guide",
+    "arca-brand-system": "fieldnotes-digital-guide",
+    "common-good-impact-report": "fieldnotes-digital-guide",
+    "nest-property-market": "roam-travel-booking",
+    "serein-restaurant": "roam-travel-booking",
+    "kindred-nonprofit": "roam-travel-booking"
+  };
+  var CANONICAL_TEMPLATE_IDS = [
+    "northstar-saas-console", "forma-furniture-store", "moneta-mobile-finance",
+    "afterlight-conference", "fieldnotes-digital-guide", "folio-architecture",
+    "roam-travel-booking", "lumen-course-platform", "signal-social-campaign"
+  ];
+  var NEW_UNIQUE_TEMPLATES = [
+    {
+      id: "vector-api-portal", category: "web", kind: "api", skin: "vector",
+      accent: "#ff7a45", alt: "#60d7ff", bg: "#10151c", surface: "#171f29", ink: "#edf4f8", uses: "5.8k",
+      zh: { name: "Vector API 开发者门户", category: "开发者文档", desc: "文档树、参数表、代码示例与实时请求控制台组成的开发者体验。", tags: ["API", "文档", "控制台"], pages: ["快速开始", "身份验证", "实时请求"] },
+      en: { name: "Vector API Portal", category: "Developer docs", desc: "A developer experience built from navigation, parameters, examples, and a live request console.", tags: ["API", "Docs", "Console"], pages: ["Quickstart", "Authentication", "Live request"] }
+    },
+    {
+      id: "atlas-research-repository", category: "deck", kind: "research", skin: "atlas",
+      accent: "#ff6a72", alt: "#735cff", bg: "#f1ebe2", surface: "#fffdf8", ink: "#28201d", uses: "4.9k",
+      zh: { name: "Atlas 用户研究库", category: "研究与洞察", desc: "把访谈、证据、聚类和机会地图连接成完整研究工作流。", tags: ["研究", "洞察", "证据"], pages: ["研究首页", "访谈档案", "洞察聚类"] },
+      en: { name: "Atlas Research Repository", category: "Research & insight", desc: "A research workflow connecting interviews, evidence, clusters, and opportunity maps.", tags: ["Research", "Insight", "Evidence"], pages: ["Research home", "Interview archive", "Insight clusters"] }
+    },
+    {
+      id: "tempo-planning-board", category: "dashboard", kind: "planning", skin: "tempo",
+      accent: "#7458ff", alt: "#ffb84d", bg: "#eeeafa", surface: "#ffffff", ink: "#201a3d", uses: "6.2k",
+      zh: { name: "Tempo 规划协作台", category: "路线图与排期", desc: "路线图、依赖关系、资源容量和风险决策合并在同一规划空间。", tags: ["规划", "路线图", "协作"], pages: ["季度路线图", "依赖网络", "资源容量"] },
+      en: { name: "Tempo Planning Board", category: "Roadmap planning", desc: "A planning space combining roadmaps, dependencies, capacity, and risk decisions.", tags: ["Planning", "Roadmap", "Collaboration"], pages: ["Quarter roadmap", "Dependency network", "Team capacity"] }
+    },
+    {
+      id: "echo-media-network", category: "app", kind: "media", skin: "echo",
+      accent: "#ff4f91", alt: "#8df06d", bg: "#181324", surface: "#241c34", ink: "#fff7fb", uses: "7.1k",
+      zh: { name: "Echo 媒体网络", category: "音视频产品", desc: "节目发现、沉浸播放、章节笔记与会员频道组成的媒体体验。", tags: ["音频", "视频", "会员"], pages: ["节目发现", "沉浸播放器", "章节与笔记"] },
+      en: { name: "Echo Media Network", category: "Audio & video", desc: "A media experience for discovery, focused playback, chapter notes, and member channels.", tags: ["Audio", "Video", "Membership"], pages: ["Discover", "Immersive player", "Chapters & notes"] }
+    },
+    {
+      id: "commons-community-hub", category: "web", kind: "community", skin: "commons",
+      accent: "#2a9d72", alt: "#ff8a58", bg: "#eaf3ed", surface: "#ffffff", ink: "#17352b", uses: "5.4k",
+      zh: { name: "Commons 社区中心", category: "社区与活动", desc: "动态、小组、成员网络、城市活动与治理工具组成的社区产品。", tags: ["社区", "成员", "活动"], pages: ["社区动态", "兴趣小组", "成员网络"] },
+      en: { name: "Commons Community Hub", category: "Community platform", desc: "A community product built from feeds, groups, member networks, events, and governance.", tags: ["Community", "Members", "Events"], pages: ["Community feed", "Groups", "Member network"] }
+    },
+    {
+      id: "relay-logistics-map", category: "dashboard", kind: "logistics", skin: "relay",
+      accent: "#4ae0b5", alt: "#ffc45b", bg: "#0f1b21", surface: "#15272e", ink: "#effbf7", uses: "8.3k",
+      zh: { name: "Relay 物流地图", category: "实时物流", desc: "地理轨迹、运输节点、异常队列和履约操作组成的实时控制界面。", tags: ["地图", "物流", "实时"], pages: ["运输态势", "实时轨迹", "异常队列"] },
+      en: { name: "Relay Logistics Map", category: "Live logistics", desc: "A real-time control surface for routes, transport nodes, exceptions, and fulfillment.", tags: ["Maps", "Logistics", "Live"], pages: ["Network overview", "Live routes", "Exception queue"] }
+    },
+    {
+      id: "prism-design-system-lab", category: "brand", kind: "designlab", skin: "prism",
+      accent: "#735cff", alt: "#ff5e7a", bg: "#f5f3fa", surface: "#ffffff", ink: "#241d38", uses: "9.1k",
+      zh: { name: "Prism 设计系统实验室", category: "组件与规范", desc: "设计令牌、组件预览、属性控制、代码示例和发布记录组成的系统工作台。", tags: ["组件", "Token", "规范"], pages: ["设计令牌", "组件目录", "交互实验台"] },
+      en: { name: "Prism Design System Lab", category: "Components & guidelines", desc: "A system workspace for tokens, component previews, controls, code, and releases.", tags: ["Components", "Tokens", "Guidelines"], pages: ["Design tokens", "Component catalog", "Interactive lab"] }
+    }
+  ];
+  TEMPLATES = TEMPLATES.filter(function (template) {
+    return CANONICAL_TEMPLATE_IDS.indexOf(template.id) >= 0;
+  }).concat(NEW_UNIQUE_TEMPLATES);
+
+  /* Every canonical kit ships as a complete product, not a three-screen teaser. */
   var TEMPLATE_EXTRA_PAGES = {
     "northstar-saas-console": {
       zh: ["增长漏斗", "订阅计划", "客户列表", "客户详情", "产品使用", "留存队列", "销售管道", "团队绩效", "告警中心", "系统设置"],
@@ -277,11 +344,87 @@
     }
   };
 
+  var TEMPLATE_ENRICHED_PAGES = {
+    "northstar-saas-console": {
+      zh: ["医疗照护总览", "患者风险队列", "新成员入职", "组织关系图", "AI 创作任务", "模型与成本", "自动化策略"],
+      en: ["Care overview", "Patient risks", "Employee onboarding", "Organization map", "AI creation tasks", "Models & cost", "Automation rules"]
+    },
+    "forma-furniture-store": {
+      zh: ["尺寸与材质", "产品比较", "到店预约", "设计师咨询", "售后服务", "空间项目", "可持续档案"],
+      en: ["Size & material", "Product compare", "Store appointment", "Designer consult", "Aftercare", "Room project", "Sustainability"]
+    },
+    "moneta-mobile-finance": {
+      zh: ["现金流预测", "订阅管理", "家庭账户", "旅行模式", "身份验证", "帮助中心", "月度总结"],
+      en: ["Cashflow forecast", "Subscriptions", "Family account", "Travel mode", "Identity check", "Help center", "Monthly recap"]
+    },
+    "afterlight-conference": {
+      zh: ["个性化日程", "现场直播", "观众提问", "社交配对", "周边商店", "会后回放", "参会反馈"],
+      en: ["My schedule", "Live stream", "Audience Q&A", "Networking", "Merch store", "Session replay", "Event feedback"]
+    },
+    "fieldnotes-digital-guide": {
+      zh: ["市场机会", "商业模型", "品牌资产", "标志规范", "影响力数据", "人物故事", "下载与引用"],
+      en: ["Market opportunity", "Business model", "Brand assets", "Logo rules", "Impact data", "People stories", "Downloads & citations"]
+    },
+    "folio-architecture": {
+      zh: ["施工图册", "现场记录", "客户证言", "出版与媒体", "服务范围", "项目咨询", "工作机会"],
+      en: ["Drawing set", "Site journal", "Client stories", "Press", "Services", "Project inquiry", "Careers"]
+    },
+    "roam-travel-booking": {
+      zh: ["房产场景", "餐厅场景", "公益场景", "顾问对话", "服务评价", "退款与变更", "安全与保障"],
+      en: ["Property preset", "Restaurant preset", "Nonprofit preset", "Advisor chat", "Service reviews", "Changes & refunds", "Trust & safety"]
+    },
+    "lumen-course-platform": {
+      zh: ["学习目标", "直播课堂", "导师反馈", "同伴互评", "作品集", "能力图谱", "学习设置"],
+      en: ["Learning goals", "Live class", "Mentor feedback", "Peer review", "Portfolio", "Skill map", "Learning settings"]
+    },
+    "signal-social-campaign": {
+      zh: ["品牌素材库", "创作者合作", "评论与提及", "社群运营", "预算分配", "归因分析", "模板导出"],
+      en: ["Brand assets", "Creator partnerships", "Comments & mentions", "Community ops", "Budget allocation", "Attribution", "Template export"]
+    },
+    "vector-api-portal": {
+      zh: ["SDK 安装", "第一个请求", "错误处理", "速率限制", "用户接口", "项目接口", "文件接口", "生成接口", "Webhook", "事件目录", "请求日志", "API 密钥", "沙箱环境", "版本迁移", "状态页面", "支持中心", "变更日志"],
+      en: ["SDK setup", "First request", "Error handling", "Rate limits", "Users API", "Projects API", "Files API", "Generation API", "Webhooks", "Event catalog", "Request logs", "API keys", "Sandbox", "Version migration", "Status page", "Support", "Changelog"]
+    },
+    "atlas-research-repository": {
+      zh: ["研究计划", "招募进度", "访谈日程", "访谈详情", "原始记录", "视频片段", "证据标签", "主题墙", "用户旅程", "机会地图", "优先级矩阵", "洞察详情", "研究报告", "利益相关方评审", "行动事项", "研究模板", "资料设置"],
+      en: ["Research plan", "Recruitment", "Interview calendar", "Interview detail", "Raw notes", "Video clips", "Evidence tags", "Theme wall", "User journey", "Opportunity map", "Priority matrix", "Insight detail", "Research report", "Stakeholder review", "Action items", "Research templates", "Repository settings"]
+    },
+    "tempo-planning-board": {
+      zh: ["战略主题", "目标树", "计划列表", "事项详情", "时间线", "里程碑", "团队负载", "技能容量", "依赖详情", "风险登记", "决策记录", "评审日历", "状态报告", "预算规划", "情景模拟", "归档计划", "规划设置"],
+      en: ["Strategic themes", "Goal tree", "Initiative list", "Initiative detail", "Timeline", "Milestones", "Team workload", "Skill capacity", "Dependency detail", "Risk register", "Decision log", "Review calendar", "Status report", "Budget plan", "Scenario planning", "Plan archive", "Planning settings"]
+    },
+    "echo-media-network": {
+      zh: ["今日精选", "节目详情", "剧集详情", "直播频道", "视频影院", "播放队列", "稍后收听", "下载管理", "听中笔记", "文字稿", "嘉宾档案", "主题频道", "会员专享", "创作者主页", "收听数据", "通知中心", "账户设置"],
+      en: ["Today picks", "Show detail", "Episode detail", "Live channels", "Video theater", "Play queue", "Listen later", "Downloads", "Listening notes", "Transcript", "Guest profile", "Topic channels", "Member exclusives", "Creator profile", "Listening stats", "Notifications", "Account settings"]
+    },
+    "commons-community-hub": {
+      zh: ["发现话题", "帖子详情", "发布动态", "小组详情", "小组讨论", "成员档案", "关注网络", "城市活动", "活动详情", "活动报名", "资源共享", "志愿任务", "社区提案", "投票决策", "举报中心", "管理后台", "个人设置"],
+      en: ["Discover topics", "Post detail", "Create post", "Group detail", "Group discussion", "Member profile", "Following network", "Local events", "Event detail", "Event signup", "Shared resources", "Volunteer tasks", "Community proposals", "Voting", "Report center", "Moderation", "Profile settings"]
+    },
+    "relay-logistics-map": {
+      zh: ["车辆列表", "车辆详情", "司机档案", "运输计划", "路线规划", "节点详情", "仓库状态", "订单追踪", "异常详情", "处理任务", "温控记录", "服务水平", "成本分析", "碳排分析", "客户通知", "运营报告", "控制塔设置"],
+      en: ["Vehicle list", "Vehicle detail", "Driver profile", "Shipment plan", "Route planning", "Node detail", "Warehouse status", "Order tracking", "Exception detail", "Resolution task", "Temperature log", "Service levels", "Cost analysis", "Carbon analysis", "Customer alerts", "Operations report", "Control settings"]
+    },
+    "prism-design-system-lab": {
+      zh: ["色彩系统", "字体系统", "间距系统", "圆角与阴影", "图标资源", "按钮组件", "表单组件", "导航组件", "数据组件", "反馈组件", "组件详情", "属性控制", "无障碍检查", "代码示例", "版本对比", "发布记录", "贡献指南"],
+      en: ["Color system", "Typography", "Spacing", "Radius & shadow", "Icon assets", "Buttons", "Forms", "Navigation", "Data components", "Feedback", "Component detail", "Property controls", "Accessibility", "Code examples", "Version compare", "Release history", "Contribution guide"]
+    }
+  };
+
   TEMPLATES.forEach(function (template) {
     var extra = TEMPLATE_EXTRA_PAGES[template.id];
-    if (!extra) return;
-    template.zh.pages = template.zh.pages.concat(extra.zh);
-    template.en.pages = template.en.pages.concat(extra.en);
+    if (extra) {
+      template.zh.pages = template.zh.pages.concat(extra.zh);
+      template.en.pages = template.en.pages.concat(extra.en);
+    }
+    var enriched = TEMPLATE_ENRICHED_PAGES[template.id];
+    if (enriched) {
+      template.zh.pages = template.zh.pages.concat(enriched.zh);
+      template.en.pages = template.en.pages.concat(enriched.en);
+    }
+    if (template.zh.pages.length !== 20 || template.en.pages.length !== 20) {
+      throw new Error("Template must contain exactly 20 screens: " + template.id);
+    }
   });
 
   function langOf(lang) { return lang === "en" ? "en" : "zh"; }
@@ -296,7 +439,8 @@
   }
   function pageNumber(page) { return String(page + 1).padStart(2, "0"); }
   function byId(id) {
-    for (var i = 0; i < TEMPLATES.length; i += 1) if (TEMPLATES[i].id === id) return TEMPLATES[i];
+    var canonicalId = TEMPLATE_ALIASES[id] || id;
+    for (var i = 0; i < TEMPLATES.length; i += 1) if (TEMPLATES[i].id === canonicalId) return TEMPLATES[i];
     return null;
   }
   function categoryList(lang) {
@@ -415,6 +559,36 @@
     var variant = page % 3;
     return '<div class="tpl-art tpl-art--campaign tpl-skin-' + esc(template.skin) + ' tpl-page-variant-' + (page % 6) + ' tpl-screen-' + (page + 1) + '" style="' + cssVars(template, alternate) + '"><div class="tpl-campaign-head"><b>SIGNAL / CAMPAIGN KIT</b><span>' + esc(info.pages[page]) + '</span><em>' + pageNumber(page) + '</em></div><div class="tpl-moodboard"><section class="tpl-poster"><small>DROP ' + pageNumber(page) + '</small><h2>' + ["MAKE<br>NOISE.", "SHOW<br>THE WORK.", "KEEP<br>MOVING."][variant] + '</h2><i></i></section><section class="tpl-social-post"><header><i></i><b>@signal.studio</b><span>•••</span></header><div class="tpl-social-art"><b>' + ["NEW / NOW", "BEHIND / IT", "RESULTS / IN"][variant] + '</b></div><footer>♡　⌁　↗<span>2,804 likes</span></footer></section><section class="tpl-campaign-plan"><header>CONTENT PLAN <span>W' + (12 + page) + '</span></header>' + ["Tease", "Reveal", "Explain", "Convert"].map(function (x, i) { return '<button type="button" data-demo-action="' + x + '"><span>' + ["MON", "TUE", "THU", "SAT"][i] + '</span><b>' + x + '</b><i class="' + (i < variant + 2 ? "done" : "") + '"></i></button>'; }).join("") + '</section></div></div>';
   }
+  function apiArt(template, info, page, alternate) {
+    var method = ["GET", "POST", "PATCH"][page % 3];
+    var inner = '<div class="tpl-api-shell"><aside><b>VECTOR<span>/</span></b><small>API REFERENCE</small><label>⌕ Search</label><div>' + navItems(info, page) + '</div><footer>v2.4　<span>Operational</span></footer></aside><main><span class="tpl-api-crumb">REFERENCE / ' + pageNumber(page) + '</span><h2>' + esc(info.pages[page]) + '</h2><p>' + esc(info.desc) + '</p><div class="tpl-api-endpoint"><b>' + method + '</b><code>/v2/' + esc(info.pages[page].toLowerCase().replace(/\s+/g, "-")) + '</code>' + action("Copy") + '</div><h3>Parameters</h3>' + ["workspace_id", "expand", "locale"].map(function (item, index) { return '<button type="button" data-demo-action="' + item + '"><code>' + item + '</code><b>' + (index ? "string" : "uuid") + '</b><span>' + esc(info.tags[index % info.tags.length]) + '</span></button>'; }).join("") + '</main><section class="tpl-api-console"><header><b>Live request</b><span>200 OK</span></header><pre><em>curl</em> --request ' + method + '\n  --url api.vector.dev/v2/resource\n  --header <b>"Authorization: Bearer …"</b></pre>' + action("Run request ▶") + '<div><small>RESPONSE · 84 MS</small><pre>{\n  "status": "ok",\n  "page": "' + (page + 1) + '"\n}</pre></div></section></div>';
+    return browserShell(template, info, page, inner, "api", alternate);
+  }
+  function researchArt(template, info, page, alternate) {
+    var notes = ["Control", "Trust", "Momentum", "Clarity"];
+    return '<div class="tpl-art tpl-art--research tpl-skin-' + esc(template.skin) + ' tpl-page-variant-' + (page % 6) + '" style="' + cssVars(template, alternate) + '"><div class="tpl-research-shell"><header><div><small>ATLAS / STUDY ' + pageNumber(page) + '</small><h2>' + esc(info.pages[page]) + '</h2></div><span>24 interviews · 186 evidence clips</span>' + action("Share insight") + '</header><main><aside><b>Research index</b>' + navItems(info, page) + '<div><small>SATURATION</small><strong>86%</strong><i><em></em></i></div></aside><section class="tpl-affinity-map">' + notes.map(function (note, index) { return '<button type="button" class="n' + (index + 1) + '" data-demo-action="' + note + '"><small>0' + (index + 1) + '</small><b>' + note + '</b><p>' + esc(info.tags[index % info.tags.length]) + ' appears across ' + (5 + index * 3) + ' sessions.</p></button>'; }).join("") + '</section><blockquote>“People want assistance without losing the final decision.”<small>P07 · Power user</small></blockquote></main></div></div>';
+  }
+  function planningArt(template, info, page, alternate) {
+    var columns = ["NOW", "NEXT", "LATER"];
+    var inner = '<div class="tpl-planning-shell"><header><div><small>TEMPO / Q' + ((page % 4) + 1) + '</small><h2>' + esc(info.pages[page]) + '</h2></div><nav>' + navItems(info, page) + '</nav>' + action("＋ Initiative") + '</header><div class="tpl-planning-metrics"><span><small>Capacity</small><b>84%</b></span><span><small>Dependencies</small><b>12</b></span><span><small>At risk</small><b>03</b></span></div><main>' + columns.map(function (column, columnIndex) { return '<section><header><b>' + column + '</b><span>' + (4 + columnIndex * 2) + '</span></header>' + [0, 1, 2].map(function (item) { var label = info.pages[(page + columnIndex + item) % info.pages.length]; return '<button type="button" data-demo-action="' + esc(label) + '"><small>P' + ((item + columnIndex) % 3) + '</small><b>' + esc(label) + '</b><span><i></i>' + (38 + item * 21) + '% complete</span><footer><em></em><em></em><strong>→</strong></footer></button>'; }).join("") + '</section>'; }).join("") + '</main></div>';
+    return browserShell(template, info, page, inner, "planning", alternate);
+  }
+  function mediaArt(template, info, page, alternate) {
+    var inner = '<div class="tpl-media-shell"><aside><b>ECHO<span>●</span></b><div>' + navItems(info, page) + '</div><small>MEMBER CHANNELS</small><button type="button" data-demo-action="Daily Brief">Daily Brief</button><button type="button" data-demo-action="Field Notes">Field Notes</button></aside><main><header><span>NOW PLAYING / ' + pageNumber(page) + '</span><button type="button" data-demo-action="Favorite">♡</button></header><div class="tpl-media-player"><div class="tpl-media-disc"><i></i><b>EC<br>HO</b></div><section><small>' + esc(info.category) + '</small><h2>' + esc(info.pages[page]) + '</h2><p>' + esc(info.desc) + '</p><div class="tpl-wave">' + Array.from({ length: 34 }, function (_, index) { return '<i style="height:' + (18 + ((index * 17 + page * 9) % 72)) + '%"></i>'; }).join("") + '</div><footer><span>18:42</span><button type="button" data-demo-action="Play">▶</button><span>42:08</span></footer></section></div><div class="tpl-episode-row">' + [0, 1, 2].map(function (index) { var label = info.pages[(page + index + 1) % info.pages.length]; return '<button type="button" data-demo-action="' + esc(label) + '"><i>' + (index + 1) + '</i><span><b>' + esc(label) + '</b><small>' + (22 + index * 9) + ' min · ' + esc(info.tags[index]) + '</small></span><em>＋</em></button>'; }).join("") + '</div></main></div>';
+    return browserShell(template, info, page, inner, "media", alternate);
+  }
+  function communityArt(template, info, page, alternate) {
+    var inner = '<div class="tpl-community-shell"><header><b>COMMONS</b><label>⌕ Search the community</label><nav>' + navItems(info, page) + '</nav><i>C</i></header><main><aside><small>YOUR SPACES</small>' + ["Design circle", "Osaka makers", "Climate action", "Book club"].map(function (label, index) { return '<button type="button" data-demo-action="' + label + '"><i>' + label[0] + '</i><span>' + label + '</span><em>' + (3 + index * 4) + '</em></button>'; }).join("") + '</aside><section class="tpl-community-feed"><div class="tpl-community-title"><div><small>COMMUNITY / ' + pageNumber(page) + '</small><h2>' + esc(info.pages[page]) + '</h2></div>' + action("Create post") + '</div>' + [0, 1].map(function (index) { return '<article><header><i></i><span><b>' + ["Aiko Tan", "Mina Chen"][index] + '</b><small>' + (index + 2) + 'h · ' + esc(info.tags[index]) + '</small></span><em>•••</em></header><p>' + esc(index ? info.desc : "A practical idea from the community, ready for feedback and collaboration.") + '</p><div class="tpl-community-art a' + index + '"><b>' + esc(info.pages[(page + index + 1) % info.pages.length]) + '</b></div><footer><button data-demo-action="Like">♡ ' + (28 + index * 17) + '</button><button data-demo-action="Comment">◌ ' + (8 + index * 4) + '</button><button data-demo-action="Share">↗</button></footer></article>'; }).join("") + '</section><aside class="tpl-community-rail"><small>UPCOMING</small><div><b>18</b><span>OCT<br>Community supper</span></div><div><b>24</b><span>OCT<br>Open studio</span></div>' + action("View events") + '</aside></main></div>';
+    return browserShell(template, info, page, inner, "community", alternate);
+  }
+  function logisticsArt(template, info, page, alternate) {
+    var inner = '<div class="tpl-logistics-shell"><header><div><i></i><b>RELAY CONTROL</b></div><span>● NETWORK LIVE</span><nav>' + navItems(info, page) + '</nav>' + action("New shipment") + '</header><main><section class="tpl-logistics-map"><div class="tpl-map-grid"></div><svg viewBox="0 0 700 420"><path d="M60 310 C170 260 180 80 330 160 S510 340 660 110"/><path d="M160 70 C250 150 390 70 560 260"/></svg>' + ["n1", "n2", "n3", "n4", "n5"].map(function (name, index) { return '<button type="button" class="' + name + '" data-demo-action="Node ' + (index + 1) + '"><i></i><span>' + ["OSA", "TYO", "SEL", "SHA", "SIN"][index] + '</span></button>'; }).join("") + '<div><small>' + esc(info.pages[page]) + '</small><b>1,284 active shipments</b><span>96.8% on time</span></div></section><aside><header><b>Priority exceptions</b><span>08 active</span></header>' + [0, 1, 2, 3].map(function (index) { var label = info.pages[(page + index) % info.pages.length]; return '<button type="button" data-demo-action="' + esc(label) + '"><i class="s' + index + '"></i><span><b>' + esc(label) + '</b><small>' + ["Route delay", "Temperature", "Customs", "Capacity"][index] + '</small></span><em>' + (12 + index * 7) + 'm</em></button>'; }).join("") + '<footer><span>Resolved today</span><b>42</b>' + sparkline() + '</footer></aside></main></div>';
+    return browserShell(template, info, page, inner, "logistics", alternate);
+  }
+  function designLabArt(template, info, page, alternate) {
+    var inner = '<div class="tpl-designlab-shell"><header><b>PRISM<span>◆</span></b><nav>' + navItems(info, page) + '</nav><label>⌕ Search 84 components</label>' + action("Publish") + '</header><main><aside><small>FOUNDATIONS</small>' + ["Color", "Type", "Space", "Motion"].map(function (label) { return '<button type="button" data-demo-action="' + label + '">' + label + '<span>›</span></button>'; }).join("") + '<small>COMPONENTS</small>' + ["Actions", "Forms", "Navigation", "Feedback"].map(function (label) { return '<button type="button" data-demo-action="' + label + '">' + label + '<span>›</span></button>'; }).join("") + '</aside><section><div class="tpl-lab-title"><div><small>COMPONENT / ' + pageNumber(page) + '</small><h2>' + esc(info.pages[page]) + '</h2></div><span>Accessibility <b>AA</b></span></div><div class="tpl-component-canvas"><button type="button" data-demo-action="Primary action" class="p">Primary action</button><button type="button" data-demo-action="Secondary action">Secondary</button><button type="button" data-demo-action="Quiet action" class="q">Quiet action</button></div><div class="tpl-code-sample"><span>React</span><code>&lt;Button variant=<b>"primary"</b>&gt;Continue&lt;/Button&gt;</code></div></section><aside class="tpl-controls"><b>PROPERTIES</b><label>Variant<span>Primary⌄</span></label><label>Size<span>Medium⌄</span></label><label>Leading icon<button data-demo-action="Toggle icon"><i></i></button></label><label>Loading<button data-demo-action="Toggle loading"><i></i></button></label><div><small>VERSION</small><b>2.4.0</b><span>Stable</span></div></aside></main></div>';
+    return browserShell(template, info, page, inner, "designlab", alternate);
+  }
   function artMarkup(template, page, lang, compact, alternate) {
     var info = localized(template, lang);
     page = Math.max(0, Math.min(info.pages.length - 1, Number(page) || 0));
@@ -427,6 +601,13 @@
     if (template.kind === "realestate" || template.kind === "restaurant" || template.kind === "travel" || template.kind === "nonprofit") return serviceArt(template, info, page, alternate);
     if (template.kind === "course") return courseArt(template, info, page, alternate);
     if (template.kind === "campaign") return campaignArt(template, info, page, alternate);
+    if (template.kind === "api") return apiArt(template, info, page, alternate);
+    if (template.kind === "research") return researchArt(template, info, page, alternate);
+    if (template.kind === "planning") return planningArt(template, info, page, alternate);
+    if (template.kind === "media") return mediaArt(template, info, page, alternate);
+    if (template.kind === "community") return communityArt(template, info, page, alternate);
+    if (template.kind === "logistics") return logisticsArt(template, info, page, alternate);
+    if (template.kind === "designlab") return designLabArt(template, info, page, alternate);
     return dashboardArt(template, info, page, alternate);
   }
 
@@ -684,6 +865,7 @@
 
   global.StudioTemplates = {
     items: TEMPLATES,
+    aliases: TEMPLATE_ALIASES,
     byId: byId,
     localized: localized,
     categories: categoryList,

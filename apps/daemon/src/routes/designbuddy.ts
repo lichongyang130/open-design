@@ -17,9 +17,12 @@
 //   POST /api/db/projects/:id/gen  <- { type, payload } -> 201 { event }
 //   GET  /api/db/agnes/config      -> public fixed-model metadata (never the key)
 //   POST /api/db/agnes/test        -> daemon-side Agnes connectivity check
-//   POST /api/db/agnes/generate    -> bounded, daemon-side Agnes HTML generation
+//   POST /api/db/agnes/generation-jobs -> start proxy-safe background HTML generation
+//   GET/DELETE /api/db/agnes/generation-jobs/:id -> poll or cancel generation
+//   POST /api/db/agnes/generate    -> bounded synchronous compatibility endpoint
 
 import type { Express } from 'express';
+import { randomUUID } from 'node:crypto';
 import type { RouteDeps } from '../server-context.js';
 import { sendApiError } from '../http/api-errors.js';
 import { proxyDispatcherRequestInit } from '../connectionTest.js';
@@ -54,6 +57,39 @@ import {
 } from '../designbuddy-store.js';
 
 export interface RegisterDesignBuddyRoutesDeps extends RouteDeps<'db'> {}
+
+type AgnesGenerationJob = {
+  id: string;
+  status: 'running' | 'succeeded' | 'failed' | 'canceled';
+  createdAt: number;
+  updatedAt: number;
+  controller: AbortController;
+  result?: {
+    html: string;
+    model: string;
+    usage: Record<string, unknown> | null;
+    latencyMs: number;
+  };
+  error?: { code: string; message: string; status: number };
+};
+
+const AGNES_GENERATION_JOB_TTL_MS = 15 * 60_000;
+const AGNES_GENERATION_JOB_LIMIT = 4;
+const agnesGenerationJobs = new Map<string, AgnesGenerationJob>();
+
+function pruneAgnesGenerationJobs(now = Date.now()): void {
+  for (const [id, job] of agnesGenerationJobs) {
+    if (job.status !== 'running' && now - job.updatedAt > AGNES_GENERATION_JOB_TTL_MS) {
+      agnesGenerationJobs.delete(id);
+    }
+  }
+}
+
+function normalizeAgnesError(error: unknown): AgnesIntegrationError {
+  return error instanceof AgnesIntegrationError
+    ? error
+    : new AgnesIntegrationError('AGNES_UNAVAILABLE', 'Agnes is currently unavailable.');
+}
 
 export function registerDesignBuddyRoutes(app: Express, ctx: RegisterDesignBuddyRoutesDeps): void {
   const { db } = ctx;
@@ -97,6 +133,107 @@ export function registerDesignBuddyRoutes(app: Express, ctx: RegisterDesignBuddy
     }
   });
 
+  // Text generation can take longer than browser-facing reverse proxies allow.
+  // Start it in the daemon and let Studio poll a short-lived local job instead
+  // of keeping one HTTPS request open until the model finishes.
+  app.post('/api/db/agnes/generation-jobs', (req, res) => {
+    pruneAgnesGenerationJobs();
+    const prompt = req.body?.prompt;
+    const previousHtml = req.body?.previousHtml;
+    if (typeof prompt !== 'string' || !prompt.trim()) {
+      return sendApiError(res, 400, 'BAD_REQUEST', 'prompt is required');
+    }
+    if (previousHtml !== undefined && typeof previousHtml !== 'string') {
+      return sendApiError(res, 400, 'BAD_REQUEST', 'previousHtml must be a string');
+    }
+    if (typeof previousHtml === 'string' && previousHtml.length > 120_000) {
+      return sendApiError(res, 413, 'PAYLOAD_TOO_LARGE', 'previousHtml is too large');
+    }
+    const activeJobs = Array.from(agnesGenerationJobs.values())
+      .filter((job) => job.status === 'running').length;
+    if (activeJobs >= AGNES_GENERATION_JOB_LIMIT) {
+      return sendApiError(res, 429, 'RATE_LIMITED', 'Too many Agnes generations are already running');
+    }
+
+    const now = Date.now();
+    const job: AgnesGenerationJob = {
+      id: randomUUID(),
+      status: 'running',
+      createdAt: now,
+      updatedAt: now,
+      controller: new AbortController(),
+    };
+    agnesGenerationJobs.set(job.id, job);
+    res.status(202).json({ jobId: job.id, status: job.status });
+
+    const proxyDispatcher = proxyDispatcherRequestInit(process.env);
+    void (async () => {
+      const startedAt = Date.now();
+      try {
+        const result = await generateAgnesDesign({
+          prompt,
+          locale: req.body?.locale === 'en' ? 'en' : 'zh',
+          mode: typeof req.body?.mode === 'string' ? req.body.mode : undefined,
+          projectName: typeof req.body?.projectName === 'string' ? req.body.projectName : undefined,
+          previousHtml,
+          signal: job.controller.signal,
+          requestInit: proxyDispatcher.requestInit,
+        });
+        if (job.status === 'canceled') return;
+        job.status = 'succeeded';
+        job.updatedAt = Date.now();
+        job.result = {
+          html: result.html,
+          model: AGNES_TEXT_MODEL,
+          usage: result.usage,
+          latencyMs: Date.now() - startedAt,
+        };
+      } catch (error) {
+        if (job.status === 'canceled') return;
+        const normalized = normalizeAgnesError(error);
+        job.status = 'failed';
+        job.updatedAt = Date.now();
+        job.error = {
+          code: normalized.code,
+          message: normalized.message,
+          status: normalized.status,
+        };
+      } finally {
+        await proxyDispatcher.close();
+      }
+    })();
+  });
+
+  app.get('/api/db/agnes/generation-jobs/:jobId', (req, res) => {
+    pruneAgnesGenerationJobs();
+    const job = agnesGenerationJobs.get(req.params.jobId);
+    if (!job) return sendApiError(res, 404, 'NOT_FOUND', 'Agnes generation job not found');
+    if (job.status === 'succeeded') {
+      return res.json({ status: job.status, result: job.result });
+    }
+    if (job.status === 'failed' || job.status === 'canceled') {
+      return res.json({ status: job.status, error: job.error || {
+        code: 'AGNES_CANCELED',
+        message: 'Agnes generation was canceled.',
+        status: 499,
+      } });
+    }
+    return res.json({ status: job.status, createdAt: job.createdAt });
+  });
+
+  app.delete('/api/db/agnes/generation-jobs/:jobId', (req, res) => {
+    const job = agnesGenerationJobs.get(req.params.jobId);
+    if (!job) return res.status(204).end();
+    if (job.status === 'running') {
+      job.status = 'canceled';
+      job.updatedAt = Date.now();
+      job.controller.abort();
+    }
+    return res.status(204).end();
+  });
+
+  // Keep the synchronous endpoint for API compatibility. Studio uses the job
+  // endpoint above so a CDN timeout can never replace a model result with HTML.
   app.post('/api/db/agnes/generate', async (req, res) => {
     const prompt = req.body?.prompt;
     const previousHtml = req.body?.previousHtml;

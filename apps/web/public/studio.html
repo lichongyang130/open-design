@@ -104,7 +104,10 @@
   .main-inner { width: min(860px, 100%); }
   .main-inner.wide { width: min(1360px, 100%); }
   .main.projects-wall { align-items: stretch; padding: 24px 24px 52px; }
-  .main-inner.project-wall { width: 100%; max-width: none; }
+  .main.generation-workspace { align-items: stretch; height: 100dvh; min-height: 640px; padding: 14px; overflow: hidden; }
+  .main-inner.project-wall, .main-inner.generation-wall { width: 100%; max-width: none; }
+  .main-inner.generation-wall { height: 100%; min-height: 0; }
+  .main-inner.generation-wall > .topbar { display: none; }
   .main-inner.wide .topbar, .main-inner.project-wall .topbar { margin-bottom: 16px; }
   .topbar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 42px; }
   .lang { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--glass); border: 1px solid var(--glass-border); backdrop-filter: blur(14px); }
@@ -215,7 +218,7 @@
   .bn-empty { grid-column: 1 / -1; padding: 44px 20px; text-align: center; color: var(--faint); font-size: 13px; border: 1.5px dashed var(--glass-border); border-radius: 16px; }
 
   /* ── 生成过程视图（左：对话修改；右：设计文件）── */
-  .gen-wrap { display: grid; grid-template-columns: minmax(340px, 46%) 1fr; height: calc(100dvh - 148px); min-height: 560px; border-radius: 22px; overflow: hidden; border: 1px solid var(--glass-border); background: #fff; box-shadow: 0 18px 44px rgba(58,70,52,0.12); }
+  .gen-wrap { display: grid; grid-template-columns: clamp(320px, 29vw, 420px) minmax(0, 1fr); width: 100%; height: 100%; min-height: 0; border-radius: 18px; overflow: hidden; border: 1px solid var(--glass-border); background: #fff; box-shadow: 0 18px 44px rgba(58,70,52,0.12); }
   .gen-left { display: flex; flex-direction: column; background: #eceef0; border-right: 1px solid #e2e5e7; min-width: 0; }
   .gen-head { display: flex; align-items: center; gap: 10px; padding: 13px 16px; border-bottom: 1px solid #e2e5e7; }
   .gen-back { flex: none; width: 32px; height: 32px; border-radius: 10px; border: 0; background: transparent; color: var(--muted); cursor: pointer; display: grid; place-items: center; }
@@ -267,16 +270,25 @@
   .gen-rhead .rt b { font-size: 16px; font-weight: 800; letter-spacing: -0.01em; }
   .gen-rhead .tab { font-size: 11.5px; font-weight: 700; padding: 4px 12px; border-radius: 999px; background: #f1f3f4; color: var(--muted); }
   .gen-quota { flex: none; font-size: 12.5px; font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; }
-  .gen-files { flex: 1; overflow-y: auto; padding: 18px 20px; }
-  .gf-empty { height: 100%; min-height: 260px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border: 1.5px dashed #dfe3e5; border-radius: 16px; color: var(--faint); text-align: center; padding: 20px; }
+  .gen-files { flex: 1; min-height: 0; overflow: hidden; padding: 10px; background: #f4f6f4; }
+  .gf-empty { height: 100%; min-height: 260px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border: 1.5px dashed #dfe3e5; border-radius: 16px; color: var(--faint); text-align: center; padding: 20px; background: #fff; }
   .gf-empty .mark { width: 44px; height: 44px; border-radius: 12px; background: #f4f6f5; display: grid; place-items: center; margin-bottom: 4px; color: #b7c0ba; }
   .gf-empty b { font-size: 13.5px; color: var(--muted); font-weight: 700; }
   .gf-empty span { font-size: 12px; }
-  .gf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(216px, 1fr)); gap: 14px; }
-  .gf-card { border: 1px solid #e8eaea; border-radius: 14px; overflow: hidden; cursor: pointer; background: #fff; transition: 0.2s; }
-  .gf-card:hover { box-shadow: 0 12px 26px rgba(58,70,52,0.13); transform: translateY(-2px); border-color: #d6ded9; }
-  .gf-card .pv { height: 152px; overflow: hidden; position: relative; background: #fbfbfa; }
-  .gf-card .pv iframe { width: 1280px; height: 940px; transform: scale(0.17); transform-origin: 0 0; border: 0; pointer-events: none; }
+  .gf-grid { position: relative; height: 100%; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); grid-template-rows: minmax(0, 1fr) auto; gap: 9px; }
+  .gf-grid > .gf-generating { position: absolute; z-index: 4; top: 10px; left: 50%; width: min(560px, calc(100% - 24px)); transform: translateX(-50%); box-shadow: 0 14px 34px rgba(40,48,41,.14); }
+  .gf-card { border: 1px solid #e0e5e1; border-radius: 12px; overflow: hidden; cursor: pointer; background: #fff; transition: 0.2s; }
+  .gf-card:hover { box-shadow: 0 12px 26px rgba(58,70,52,0.13); border-color: #cdd8d1; }
+  .gf-card.is-primary { grid-column: 1 / -1; grid-row: 1; min-height: 0; display: flex; flex-direction: column; cursor: default; box-shadow: 0 12px 34px rgba(58,70,52,.1); }
+  .gf-card.is-history { min-height: 112px; }
+  .gf-card .pv { height: 86px; overflow: hidden; position: relative; background: #fbfbfa; }
+  .gf-card .pv iframe { width: 1280px; height: 940px; transform: scale(0.12); transform-origin: 0 0; border: 0; pointer-events: none; }
+  .gf-card.is-primary .pv { flex: 1; min-height: 0; height: auto; }
+  .gf-card.is-primary .pv iframe { width: 100%; height: 100%; transform: none; pointer-events: auto; background: #fff; }
+  .gf-card.is-primary:hover { transform: none; }
+  .gf-card.is-primary .meta { min-height: 42px; }
+  .gf-card.is-history .meta { padding: 7px 9px; }
+  .gf-card.is-history .meta .time { display: none; }
   .gf-card .pv.media { display: grid; place-items: center; background: #151916; }
   .gf-card .pv.media img, .gf-card .pv.media video { width: 100%; height: 100%; display: block; object-fit: contain; pointer-events: none; }
   .gf-card .pv.media::after { content: attr(data-media-label); position: absolute; left: 9px; top: 9px; padding: 4px 8px; border-radius: 999px; color: #fff; background: rgba(10,14,11,.62); backdrop-filter: blur(8px); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
@@ -302,8 +314,12 @@
   .gm-frame img, .gm-frame video { width: 100%; height: 100%; display: block; object-fit: contain; background: #101411; }
   .gm-frame video { padding: 12px; }
   @media (max-width: 980px) {
-    .gen-wrap { grid-template-columns: 1fr; height: auto; }
+    .main.generation-workspace { height: auto; min-height: 100dvh; padding: 8px; overflow: visible; }
+    .main-inner.generation-wall { height: auto; }
+    .gen-wrap { grid-template-columns: 1fr; height: auto; min-height: 0; }
     .gen-left { height: 72dvh; border-right: 0; border-bottom: 1px solid #e2e5e7; }
+    .gen-right { height: 82dvh; }
+    .gf-grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
     .gm-scroll-tip { display: none; }
     .gm-box { width: 98vw; height: 94dvh; }
     .gm-bar { gap: 6px; padding: 9px; }
@@ -2460,27 +2476,78 @@
     var mode = roleModeById(state.genMode, state.role, state.lang);
     return mode ? mode.label : t("gkPage");
   }
+  function waitForAgnesPoll(ms, signal) {
+    return new Promise(function (resolve, reject) {
+      if (signal && signal.aborted) return reject(new DOMException("Generation stopped", "AbortError"));
+      var timer = setTimeout(done, ms);
+      function aborted() {
+        clearTimeout(timer);
+        cleanup();
+        reject(new DOMException("Generation stopped", "AbortError"));
+      }
+      function cleanup() { if (signal) signal.removeEventListener("abort", aborted); }
+      function done() { cleanup(); resolve(); }
+      if (signal) signal.addEventListener("abort", aborted, { once: true });
+    });
+  }
   async function invokeAgnesText(prompt, kind, version, model, signal) {
     if (window.StudioWorkbench && typeof window.StudioWorkbench.promptWithContext === "function") {
       prompt = await window.StudioWorkbench.promptWithContext(prompt);
     }
-    var result = await apiSend("/api/db/agnes/generate", "POST", {
+    var submitted = await apiSend("/api/db/agnes/generation-jobs", "POST", {
       prompt: prompt,
       locale: state.lang,
       mode: generationModeLabel(),
       projectName: state.gen.name,
       previousHtml: latestTextArtifactHtml()
     }, { signal: signal });
-    if (!result || typeof result.html !== "string" || result.html.length < 40) throw new Error("Agnes returned no HTML artifact");
-    return {
-      name: state.gen.name,
-      version: version,
-      kind: kind,
-      surface: "text",
-      model: result.model || model,
-      html: result.html,
-      latencyMs: Number(result.latencyMs) || null
+    if (!submitted || !submitted.jobId) throw new Error("Agnes generation job was not created");
+    var jobId = String(submitted.jobId);
+    var cancelJob = function () {
+      if (typeof fetch !== "function") return;
+      fetch("/api/db/agnes/generation-jobs/" + encodeURIComponent(jobId), {
+        method: "DELETE",
+        keepalive: true
+      }).catch(function () {});
     };
+    if (signal) signal.addEventListener("abort", cancelJob, { once: true });
+    try {
+      var deadline = Date.now() + 3 * 60 * 1000;
+      while (Date.now() < deadline) {
+        var snapshot = await apiGet(
+          "/api/db/agnes/generation-jobs/" + encodeURIComponent(jobId),
+          { signal: signal, cache: "no-store" }
+        );
+        if (snapshot && snapshot.status === "succeeded") {
+          var result = snapshot.result || {};
+          if (typeof result.html !== "string" || result.html.length < 40) throw new Error("Agnes returned no HTML artifact");
+          return {
+            name: state.gen.name,
+            version: version,
+            kind: kind,
+            surface: "text",
+            model: result.model || model,
+            html: result.html,
+            latencyMs: Number(result.latencyMs) || null
+          };
+        }
+        if (snapshot && (snapshot.status === "failed" || snapshot.status === "canceled")) {
+          var failure = snapshot.error && typeof snapshot.error === "object" ? snapshot.error : {};
+          var jobError = new Error(apiErrorMessage(snapshot.error, "Agnes generation failed"));
+          jobError.status = Number(failure.status) || 0;
+          jobError.code = typeof failure.code === "string" ? failure.code : "";
+          throw jobError;
+        }
+        await waitForAgnesPoll(1200, signal);
+      }
+      cancelJob();
+      var timeoutError = new Error("Agnes generation timed out");
+      timeoutError.code = "AGNES_TIMEOUT";
+      timeoutError.status = 504;
+      throw timeoutError;
+    } finally {
+      if (signal) signal.removeEventListener("abort", cancelJob);
+    }
   }
   async function invokeAgnesMedia(prompt, kind, version, model, surface, signal, runId) {
     if (window.StudioWorkbench && typeof window.StudioWorkbench.promptWithContext === "function") {
@@ -2766,9 +2833,10 @@
     }
     var grid = document.createElement("div");
     grid.className = "gf-grid";
-    arts.slice().reverse().forEach(function (a) {
+    arts.slice().reverse().forEach(function (a, artifactIndex) {
+      var isPrimary = artifactIndex === 0;
       var card = document.createElement("div");
-      card.className = "gf-card";
+      card.className = "gf-card " + (isPrimary ? "is-primary" : "is-history");
       card.tabIndex = 0;
       card.setAttribute("role", "button");
       card.setAttribute("data-art", String(a.version));
@@ -2798,7 +2866,7 @@
         var frame = document.createElement("iframe");
         frame.setAttribute("sandbox", "");
         frame.setAttribute("referrerpolicy", "no-referrer");
-        frame.setAttribute("scrolling", "no");
+        frame.setAttribute("scrolling", isPrimary ? "auto" : "no");
         frame.setAttribute("title", a.name || "Agnes HTML preview");
         frame.srcdoc = typeof a.html === "string" ? a.html : "";
         preview.appendChild(frame);
@@ -3113,9 +3181,13 @@
     if (inner) {
       inner.classList.toggle("wide", v === "gen");
       inner.classList.toggle("project-wall", v === "projects");
+      inner.classList.toggle("generation-wall", v === "gen");
     }
     var main = document.querySelector(".main");
-    if (main) main.classList.toggle("projects-wall", v === "projects");
+    if (main) {
+      main.classList.toggle("projects-wall", v === "projects");
+      main.classList.toggle("generation-workspace", v === "gen");
+    }
     var navV = v === "gen" ? "projects" : v;
     var items = document.querySelectorAll(".nav-item");
     for (var j = 0; j < items.length; j++) items[j].classList.toggle("on", items[j].getAttribute("data-nav") === navV);
@@ -3633,7 +3705,9 @@
   function renderProjects() {
     var d = I18N[state.lang];
     var cfg = roleProjectContent();
-    if (state.realProjectRows) state.realProjects = state.realProjectRows.map(mapRealProject);
+    if (state.realProjectRows) state.realProjects = state.realProjectRows.map(mapRealProject).filter(function (project) {
+      return !project.retired;
+    });
     var real = state.realProjects || [];
     /* Role scope is authoritative: every role now owns persisted starters and
        user projects. Legacy unscoped rows stay visible only to Designer. */
@@ -4058,6 +4132,12 @@
     if (code === "AGNES_INVALID_RESPONSE" || code === "AGNES_BAD_RESPONSE") {
       return state.lang === "zh" ? "Agnes 返回了无法解析的响应，请稍后重试；若持续发生，请检查上游网关。" : "Agnes returned an unreadable response. Retry later; if it persists, check the upstream gateway.";
     }
+    if (code === "HTML_GATEWAY_RESPONSE") {
+      return state.lang === "zh" ? "代理网关中断了生成连接。文本生成已改为后台任务轮询，请重试一次。" : "The proxy interrupted generation. Text generation now uses a background job; please retry once.";
+    }
+    if (code === "AGNES_TIMEOUT") {
+      return state.lang === "zh" ? "Agnes 生成超时，请稍后重试。" : "Agnes generation timed out. Please retry later.";
+    }
     if (code === "AGNES_NOT_CONFIGURED" || /OD_AGNES_API_KEY|no Agnes credential|Agnes is not configured/i.test(value)) {
       return state.lang === "zh" ? "Agnes 尚未配置。请在 Daemon 环境中设置 OD_AGNES_API_KEY 后重启服务。" : "Agnes is not configured. Set OD_AGNES_API_KEY in the daemon environment, then restart the service.";
     }
@@ -4074,6 +4154,16 @@
     return fetch(p, options || {}).then(function (response) {
       return response.text().then(function (raw) {
         var data = {};
+        var contentType = String(response.headers.get("content-type") || "").toLowerCase();
+        var gatewayHtml = /text\/html/.test(contentType) || /^\s*(?:<!doctype\s+html|<html\b)/i.test(raw || "");
+        if (gatewayHtml) {
+          var gatewayError = new Error(state.lang === "zh"
+            ? "代理网关返回了 HTML 错误页，生成连接已中断。"
+            : "The proxy returned an HTML error page and interrupted generation.");
+          gatewayError.status = response.status;
+          gatewayError.code = "HTML_GATEWAY_RESPONSE";
+          throw gatewayError;
+        }
         if (raw) {
           try { data = JSON.parse(raw); }
           catch (e) {
@@ -4152,6 +4242,7 @@
       mode: mode,
       source: meta.source || "user",
       starterKey: meta.starterKey || null,
+      retired: meta.starterRetired === true,
       st: st.c,
       stT: st[state.lang],
       prog: statusKey === "running" ? 72 : 55,
@@ -4231,7 +4322,9 @@
         if (summary && summary.projectId) state.realGenSummaries[summary.projectId] = summary;
       });
       state.realProjectRows = projectsResponse.projects || [];
-      state.realProjects = state.realProjectRows.map(mapRealProject);
+      state.realProjects = state.realProjectRows.map(mapRealProject).filter(function (project) {
+        return !project.retired;
+      });
       state.projectsLoading = false;
       renderProjects();
       renderHomeRecent();

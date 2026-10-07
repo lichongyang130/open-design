@@ -16,7 +16,7 @@
     "tools-pack": "pnpm exec tools-pack",
     "tools-release": "pnpm exec tools-release",
     "tools-serve": "pnpm exec tools-serve",
-    "preview-studio": "node ./scripts/preview-studio.mjs",
+    "preview-studio": "node --env-file-if-exists=.env.local ./scripts/preview-studio.mjs",
     "guard": "tsx ./scripts/guard.ts",
     "lint:craft": "tsx ./scripts/lint-craft-references.ts",
     "i18n:check": "tsx ./scripts/i18n-check.ts",

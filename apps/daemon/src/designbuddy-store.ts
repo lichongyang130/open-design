@@ -8,6 +8,7 @@
 import type Database from 'better-sqlite3';
 import { randomUUID } from 'node:crypto';
 import {
+  DESIGNER_COMMERCIAL_ALIASES,
   DESIGNER_COMMERCIAL_STARTERS,
   enhanceLegacyStarterHtml,
 } from './designbuddy-commercial-projects.js';
@@ -100,7 +101,7 @@ export interface DesignBuddyStarterStatus {
   createdProjectIds: string[];
 }
 
-const DESIGNER_STARTER_VERSION = 3;
+const DESIGNER_STARTER_VERSION = 4;
 const ROLE_STARTER_VERSION = 2;
 const DESIGNER_STARTER_PREF = 'starter-projects:designer';
 
@@ -527,7 +528,8 @@ function initializeOperationalRoleStarterProjects(
 
 /**
  * Materialize each role's showcase as persisted projects with replayable v1
- * artifacts. Designer version 3 contains the 56 commercial experiences;
+ * artifacts. Designer version 4 keeps one canonical project per visual system
+ * and folds the former duplicate entries into five interactive scenario packs;
  * operational role version 2 gives every PM, Developer, and Admin project a
  * distinct workspace instead of reusing one visual shell.
  * User projects and intentionally deleted starters remain untouched.
@@ -564,9 +566,17 @@ export function initializeDesignBuddyStarterProjects(db: SqliteDb, role: DesignB
   existingStarterByKey.forEach((_row, key) => completedKeys.add(key));
 
   const createdProjectIds: string[] = [];
+  const visibleStarterKeys = new Set(DESIGNER_STARTERS.map((starter) => starter.key));
+  const retiredStarterIds = new Set(
+    Object.keys(DESIGNER_COMMERCIAL_ALIASES)
+      .map((key) => existingStarterByKey.get(key)?.id)
+      .filter((id): id is string => typeof id === 'string'),
+  );
   const projectIds = Array.from(new Set([
-    ...preference.projectIds,
-    ...Array.from(existingStarterByKey.values()).map((row) => row.id),
+    ...preference.projectIds.filter((id) => !retiredStarterIds.has(id)),
+    ...Array.from(existingStarterByKey.entries())
+      .filter(([key]) => visibleStarterKeys.has(key))
+      .map(([, row]) => row.id),
   ]));
   const now = Date.now();
   const insertProject = db.prepare(
@@ -589,6 +599,23 @@ export function initializeDesignBuddyStarterProjects(db: SqliteDb, role: DesignB
   );
 
   db.transaction(() => {
+    // Retire duplicate system starters from the default gallery without
+    // deleting their history. Old ids remain available for recovery and old
+    // template concepts are folded into the canonical project's scenario packs.
+    for (const [retiredKey, canonicalKey] of Object.entries(DESIGNER_COMMERCIAL_ALIASES)) {
+      const existing = existingStarterByKey.get(retiredKey);
+      if (!existing) continue;
+      updateProjectMetadata.run(
+        JSON.stringify({
+          ...existing.metadata,
+          starterVersion: DESIGNER_STARTER_VERSION,
+          starterRetired: true,
+          canonicalStarterKey: canonicalKey,
+        }),
+        existing.id,
+      );
+    }
+
     // Refresh only the original system artifact. Any later artifact version is
     // user-authored and remains the summary's latest version after migration.
     for (const starter of DESIGNER_STARTERS) {
@@ -619,6 +646,7 @@ export function initializeDesignBuddyStarterProjects(db: SqliteDb, role: DesignB
         JSON.stringify({
           ...existing.metadata,
           starterVersion: DESIGNER_STARTER_VERSION,
+          starterRetired: false,
         }),
         existing.id,
       );
@@ -634,6 +662,7 @@ export function initializeDesignBuddyStarterProjects(db: SqliteDb, role: DesignB
         source: 'starter-project',
         starterKey: starter.key,
         starterVersion: DESIGNER_STARTER_VERSION,
+        starterRetired: false,
       };
       const artifactHtml = starterArtifactHtml(starter);
       const eventSpecs: Array<{
@@ -792,15 +821,28 @@ export function listDesignBuddyGenEvents(db: SqliteDb, projectId: string): Desig
 export function listDesignBuddyGenSummaries(db: SqliteDb): DesignBuddyGenSummary[] {
   const rows = db
     .prepare(
-      `SELECT g.*
+      `SELECT g.*, p.metadata_json AS project_metadata_json
          FROM designbuddy_gen g
          INNER JOIN projects p ON p.id = g.project_id
         ORDER BY g.project_id ASC, g.seq ASC, g.created_at ASC`,
     )
     .all() as DbRow[];
   const summaries = new Map<string, DesignBuddyGenSummary>();
+  const projectVisibility = new Map<string, boolean>();
   for (const row of rows) {
     const event = genEventFromRow(row);
+    let visible = projectVisibility.get(event.projectId);
+    if (visible == null) {
+      visible = true;
+      try {
+        const metadata = JSON.parse(String(row.project_metadata_json || '{}')) as Record<string, any>;
+        visible = metadata.starterRetired !== true;
+      } catch {
+        // Malformed user metadata stays visible; only explicit system retirement hides a row.
+      }
+      projectVisibility.set(event.projectId, visible);
+    }
+    if (!visible) continue;
     let summary = summaries.get(event.projectId);
     if (!summary) {
       summary = {

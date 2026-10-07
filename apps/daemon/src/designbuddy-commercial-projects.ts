@@ -615,18 +615,71 @@ ${renderMetricStrip(spec)}
 </body></html>`;
 }
 
-if (SPECS.length !== 50) {
-  throw new Error(`Expected 50 commercial project starters, received ${SPECS.length}`);
+const COMMERCIAL_SCENARIO_CSS = `
+.scenario-library{background:color-mix(in srgb,var(--paper) 84%,var(--soft));border-top:1px solid var(--line)}
+.scenario-library .section-heading{margin-bottom:34px}.scenario-stack{display:grid;gap:34px}.scenario-pack{border-top:1px solid var(--line);padding-top:24px}.scenario-pack>header{display:flex;align-items:end;justify-content:space-between;gap:24px;margin-bottom:16px}.scenario-pack>header span{font-size:9px;font-weight:900;letter-spacing:.15em;color:var(--accent)}.scenario-pack>header h3{font-size:28px;letter-spacing:-.04em;margin:5px 0}.scenario-pack>header p{max-width:560px;margin:0;color:var(--muted);font-size:11px}.scenario-pack>header button{border:1px solid var(--line);border-radius:999px;background:var(--panel);padding:9px 13px;color:var(--ink);font-size:9px;font-weight:850}.scenario-pack>header button.active,.scenario-pack>header button:hover{background:var(--ink);color:var(--paper)}.scenario-screens{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.scenario-screen{min-height:230px;border:1px solid var(--line);border-radius:19px;background:var(--panel);color:var(--ink);padding:20px;text-align:left;display:flex;flex-direction:column;transition:.2s}.scenario-screen:hover,.scenario-screen.active{transform:translateY(-4px);border-color:var(--accent);box-shadow:0 18px 45px color-mix(in srgb,var(--ink) 10%,transparent)}.scenario-screen>span{font-size:8px;color:var(--accent);font-weight:900}.scenario-screen h4{font-size:20px;letter-spacing:-.03em;margin:42px 0 8px}.scenario-screen p{font-size:10px;color:var(--muted)}.scenario-screen footer{margin-top:auto;padding-top:17px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-size:9px}.scenario-screen footer b{font-size:16px}.scenario-screen footer em{font-style:normal;color:var(--accent-2)}
+@media(max-width:900px){.scenario-screens{grid-template-columns:1fr}.scenario-pack>header{align-items:flex-start;flex-direction:column}.scenario-screen{min-height:190px}}
+`;
+
+function renderScenarioLibrary(familySpecs: CommercialProjectSpec[]): string {
+  const screens = ['业务首页', '核心任务流', '运营与洞察'];
+  return `<section class="section scenario-library" id="scenario-library"><div class="wide"><div class="section-heading"><div><small>04 / FIVE REAL BUSINESS PACKS</small><h2>一个系统，<br>覆盖五种真实业务。</h2></div><p>重复的项目入口已经收敛为一个完整系统。原有内容保留为可点击的行业场景、任务流和运营视图。</p></div><div class="scenario-stack">${familySpecs.map((scenario, scenarioIndex) => `
+    <article class="scenario-pack" data-scenario-pack="${escapeHtml(scenario.slug)}"><header><div><span>SCENARIO ${String(scenarioIndex + 1).padStart(2, '0')}</span><h3>${escapeHtml(scenario.name)}</h3></div><p>${escapeHtml(scenario.summary)}</p><button type="button" data-detail="${escapeHtml(scenario.name)}" data-copy="${escapeHtml(scenario.summary)}">切换到此场景　↗</button></header><div class="scenario-screens">${screens.map((screen, screenIndex) => {
+      const feature = scenario.features[screenIndex]!;
+      const metric = scenario.metrics[screenIndex]!;
+      return `<button type="button" class="scenario-screen" data-content-screen="${escapeHtml(scenario.slug)}-${screenIndex + 1}" data-detail="${escapeHtml(feature[0])}" data-copy="${escapeHtml(feature[1])}"><span>${String(scenarioIndex * 3 + screenIndex + 1).padStart(2, '0')} · ${screen}</span><h4>${escapeHtml(feature[0])}</h4><p>${escapeHtml(feature[1])}</p><footer><b>${escapeHtml(metric[0])}</b><em>${escapeHtml(metric[1])}　↗</em></footer></button>`;
+    }).join('')}</div></article>`).join('')}</div></div></section>`;
 }
 
-export const DESIGNER_COMMERCIAL_STARTERS: CommercialStarterProject[] = SPECS.map((spec, index) => ({
-  key: `designer.commercial.${spec.slug}`,
-  name: spec.name,
-  mode: spec.mode,
-  prompt: `为「${spec.name}」创建商业级、可上下滚动并带真实按钮交互的完整${spec.mode === 'dashboard' ? '数据产品' : spec.mode === 'app' ? '应用界面' : '品牌体验'}。`,
-  html: renderCommercialProject(spec, index),
-  interactive: true,
-}));
+function renderCanonicalCommercialProject(
+  spec: CommercialProjectSpec,
+  index: number,
+  familySpecs: CommercialProjectSpec[],
+): string {
+  return renderCommercialProject(spec, index)
+    .replace('</style>', `${COMMERCIAL_SCENARIO_CSS}</style>`)
+    .replace('<section class="closing">', `${renderScenarioLibrary(familySpecs)}<section class="closing">`)
+    .replace(
+      `data-family="${spec.family}"`,
+      `data-family="${spec.family}" data-canonical-template="${spec.family}" data-scenario-count="${familySpecs.length}"`,
+    );
+}
+
+if (SPECS.length !== 50) {
+  throw new Error(`Expected 50 commercial project source scenarios, received ${SPECS.length}`);
+}
+
+const COMMERCIAL_FAMILIES: readonly CommercialFamily[] = [
+  'commerce', 'saas', 'service', 'editorial', 'knowledge',
+  'mobile', 'dashboard', 'event', 'portfolio', 'brand',
+];
+const SPECS_BY_FAMILY = new Map<CommercialFamily, CommercialProjectSpec[]>(
+  COMMERCIAL_FAMILIES.map((family) => [family, SPECS.filter((spec) => spec.family === family)]),
+);
+
+/** Old duplicate starter keys remain routable to their canonical project. */
+export const DESIGNER_COMMERCIAL_ALIASES: Readonly<Record<string, string>> = Object.freeze(
+  Object.fromEntries(COMMERCIAL_FAMILIES.flatMap((family) => {
+    const familySpecs = SPECS_BY_FAMILY.get(family)!;
+    const canonicalKey = `designer.commercial.${familySpecs[0]!.slug}`;
+    return familySpecs.slice(1).map((spec) => [`designer.commercial.${spec.slug}`, canonicalKey]);
+  })),
+);
+
+/** One visible project per real visual system; five source scenarios live inside it. */
+export const DESIGNER_COMMERCIAL_STARTERS: CommercialStarterProject[] = COMMERCIAL_FAMILIES.map((family, index) => {
+  const familySpecs = SPECS_BY_FAMILY.get(family)!;
+  if (familySpecs.length !== 5) throw new Error(`Expected five scenarios for ${family}`);
+  const spec = familySpecs[0]!;
+  return {
+    key: `designer.commercial.${spec.slug}`,
+    name: spec.name,
+    mode: spec.mode,
+    prompt: `为「${spec.name}」创建包含五种业务场景、十五个可操作内容界面的完整${spec.mode === 'dashboard' ? '数据产品' : spec.mode === 'app' ? '应用界面' : '品牌体验'}。`,
+    html: renderCanonicalCommercialProject(spec, index, familySpecs),
+    interactive: true,
+  };
+});
 
 interface LegacyEnhancement {
   kicker: string;

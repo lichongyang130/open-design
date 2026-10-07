@@ -13,7 +13,10 @@ import {
   readDesignBuddyStarterStatus,
   setDesignBuddyProfile,
 } from '../src/designbuddy-store.js';
-import { DESIGNER_COMMERCIAL_STARTERS } from '../src/designbuddy-commercial-projects.js';
+import {
+  DESIGNER_COMMERCIAL_ALIASES,
+  DESIGNER_COMMERCIAL_STARTERS,
+} from '../src/designbuddy-commercial-projects.js';
 import { DESIGNBUDDY_ROLE_STARTERS } from '../src/designbuddy-role-projects.js';
 
 function fixtureDb() {
@@ -51,33 +54,35 @@ describe('DesignBuddy real starter projects', () => {
     db.close();
   });
 
-  it('ships 50 distinct long-form commercial pages across ten real product systems', () => {
-    expect(DESIGNER_COMMERCIAL_STARTERS).toHaveLength(50);
-    expect(new Set(DESIGNER_COMMERCIAL_STARTERS.map((starter) => starter.key)).size).toBe(50);
-    expect(new Set(DESIGNER_COMMERCIAL_STARTERS.map((starter) => starter.html)).size).toBe(50);
+  it('keeps one enriched commercial project per visual system and folds duplicate content into scenarios', () => {
+    expect(DESIGNER_COMMERCIAL_STARTERS).toHaveLength(10);
+    expect(Object.keys(DESIGNER_COMMERCIAL_ALIASES)).toHaveLength(40);
+    expect(new Set(DESIGNER_COMMERCIAL_STARTERS.map((starter) => starter.key)).size).toBe(10);
+    expect(new Set(DESIGNER_COMMERCIAL_STARTERS.map((starter) => starter.html)).size).toBe(10);
     const families = new Set<string>();
-    const layouts = new Map<string, Set<string>>();
+    const canonicalTemplates = new Set<string>();
     for (const starter of DESIGNER_COMMERCIAL_STARTERS) {
-      expect((starter.html.match(/<section/g) ?? []).length).toBeGreaterThanOrEqual(5);
-      expect((starter.html.match(/<button/g) ?? []).length).toBeGreaterThanOrEqual(12);
+      expect((starter.html.match(/<section/g) ?? []).length).toBeGreaterThanOrEqual(6);
+      expect((starter.html.match(/<button/g) ?? []).length).toBeGreaterThanOrEqual(30);
+      expect((starter.html.match(/data-scenario-pack=/g) ?? []).length).toBe(5);
+      expect((starter.html.match(/data-content-screen=/g) ?? []).length).toBe(15);
       expect(starter.html).toContain('scroll-behavior:smooth');
       expect(starter.html).toContain('id="experience"');
+      expect(starter.html).toContain('id="scenario-library"');
       expect(starter.html).toContain('data-open-action');
       expect(starter.html).toContain('data-detail');
       expect(starter.html).toContain("addEventListener('click'");
-      expect(starter.html).not.toContain('关键价值，<br>一眼可见');
       expect(starter.interactive).toBe(true);
       const family = starter.html.match(/data-family="([^"]+)"/)?.[1];
-      const layout = starter.html.match(/data-layout="([^"]+)"/)?.[1];
+      const canonicalTemplate = starter.html.match(/data-canonical-template="([^"]+)"/)?.[1];
       expect(family).toBeTruthy();
-      expect(layout).toBeTruthy();
+      expect(canonicalTemplate).toBe(family);
       families.add(family!);
-      const familyLayouts = layouts.get(family!) ?? new Set<string>();
-      familyLayouts.add(layout!);
-      layouts.set(family!, familyLayouts);
+      canonicalTemplates.add(canonicalTemplate!);
     }
     expect(families.size).toBe(10);
-    expect(Array.from(layouts.values()).every((familyLayouts) => familyLayouts.size === 5)).toBe(true);
+    expect(canonicalTemplates.size).toBe(10);
+    expect(new Set(Object.values(DESIGNER_COMMERCIAL_ALIASES)).size).toBe(10);
 
     const dom = new JSDOM(DESIGNER_COMMERCIAL_STARTERS[0]!.html, {
       runScripts: 'dangerously',
@@ -101,6 +106,10 @@ describe('DesignBuddy real starter projects', () => {
     const thirdFeature = document.querySelectorAll('[data-detail]')[2];
     thirdFeature.click();
     expect(document.querySelector('#detailTitle')?.textContent).toBe(thirdFeature.dataset.detail);
+    const scenarioScreen = document.querySelectorAll('[data-content-screen]')[14];
+    scenarioScreen.click();
+    expect(scenarioScreen.classList.contains('active')).toBe(true);
+    expect(document.querySelector('#detailTitle')?.textContent).toBe(scenarioScreen.dataset.detail);
 
     (document.querySelector('[data-open-action]')).click();
     expect(document.querySelector('#actionDrawer')?.classList.contains('open')).toBe(true);
@@ -141,16 +150,16 @@ describe('DesignBuddy real starter projects', () => {
         url: `https://preview.example/project/${starter.key}`,
       });
       const document = dom.window.document;
-      const inlineAction = Array.from(document.querySelectorAll<HTMLElement>('[data-action]'))
-        .find((button) =>
+      const inlineAction = Array.from(document.querySelectorAll('[data-action]') as any)
+        .find((button: any) =>
           !button.hasAttribute('data-modal')
           && !button.hasAttribute('disabled')
           && !button.classList.contains('active'),
-        );
+        ) as any;
       expect(inlineAction).toBeTruthy();
-      inlineAction!.click();
-      expect(inlineAction!.classList.contains('active')).toBe(true);
-      const modalAction = document.querySelector<HTMLElement>('[data-action][data-modal]');
+      inlineAction.click();
+      expect(inlineAction.classList.contains('active')).toBe(true);
+      const modalAction = document.querySelector('[data-action][data-modal]') as any;
       expect(modalAction).toBeTruthy();
       modalAction!.click();
       expect(document.getElementById('projectDialog')!.classList.contains('open')).toBe(true);
@@ -188,6 +197,25 @@ describe('DesignBuddy real starter projects', () => {
     const pmAgain = initializeDesignBuddyStarterProjects(db, 'pm');
     expect(pmAgain.createdProjectIds).toEqual([]);
     expect((db.prepare('SELECT COUNT(*) AS count FROM projects').get() as { count: number }).count).toBe(17);
+    db.close();
+  });
+
+  it('materializes exactly 34 visible default projects across all four roles', () => {
+    const db = fixtureDb();
+    for (const role of ['designer', 'pm', 'dev', 'admin'] as const) {
+      initializeDesignBuddyStarterProjects(db, role);
+    }
+    const rows = db.prepare(
+      `SELECT json_extract(metadata_json, '$.designBuddyRole') AS role,
+              json_extract(metadata_json, '$.starterRetired') AS retired
+       FROM projects`,
+    ).all() as Array<{ role: string; retired: number | null }>;
+    expect(rows).toHaveLength(34);
+    expect(rows.filter((row) => row.role === 'designer' && row.retired !== 1)).toHaveLength(16);
+    expect(rows.filter((row) => row.role === 'pm')).toHaveLength(6);
+    expect(rows.filter((row) => row.role === 'dev')).toHaveLength(6);
+    expect(rows.filter((row) => row.role === 'admin')).toHaveLength(6);
+    expect(listDesignBuddyGenSummaries(db)).toHaveLength(34);
     db.close();
   });
 
@@ -242,15 +270,15 @@ describe('DesignBuddy real starter projects', () => {
     db.close();
   });
 
-  it('materializes 56 persisted Designer projects, including 50 commercial interactive experiences', () => {
+  it('materializes 16 persisted Designer projects with ten enriched commercial systems', () => {
     const db = fixtureDb();
     expect(readDesignBuddyStarterStatus(db, 'designer').initialized).toBe(false);
 
     const initialized = initializeDesignBuddyStarterProjects(db, 'designer');
     expect(initialized.initialized).toBe(true);
-    expect(initialized.version).toBe(3);
-    expect(initialized.createdProjectIds).toHaveLength(56);
-    expect(new Set(initialized.projectIds).size).toBe(56);
+    expect(initialized.version).toBe(4);
+    expect(initialized.createdProjectIds).toHaveLength(16);
+    expect(new Set(initialized.projectIds).size).toBe(16);
 
     const projects = db
       .prepare(
@@ -263,7 +291,7 @@ describe('DesignBuddy real starter projects', () => {
         createdAt: number;
         updatedAt: number;
       }>;
-    expect(projects).toHaveLength(56);
+    expect(projects).toHaveLength(16);
     expect(projects.slice(0, 6).map((project) => project.name)).toEqual([
       '品牌官网改版',
       '会员中心 App',
@@ -283,8 +311,9 @@ describe('DesignBuddy real starter projects', () => {
     ]);
     expect(metadata.every((item) => item.designBuddyRole === 'designer')).toBe(true);
     expect(metadata.every((item) => item.source === 'starter-project')).toBe(true);
-    expect(new Set(metadata.map((item) => item.starterKey)).size).toBe(56);
-    expect(metadata.filter((item) => String(item.starterKey).startsWith('designer.commercial.'))).toHaveLength(50);
+    expect(new Set(metadata.map((item) => item.starterKey)).size).toBe(16);
+    expect(metadata.filter((item) => String(item.starterKey).startsWith('designer.commercial.'))).toHaveLength(10);
+    expect(metadata.every((item) => item.starterRetired === false)).toBe(true);
     expect(projects.every((project) => project.id.startsWith('db-starter-'))).toBe(true);
     expect(projects.every((project) => project.createdAt <= project.updatedAt)).toBe(true);
     expect(projects.every((project) => project.updatedAt <= Date.now())).toBe(true);
@@ -316,11 +345,11 @@ describe('DesignBuddy real starter projects', () => {
       }
       artifactHtml.add(html);
     }
-    expect(artifactHtml.size).toBe(56);
-    expect(Array.from(artifactHtml).filter((html) => html.includes('data-commercial-project'))).toHaveLength(50);
+    expect(artifactHtml.size).toBe(16);
+    expect(Array.from(artifactHtml).filter((html) => html.includes('data-commercial-project'))).toHaveLength(10);
 
     const summaries = listDesignBuddyGenSummaries(db);
-    expect(summaries).toHaveLength(56);
+    expect(summaries).toHaveLength(16);
     expect(summaries.every((summary) => summary.status === 'succeeded')).toBe(true);
     expect(summaries.every((summary) => summary.latestVersion === 1)).toBe(true);
     expect(summaries.every((summary) => summary.artifactCount === 1)).toBe(true);
@@ -348,7 +377,7 @@ describe('DesignBuddy real starter projects', () => {
           count: number;
         }
       ).count,
-    ).toBe(56);
+    ).toBe(16);
     expect(db.prepare('SELECT name FROM projects WHERE id = ?').get('user-project')).toEqual({
       name: '用户自己的项目',
     });
@@ -358,13 +387,13 @@ describe('DesignBuddy real starter projects', () => {
           count: number;
         }
       ).count,
-    ).toBe(440);
+    ).toBe(120);
     expect(readDesignBuddyStarterStatus(db, 'designer').initialized).toBe(true);
-    expect(listDesignBuddyGenSummaries(db)).toHaveLength(55);
+    expect(listDesignBuddyGenSummaries(db)).toHaveLength(15);
     db.close();
   });
 
-  it('upgrades a v1 six-project library by adding exactly 50 projects without duplicating legacy rows', () => {
+  it('upgrades a v1 six-project library by adding ten canonical systems without duplicating legacy rows', () => {
     const db = fixtureDb();
     initializeDesignBuddyStarterProjects(db, 'designer');
     const rows = db.prepare('SELECT id, metadata_json AS metadataJson FROM projects').all() as Array<{
@@ -379,7 +408,7 @@ describe('DesignBuddy real starter projects', () => {
       else legacyIds.push(row.id);
     }
     expect(legacyIds).toHaveLength(6);
-    expect(commercialIds).toHaveLength(50);
+    expect(commercialIds).toHaveLength(10);
     const removeProject = db.prepare('DELETE FROM projects WHERE id = ?');
     db.transaction(() => commercialIds.forEach((id) => removeProject.run(id)))();
     db.prepare(
@@ -388,10 +417,10 @@ describe('DesignBuddy real starter projects', () => {
 
     expect(readDesignBuddyStarterStatus(db, 'designer').initialized).toBe(false);
     const upgraded = initializeDesignBuddyStarterProjects(db, 'designer');
-    expect(upgraded.version).toBe(3);
-    expect(upgraded.createdProjectIds).toHaveLength(50);
-    expect((db.prepare('SELECT COUNT(*) AS count FROM projects').get() as { count: number }).count).toBe(56);
-    expect(new Set(upgraded.projectIds).size).toBe(56);
+    expect(upgraded.version).toBe(4);
+    expect(upgraded.createdProjectIds).toHaveLength(10);
+    expect((db.prepare('SELECT COUNT(*) AS count FROM projects').get() as { count: number }).count).toBe(16);
+    expect(new Set(upgraded.projectIds).size).toBe(16);
     const legacyArtifacts = legacyIds.map((id) =>
       listDesignBuddyGenEvents(db, id).find((event) => event.type === 'artifact'),
     );
@@ -400,7 +429,71 @@ describe('DesignBuddy real starter projects', () => {
     db.close();
   });
 
-  it('upgrades a v2 library in place without overwriting a later user artifact', () => {
+  it('retires forty duplicated v3 starters while preserving their rows and canonical ids', () => {
+    const db = fixtureDb();
+    const seeded = initializeDesignBuddyStarterProjects(db, 'designer');
+    const aliasEntries = Object.entries(DESIGNER_COMMERCIAL_ALIASES);
+    const insertProject = db.prepare(
+      `INSERT INTO projects
+         (id, name, skill_id, design_system_id, pending_prompt, metadata_json, created_at, updated_at)
+       VALUES (?, ?, NULL, NULL, NULL, ?, ?, ?)`,
+    );
+    const insertEvent = db.prepare(
+      `INSERT INTO designbuddy_gen (id, project_id, seq, type, payload, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+    );
+    const aliasIds: string[] = [];
+    db.transaction(() => aliasEntries.forEach(([starterKey], index) => {
+      const id = `duplicate-starter-${index}`;
+      const at = Date.now() - index * 1000;
+      aliasIds.push(id);
+      insertProject.run(id, `Duplicate ${index}`, JSON.stringify({
+        designBuddyRole: 'designer',
+        designBuddyMode: 'landing',
+        source: 'starter-project',
+        starterKey,
+        starterVersion: 3,
+      }), at, at + 1);
+      insertEvent.run(`duplicate-artifact-${index}`, id, 1, 'artifact', JSON.stringify({
+        version: 1,
+        name: `Duplicate ${index}`,
+        kind: 'landing',
+        html: '<!doctype html><main>historical duplicate</main>',
+      }), at);
+      insertEvent.run(`duplicate-done-${index}`, id, 2, 'done', JSON.stringify({
+        version: 1,
+        kind: 'landing',
+      }), at + 1);
+    }))();
+    const canonicalKeys = DESIGNER_COMMERCIAL_STARTERS.map((starter) => starter.key);
+    db.prepare(
+      `UPDATE designbuddy_prefs SET value = ?, updated_at = ? WHERE key = 'starter-projects:designer'`,
+    ).run(JSON.stringify({
+      version: 3,
+      projectIds: [...seeded.projectIds, ...aliasIds],
+      starterKeys: [...canonicalKeys, ...Object.keys(DESIGNER_COMMERCIAL_ALIASES)],
+    }), Date.now());
+
+    const upgraded = initializeDesignBuddyStarterProjects(db, 'designer');
+    expect(upgraded).toMatchObject({ role: 'designer', initialized: true, version: 4, createdProjectIds: [] });
+    expect(upgraded.projectIds).toHaveLength(16);
+    expect((db.prepare('SELECT COUNT(*) AS count FROM projects').get() as { count: number }).count).toBe(56);
+    const retiredRows = db.prepare(
+      `SELECT metadata_json AS metadataJson FROM projects
+       WHERE json_extract(metadata_json, '$.starterRetired') = 1`,
+    ).all() as Array<{ metadataJson: string }>;
+    expect(retiredRows).toHaveLength(40);
+    expect(retiredRows.every((row) => {
+      const metadata = JSON.parse(row.metadataJson);
+      return metadata.starterVersion === 4
+        && DESIGNER_COMMERCIAL_ALIASES[metadata.starterKey] === metadata.canonicalStarterKey;
+    })).toBe(true);
+    expect(listDesignBuddyGenSummaries(db)).toHaveLength(16);
+    expect(listDesignBuddyGenEvents(db, aliasIds[0]!)).toHaveLength(2);
+    db.close();
+  });
+
+  it('upgrades a v3 canonical library in place without overwriting a later user artifact', () => {
     const db = fixtureDb();
     const seeded = initializeDesignBuddyStarterProjects(db, 'designer');
     const rows = db.prepare('SELECT id, metadata_json AS metadataJson FROM projects').all() as Array<{
@@ -434,21 +527,21 @@ describe('DesignBuddy real starter projects', () => {
       `UPDATE designbuddy_prefs SET value = ?, updated_at = ? WHERE key = 'starter-projects:designer'`,
     ).run(
       JSON.stringify({
-        version: 2,
+        version: 3,
         projectIds: seeded.projectIds,
         starterKeys: metadata.map((item) => item.value.starterKey),
       }),
       Date.now(),
     );
-    const markMetadataV2 = db.prepare('UPDATE projects SET metadata_json = ? WHERE id = ?');
+    const markMetadataV3 = db.prepare('UPDATE projects SET metadata_json = ? WHERE id = ?');
     db.transaction(() => metadata.forEach((item) => {
-      markMetadataV2.run(JSON.stringify({ ...item.value, starterVersion: 2 }), item.row.id);
+      markMetadataV3.run(JSON.stringify({ ...item.value, starterVersion: 3 }), item.row.id);
     }))();
 
     const upgraded = initializeDesignBuddyStarterProjects(db, 'designer');
-    expect(upgraded.version).toBe(3);
+    expect(upgraded.version).toBe(4);
     expect(upgraded.createdProjectIds).toEqual([]);
-    expect((db.prepare('SELECT COUNT(*) AS count FROM projects').get() as { count: number }).count).toBe(56);
+    expect((db.prepare('SELECT COUNT(*) AS count FROM projects').get() as { count: number }).count).toBe(16);
 
     const commercialArtifacts = listDesignBuddyGenEvents(db, commercial.row.id)
       .filter((event) => event.type === 'artifact');
@@ -467,7 +560,7 @@ describe('DesignBuddy real starter projects', () => {
     const versions = db.prepare('SELECT metadata_json AS metadataJson FROM projects').all() as Array<{
       metadataJson: string;
     }>;
-    expect(versions.every((row) => JSON.parse(row.metadataJson).starterVersion === 3)).toBe(true);
+    expect(versions.every((row) => JSON.parse(row.metadataJson).starterVersion === 4)).toBe(true);
     db.close();
   });
 

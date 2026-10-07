@@ -76,6 +76,28 @@ describe('Agnes text integration', () => {
     expect(body.max_tokens).toBe(8);
   });
 
+  it('never exposes an upstream HTML gateway page as the generation error', async () => {
+    const fetchMock = vi.fn(async () => new Response(
+      '<!DOCTYPE html><html><body>Cloud gateway failure</body></html>',
+      { status: 502, headers: { 'content-type': 'text/html' } },
+    ));
+
+    let error: AgnesIntegrationError | null = null;
+    try {
+      await generateAgnesDesign({
+        prompt: 'Create a page',
+        fetchImpl: fetchMock as typeof fetch,
+      });
+    } catch (reason) {
+      error = reason as AgnesIntegrationError;
+    }
+    expect(error).toMatchObject({
+      code: 'AGNES_UPSTREAM_ERROR',
+      status: 502,
+    } satisfies Partial<AgnesIntegrationError>);
+    expect(error?.message).not.toMatch(/DOCTYPE|Cloud gateway/i);
+  });
+
   it('reports outbound TLS failures as actionable Agnes network errors', async () => {
     const fetchMock = vi.fn().mockRejectedValue(
       Object.assign(new TypeError('fetch failed'), {
@@ -86,10 +108,10 @@ describe('Agnes text integration', () => {
     await expect(generateAgnesDesign({
       prompt: 'Create a page',
       fetchImpl: fetchMock as typeof fetch,
-    })).rejects.toMatchObject<Partial<AgnesIntegrationError>>({
+    })).rejects.toMatchObject({
       code: 'AGNES_NETWORK_ERROR',
       status: 502,
-    });
+    } satisfies Partial<AgnesIntegrationError>);
   });
 
   it('fails without exposing or accepting a browser credential when daemon env is unset', async () => {
@@ -99,10 +121,10 @@ describe('Agnes text integration', () => {
     await expect(generateAgnesDesign({
       prompt: 'Create a page',
       fetchImpl: fetchMock as typeof fetch,
-    })).rejects.toMatchObject<Partial<AgnesIntegrationError>>({
+    })).rejects.toMatchObject({
       code: 'AGNES_NOT_CONFIGURED',
       status: 503,
-    });
+    } satisfies Partial<AgnesIntegrationError>);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
