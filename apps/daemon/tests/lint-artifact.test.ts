@@ -1278,4 +1278,19 @@ describe('accessibility and interaction basics', () => {
     const findings = lintArtifact('<a href="/docs">Read documentation</a>');
     expect(findings.find((f) => f.id === 'placeholder-link')).toBeUndefined();
   });
+
+  it('flags links without a discernible name', () => {
+    const findings = lintArtifact('<a href="/settings"><svg aria-hidden="true"></svg></a>');
+    expect(requiredFinding(findings, 'link-missing-name').severity).toBe('P1');
+  });
+
+  it('accepts image links when the image has alt text', () => {
+    const findings = lintArtifact('<a href="/brand"><img src="/brand.svg" alt="Brand home"></a>');
+    expect(findings.find((f) => f.id === 'link-missing-name')).toBeUndefined();
+  });
+
+  it('accepts icon links with an explicit accessible name', () => {
+    const findings = lintArtifact('<a href="/settings" aria-label="Settings"><svg></svg></a>');
+    expect(findings.find((f) => f.id === 'link-missing-name')).toBeUndefined();
+  });
 });
