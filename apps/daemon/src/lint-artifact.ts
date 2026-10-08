@@ -555,6 +555,37 @@ export function lintArtifact(rawHtml: unknown): LintFinding[] {
     }
   }
 
+  // ── P1-7: links without an accessible name ────────────────────────
+  // Links need a discernible name so screen-reader users can understand
+  // the destination. Keep this intentionally conservative: visible text,
+  // aria-label, aria-labelledby, or title is enough for this static check.
+  const linkRe = /<a\\b([^>]*)>([\\s\\S]*?)<\\/a\\s*>/gi;
+  let linkMatch: RegExpExecArray | null;
+  while ((linkMatch = linkRe.exec(html)) !== null) {
+    const attrs = linkMatch[1] ?? '';
+    const inner = (linkMatch[2] ?? '')
+      .replace(/<script\\b[^>]*>[\\s\\S]*?<\\/script\\s*>/gi, '')
+      .replace(/<style\\b[^>]*>[\\s\\S]*?<\\/style\\s*>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;|&#160;/gi, ' ')
+      .trim();
+    const hasAccessibleLabel =
+      /\\baria-label\\s*=\\s*(["'])\\s*[^\\s"'][\\s\\S]*?\\1/i.test(attrs) ||
+      /\\baria-labelledby\\s*=\\s*(["'])\\s*[^\\s"'][\\s\\S]*?\\1/i.test(attrs) ||
+      /\\btitle\\s*=\\s*(["'])\\s*[^\\s"'][\\s\\S]*?\\1/i.test(attrs) ||
+      inner.length > 0;
+    if (!hasAccessibleLabel) {
+      out.push({
+        severity: 'P1',
+        id: 'link-missing-name',
+        message: 'An <a> element has no visible text or explicit accessible label.',
+        fix: 'Add concise link text, or a meaningful aria-label / aria-labelledby. If the link only wraps an image, give the image useful alt text.',
+        snippet: clip(linkMatch[0]),
+      });
+      break;
+    }
+  }
+
   // ── P2-4: placeholder / unsafe navigation links ───────────────────
   const placeholderLink = /<a\b[^>]*\bhref\s*=\s*(["'])(?:#|javascript\s*:[^"']*)\1[^>]*>/i.exec(html);
   if (placeholderLink) {
