@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { lintArtifact, type LintFinding } from '../src/lint-artifact.js';
+import { lintArtifact, renderFindingsForAgent, type LintFinding } from '../src/lint-artifact.js';
 
 function requiredFinding(findings: LintFinding[], id: string): LintFinding {
   const hit = findings.find((finding) => finding.id === id);
@@ -1317,5 +1317,38 @@ describe('accessibility and interaction basics', () => {
   it('accepts unquoted alt text on an image-only link', () => {
     const findings = lintArtifact('<a href="/brand"><img src="/brand.svg" alt=Brand></a>');
     expect(findings.find((f) => f.id === 'link-missing-name')).toBeUndefined();
+  });
+});
+
+
+describe('agent correction feedback', () => {
+  it('returns no reminder for a clean artifact', () => {
+    expect(renderFindingsForAgent([])).toBe('');
+  });
+
+  it('asks the agent to re-emit a corrected artifact and orders blocking issues first', () => {
+    const reminder = renderFindingsForAgent([
+      {
+        severity: 'P2',
+        id: 'placeholder-link',
+        message: 'Placeholder link detected.',
+        fix: 'Replace it with a real destination.',
+        snippet: '<a href="#">More</a>',
+      },
+      {
+        severity: 'P0',
+        id: 'filler-copy',
+        message: 'Filler copy detected.',
+        fix: 'Replace it with brief-specific copy.',
+        snippet: 'Feature one',
+      },
+    ]);
+
+    expect(reminder).toContain('<artifact-lint>');
+    expect(reminder).toContain('Re-emit a corrected `<artifact>` in your next turn');
+    expect(reminder.indexOf('[P0] filler-copy')).toBeLessThan(reminder.indexOf('[P2] placeholder-link'));
+    expect(reminder).toContain('Fix: Replace it with brief-specific copy.');
+    expect(reminder).toContain('Snippet: `Feature one`');
+    expect(reminder).toContain('</artifact-lint>');
   });
 });
