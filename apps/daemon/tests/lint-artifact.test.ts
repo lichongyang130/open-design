@@ -1246,3 +1246,36 @@ describe('document quality basics', () => {
     expect(findings.find((f) => f.id === 'missing-document-language')).toBeUndefined();
   });
 });
+
+
+describe('accessibility and interaction basics', () => {
+  it('flags images without alt attributes', () => {
+    const findings = lintArtifact('<main><img src="/hero.png"></main>');
+    expect(requiredFinding(findings, 'image-missing-alt').severity).toBe('P1');
+  });
+
+  it('accepts informative and decorative images with alt attributes', () => {
+    const findings = lintArtifact('<main><img src="/hero.png" alt="Product dashboard"><img src="/divider.svg" alt=""></main>');
+    expect(findings.find((f) => f.id === 'image-missing-alt')).toBeUndefined();
+  });
+
+  it('flags icon-only buttons without an accessible name', () => {
+    const findings = lintArtifact('<button type="button"><svg viewBox="0 0 24 24"><path d="M0 0"></path></svg></button>');
+    expect(requiredFinding(findings, 'button-missing-name').severity).toBe('P1');
+  });
+
+  it('accepts buttons with visible text or aria-label', () => {
+    const findings = lintArtifact('<button>Save changes</button><button aria-label="Close dialog"><svg></svg></button>');
+    expect(findings.find((f) => f.id === 'button-missing-name')).toBeUndefined();
+  });
+
+  it('flags placeholder navigation links', () => {
+    const findings = lintArtifact('<a href="#">Learn more</a>');
+    expect(requiredFinding(findings, 'placeholder-link').severity).toBe('P2');
+  });
+
+  it('does not flag real navigation links', () => {
+    const findings = lintArtifact('<a href="/docs">Read documentation</a>');
+    expect(findings.find((f) => f.id === 'placeholder-link')).toBeUndefined();
+  });
+});
