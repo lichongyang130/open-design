@@ -1222,3 +1222,27 @@ describe('trust-gradient', () => {
     expect(findings.find((f) => f.id === 'trust-gradient')).toBeDefined();
   });
 });
+
+
+describe('document quality basics', () => {
+  it('flags a full HTML document without viewport metadata', () => {
+    const findings = lintArtifact('<!doctype html><html lang="en"><head><title>Demo</title></head><body><main>Demo</main></body></html>');
+    expect(requiredFinding(findings, 'missing-viewport').severity).toBe('P1');
+  });
+
+  it('does not flag a document that declares viewport metadata', () => {
+    const findings = lintArtifact('<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width, initial-scale=1"></head><body>Demo</body></html>');
+    expect(findings.find((f) => f.id === 'missing-viewport')).toBeUndefined();
+  });
+
+  it('flags a full HTML document without a language attribute', () => {
+    const findings = lintArtifact('<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"></head><body>Demo</body></html>');
+    expect(requiredFinding(findings, 'missing-document-language').severity).toBe('P2');
+  });
+
+  it('does not flag an HTML fragment for missing document metadata', () => {
+    const findings = lintArtifact('<main><h1>Fragment</h1></main>');
+    expect(findings.find((f) => f.id === 'missing-viewport')).toBeUndefined();
+    expect(findings.find((f) => f.id === 'missing-document-language')).toBeUndefined();
+  });
+});
