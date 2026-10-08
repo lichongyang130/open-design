@@ -1269,6 +1269,11 @@ describe('accessibility and interaction basics', () => {
     expect(findings.find((f) => f.id === 'button-missing-name')).toBeUndefined();
   });
 
+  it('accepts an unquoted aria-label on an icon-only button', () => {
+    const findings = lintArtifact('<button aria-label=Close><svg></svg></button>');
+    expect(findings.find((f) => f.id === 'button-missing-name')).toBeUndefined();
+  });
+
   it('flags placeholder navigation links', () => {
     const findings = lintArtifact('<a href="#">Learn more</a>');
     expect(requiredFinding(findings, 'placeholder-link').severity).toBe('P2');
@@ -1291,6 +1296,16 @@ describe('accessibility and interaction basics', () => {
 
   it('accepts icon links with an explicit accessible name', () => {
     const findings = lintArtifact('<a href="/settings" aria-label="Settings"><svg></svg></a>');
+    expect(findings.find((f) => f.id === 'link-missing-name')).toBeUndefined();
+  });
+
+  it('accepts an unquoted aria-label on an icon-only link', () => {
+    const findings = lintArtifact('<a href="/settings" aria-label=Settings><svg></svg></a>');
+    expect(findings.find((f) => f.id === 'link-missing-name')).toBeUndefined();
+  });
+
+  it('accepts unquoted alt text on an image-only link', () => {
+    const findings = lintArtifact('<a href="/brand"><img src="/brand.svg" alt=Brand></a>');
     expect(findings.find((f) => f.id === 'link-missing-name')).toBeUndefined();
   });
 });
