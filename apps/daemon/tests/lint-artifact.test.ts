@@ -1289,6 +1289,11 @@ describe('accessibility and interaction basics', () => {
     expect(requiredFinding(findings, 'placeholder-link').severity).toBe('P2');
   });
 
+  it('flags unquoted placeholder navigation links', () => {
+    const findings = lintArtifact('<a href=#>Learn more</a><a href=javascript:void(0)>Action</a>');
+    expect(requiredFinding(findings, 'placeholder-link').severity).toBe('P2');
+  });
+
   it('does not flag real navigation links', () => {
     const findings = lintArtifact('<a href="/docs">Read documentation</a>');
     expect(findings.find((f) => f.id === 'placeholder-link')).toBeUndefined();
