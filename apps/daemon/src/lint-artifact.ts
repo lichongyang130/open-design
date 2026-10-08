@@ -588,7 +588,7 @@ export function lintArtifact(rawHtml: unknown): LintFinding[] {
   }
 
   // ── P2-4: placeholder / unsafe navigation links ───────────────────
-  const placeholderLink = /<a\b[^>]*\bhref\s*=\s*(["'])(?:#|javascript\s*:[^"']*)\1[^>]*>/i.exec(html);
+  const placeholderLink = /<a\b[^>]*\bhref\s*=\s*(?:(["'])(?:#|javascript\s*:[^"']*)\1|(?:#|javascript\s*:[^\s>]+))[^>]*>/i.exec(html);
   if (placeholderLink) {
     out.push({
       severity: 'P2',
