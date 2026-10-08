@@ -507,6 +507,66 @@ export function lintArtifact(rawHtml: unknown): LintFinding[] {
   }
 
 
+  // ── P1-5: images without alt text ─────────────────────────────────
+  // Alt text is required even for decorative images (use alt="" when
+  // the image should be ignored by assistive technology). This rule is
+  // intentionally scoped to <img> elements and does not attempt to
+  // infer whether remote assets actually load.
+  const imgTags = html.match(/<img\\b[^>]*>/gi) ?? [];
+  const missingAlt = imgTags.find((tag) => !/\\balt\\s*=\\s*(["'])/i.test(tag));
+  if (missingAlt) {
+    out.push({
+      severity: 'P1',
+      id: 'image-missing-alt',
+      message: 'An <img> element has no alt attribute, so its content or decorative intent is not declared for assistive technology.',
+      fix: 'Add meaningful alt text for informative images, or alt="" for purely decorative images.',
+      snippet: clip(missingAlt),
+    });
+  }
+
+  // ── P1-6: buttons without an accessible name ──────────────────────
+  // A button may be named by visible text, aria-label, aria-labelledby,
+  // or title. Strip nested markup before checking visible text so an
+  // icon-only SVG button is flagged unless it has an explicit name.
+  const buttonRe = /<button\\b([^>]*)>([\\s\\S]*?)<\\/button\\s*>/gi;
+  let buttonMatch: RegExpExecArray | null;
+  while ((buttonMatch = buttonRe.exec(html)) !== null) {
+    const attrs = buttonMatch[1] ?? '';
+    const inner = (buttonMatch[2] ?? '')
+      .replace(/<script\\b[^>]*>[\\s\\S]*?<\\/script\\s*>/gi, '')
+      .replace(/<style\\b[^>]*>[\\s\\S]*?<\\/style\\s*>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;|&#160;/gi, ' ')
+      .trim();
+    const hasAccessibleLabel =
+      /\\baria-label\\s*=\\s*(["'])\\s*[^\\s"'][\\s\\S]*?\\1/i.test(attrs) ||
+      /\\baria-labelledby\\s*=\\s*(["'])\\s*[^\\s"'][\\s\\S]*?\\1/i.test(attrs) ||
+      /\\btitle\\s*=\\s*(["'])\\s*[^\\s"'][\\s\\S]*?\\1/i.test(attrs) ||
+      inner.length > 0;
+    if (!hasAccessibleLabel) {
+      out.push({
+        severity: 'P1',
+        id: 'button-missing-name',
+        message: 'A <button> has no visible text or explicit accessible label.',
+        fix: 'Give the button concise visible text, or add a meaningful aria-label (for example, aria-label="Close dialog" for an icon-only close button).',
+        snippet: clip(buttonMatch[0]),
+      });
+      break;
+    }
+  }
+
+  // ── P2-4: placeholder / unsafe navigation links ───────────────────
+  const placeholderLink = /<a\\b[^>]*\\bhref\\s*=\\s*(["'])(?:#|javascript\\s*:[^"']*)\\1[^>]*>/i.exec(html);
+  if (placeholderLink) {
+    out.push({
+      severity: 'P2',
+      id: 'placeholder-link',
+      message: 'A link uses href="#" or a javascript: URL, which often indicates placeholder navigation.',
+      fix: 'Use a real destination URL for navigation, or use a <button> for an in-page action and wire up its behavior.',
+      snippet: clip(placeholderLink[0]),
+    });
+  }
+
   // ── P1-4: missing viewport metadata ───────────────────────────────
   // Full HTML documents need a viewport declaration for predictable
   // mobile rendering. Do not flag fragments, which are common in
