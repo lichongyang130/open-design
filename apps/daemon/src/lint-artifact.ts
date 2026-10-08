@@ -559,20 +559,20 @@ export function lintArtifact(rawHtml: unknown): LintFinding[] {
   // Links need a discernible name so screen-reader users can understand
   // the destination. Keep this intentionally conservative: visible text,
   // aria-label, aria-labelledby, or title is enough for this static check.
-  const linkRe = /<a\\b([^>]*)>([\\s\\S]*?)<\\/a\\s*>/gi;
+  const linkRe = /<a\b([^>]*)>([\s\S]*?)<\/a\s*>/gi;
   let linkMatch: RegExpExecArray | null;
   while ((linkMatch = linkRe.exec(html)) !== null) {
     const attrs = linkMatch[1] ?? '';
     const inner = (linkMatch[2] ?? '')
-      .replace(/<script\\b[^>]*>[\\s\\S]*?<\\/script\\s*>/gi, '')
-      .replace(/<style\\b[^>]*>[\\s\\S]*?<\\/style\\s*>/gi, '')
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, '')
+      .replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, '')
       .replace(/<[^>]+>/g, ' ')
       .replace(/&nbsp;|&#160;/gi, ' ')
       .trim();
     const hasAccessibleLabel =
-      /\\baria-label\\s*=\\s*(["'])\\s*[^\\s"'][\\s\\S]*?\\1/i.test(attrs) ||
-      /\\baria-labelledby\\s*=\\s*(["'])\\s*[^\\s"'][\\s\\S]*?\\1/i.test(attrs) ||
-      /\\btitle\\s*=\\s*(["'])\\s*[^\\s"'][\\s\\S]*?\\1/i.test(attrs) ||
+      /\baria-label\s*=\s*(["'])\s*[^\s"'][\s\S]*?\1/i.test(attrs) ||
+      /\baria-labelledby\s*=\s*(["'])\s*[^\s"'][\s\S]*?\1/i.test(attrs) ||
+      /\btitle\s*=\s*(["'])\s*[^\s"'][\s\S]*?\1/i.test(attrs) ||
       inner.length > 0;
     if (!hasAccessibleLabel) {
       out.push({
