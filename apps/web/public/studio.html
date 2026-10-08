@@ -378,6 +378,10 @@
   .gf-card .meta { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-top: 1px solid #f0f2f2; }
   .gf-card .meta b { flex: 1; min-width: 0; font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .gf-card .ver { flex: none; font-size: 10.5px; font-weight: 800; background: #eef7f0; color: #2c7a4b; padding: 2.5px 9px; border-radius: 999px; }
+  .gf-card .quality { flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px; border-radius: 999px; background: #eaf6ed; color: #267142; font-size: 9px; font-weight: 850; white-space: nowrap; }
+  .gf-card .quality::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+  .gf-card .quality.advisory { background: #fff5d8; color: #8a671d; }
+  .gf-card .quality.needs-attention { background: #fff0ec; color: #b3442d; }
   .gf-card .time { flex: none; font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
   .gen-actions { display: flex; gap: 9px; padding: 12px 20px 16px; border-top: 1px solid #eef0f1; flex-wrap: wrap; }
   .gen-actions button { display: inline-flex; gap: 6px; align-items: center; font: 600 12.5px/1 inherit; padding: 9px 13px; border-radius: 11px; background: #f5f7f5; border: 1px solid #e6eae7; color: var(--ink); cursor: pointer; }
@@ -1172,6 +1176,7 @@
 </style>
 <link rel="stylesheet" href="/studio-templates.css" />
 <link rel="stylesheet" href="/studio-experts.css" />
+<link rel="stylesheet" href="/studio-skills.css" />
 </head>
 <body>
   <div class="scene" aria-hidden="true">
@@ -1549,6 +1554,55 @@
           <div class="tpl-grid" id="tpGrid"></div>
         </section>
 
+        <section class="view" id="view-skills">
+          <div class="skills-market" id="skillsMarket">
+            <section class="skills-featured" aria-labelledby="skillsFeaturedTitle">
+              <header class="skills-section-head">
+                <h1 id="skillsFeaturedTitle">精选技能</h1>
+                <button type="button" class="skills-refresh" id="skillsRefresh">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5"/><path d="M4 17v-5h5"/><path d="M6.1 9A7 7 0 0 1 17.5 7L20 9M4 15l2.5 2A7 7 0 0 0 18 15"/></svg>
+                  <span>换一换</span>
+                </button>
+              </header>
+              <div class="skills-featured-grid" id="skillsFeaturedGrid" aria-live="polite"></div>
+            </section>
+
+            <section class="skills-catalog" aria-label="技能市场">
+              <header class="skills-catalog-head" id="skillsTabbar">
+                <div class="skills-tab-row">
+                  <nav class="skills-tabs" role="tablist" aria-label="技能来源">
+                    <button type="button" class="skills-tab active" data-skills-tab="recommended" role="tab" aria-selected="true">推荐</button>
+                    <button type="button" class="skills-tab" data-skills-tab="hub" role="tab" aria-selected="false">SkillHub</button>
+                    <button type="button" class="skills-tab" data-skills-tab="suites" role="tab" aria-selected="false">套件</button>
+                  </nav>
+                  <label class="skills-search">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.3"/><path d="m16 16 4.4 4.4"/></svg>
+                    <input id="skillsSearch" type="search" autocomplete="off" placeholder="搜索技能" />
+                  </label>
+                </div>
+                <nav class="skills-categories" id="skillsCategories" aria-label="技能分类"></nav>
+              </header>
+              <div class="skills-results-meta" id="skillsResultsMeta" aria-live="polite"></div>
+              <div class="skills-grid" id="skillsGrid" aria-live="polite"></div>
+              <button type="button" class="skills-load-more" id="skillsLoadMore" hidden>加载更多</button>
+            </section>
+
+            <div class="skills-detail-overlay" id="skillsDetail" role="dialog" aria-modal="true" aria-hidden="true" hidden>
+              <section class="skills-detail-panel" aria-labelledby="skillsDetailTitle">
+                <header class="skills-detail-head">
+                  <button type="button" class="skills-detail-close" id="skillsDetailClose" aria-label="关闭技能详情">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                  </button>
+                </header>
+                <div class="skills-detail-body" id="skillsDetailBody"></div>
+                <footer class="skills-detail-foot">
+                  <button type="button" class="skills-detail-use" id="skillsDetailUse">使用此技能</button>
+                </footer>
+              </section>
+            </div>
+          </div>
+        </section>
+
         <section class="view" id="view-systems">
           <div class="page-head">
             <div>
@@ -1723,13 +1777,14 @@
 
 <script src="/studio-templates.js"></script>
 <script src="/studio-experts.js"></script>
+<script src="/studio-skills.js"></script>
 <script>
 (function () {
   "use strict";
   var I18N = {
     zh: {
       title: "DesignBuddy · 工作台",
-      navHome: "首页", navProjects: "项目", navExperts: "专家", navTemplates: "模板", navSystems: "设计系统", navCommunity: "示例画廊", navBrain: "第二大脑",
+      navHome: "首页", navProjects: "项目", navExperts: "专家", navTemplates: "模板", navSkills: "技能", navSystems: "设计系统", navCommunity: "示例画廊", navBrain: "第二大脑",
       accountTrial: "体验版", accountUpgrade: "升级套餐", accountPoints: "积分余额", accountFuel: "Buddy加油站",
       accountInvite: "去邀约", accountInviteMeta: "最高得 650 积分/人", accountGrowth: "成长计划", accountGrowthMeta: "连登抽取 Buddy 周边",
       accountSettings: "设置", accountMemory: "记忆与进化", accountAppearance: "外观", accountAppearanceMeta: "外观上新",
@@ -1800,7 +1855,7 @@
       gfTitle: "设计文件", gfTab: "项目",
       gfEmpty: "生成的设计会出现在这里",
       gfEmptySub: "先在左侧发出第一条需求",
-      gfNewSketch: "新建草图", gfNewDoc: "新建文档", gfUpload: "上传", gfNewBrowser: "新建浏览器", gfNewDs: "新建设计体系",
+      gfNewSketch: "新建草图", gfNewDoc: "新建文档", gfUpload: "上传", gfNewBrowser: "新建浏览器", gfNewDs: "新建设计体系", gfDelivery: "交付中心",
       gNewTab: "新窗口", gCopyHtml: "复制 HTML", gCopied: "已复制 HTML", gDownload: "下载文件", gClose: "关闭",
       genStepAnalyze: "分析需求：{kind}",
       genStepPlan: "制定方案：{plan}",
@@ -1958,7 +2013,7 @@
     },
     en: {
       title: "DesignBuddy · Studio",
-      navHome: "Home", navProjects: "Projects", navExperts: "Experts", navTemplates: "Templates", navSystems: "Design systems", navCommunity: "Example gallery", navBrain: "Second brain",
+      navHome: "Home", navProjects: "Projects", navExperts: "Experts", navTemplates: "Templates", navSkills: "Skills", navSystems: "Design systems", navCommunity: "Example gallery", navBrain: "Second brain",
       accountTrial: "Trial", accountUpgrade: "Upgrade", accountPoints: "Points", accountFuel: "Buddy Fuel Station",
       accountInvite: "Invite friends", accountInviteMeta: "Earn up to 650 points each", accountGrowth: "Growth plan", accountGrowthMeta: "Sign in to win Buddy gifts",
       accountSettings: "Settings", accountMemory: "Memory & evolution", accountAppearance: "Appearance", accountAppearanceMeta: "New looks",
@@ -2029,7 +2084,7 @@
       gfTitle: "Design files", gfTab: "Project",
       gfEmpty: "Generated designs will appear here",
       gfEmptySub: "Send your first brief on the left",
-      gfNewSketch: "New sketch", gfNewDoc: "New doc", gfUpload: "Upload", gfNewBrowser: "New browser", gfNewDs: "New design system",
+      gfNewSketch: "New sketch", gfNewDoc: "New doc", gfUpload: "Upload", gfNewBrowser: "New browser", gfNewDs: "New design system", gfDelivery: "Delivery Center",
       gNewTab: "New tab", gCopyHtml: "Copy HTML", gCopied: "HTML copied", gDownload: "Download file", gClose: "Close",
       genStepAnalyze: "Analyzing: {kind}",
       genStepPlan: "Plan: {plan}",
@@ -2214,6 +2269,7 @@
     brain: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6.5" r="2.5"/><circle cx="17.5" cy="6" r="2.2"/><circle cx="12" cy="13" r="2.8"/><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="18.5" r="2.5"/><path d="M8.2 7.6 9.8 11M15.4 7.3 14 10.6M10.4 15.2l-2.6 2.4M13.8 15.4l2.6 1.9"/></svg>',
     experts: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="9" r="3"/><path d="M3 19c.8-3.2 2.6-4.8 5.5-4.8 2.2 0 3.9.9 4.9 2.7M17.2 4.2l.9 2 2.2.3-1.6 1.5.4 2.2-1.9-1-2 1 .4-2.2L14 6.5l2.2-.3 1-2Z"/></svg>',
     templates: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><path d="M17 13.8v6.4M13.8 17h6.4"/></svg>',
+    skills: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 19.5 18 6l-3-3L1.5 16.5v3h3ZM12 6l3 3"/><path d="m17.5 12 .7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7.7-1.8ZM7 3l.5 1.3L9 5l-1.5.6L7 7l-.6-1.4L5 5l1.4-.7L7 3Z"/></svg>',
     systems: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="7" cy="7" r="3.2"/><circle cx="17" cy="7" r="3.2" fill="currentColor" stroke="none" opacity="0.35"/><circle cx="7" cy="17" r="3.2" fill="currentColor" stroke="none" opacity="0.35"/><circle cx="17" cy="17" r="3.2" fill="currentColor" stroke="none" opacity="0.7"/></svg>',
     community: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="9" cy="8.5" r="3.4"/><path d="M2.8 20c1.4-3 3.6-4.4 6.2-4.4s4.8 1.4 6.2 4.4"/><circle cx="17" cy="9.5" r="2.6"/><path d="M15.5 15.7c2.5.2 4.5 1.5 5.7 4.3"/></svg>',
     review: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4.5" width="14" height="16.5" rx="2"/><path d="M9 4.5V3.2c0-.9.7-1.7 1.6-1.7h2.8c.9 0 1.6.8 1.6 1.7v1.3"/><path d="m9 13 2 2 4-4.5"/></svg>',
@@ -2221,13 +2277,13 @@
     members: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="9" cy="8.5" r="3.4"/><path d="M2.8 20c1.4-3 3.6-4.4 6.2-4.4s4.8 1.4 6.2 4.4"/><path d="M16 4.9a3.4 3.4 0 0 1 0 7.2M17.8 15.9c1.7.6 2.9 1.9 3.5 4.1"/></svg>',
     approvals: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 5.5v5c0 4.4 3 8.4 7 9.5 4-1.1 7-5.1 7-9.5v-5L12 3z"/><path d="m9 11.5 2 2 4-4"/></svg>'
   };
-  var NAV_KEYS = { home: "navHome", projects: "navProjects", experts: "navExperts", templates: "navTemplates", systems: "navSystems", community: "navCommunity", brain: "navBrain", review: "navReview", artifacts: "navArtifacts", members: "navMembers", approvals: "navApprovals" };
+  var NAV_KEYS = { home: "navHome", projects: "navProjects", experts: "navExperts", templates: "navTemplates", skills: "navSkills", systems: "navSystems", community: "navCommunity", brain: "navBrain", review: "navReview", artifacts: "navArtifacts", members: "navMembers", approvals: "navApprovals" };
   var ROLES = {
     designer: {
       grad: "#d9f2c9,#8fd483", icon: ROLE_ICONS.designer,
       zh: {
         name: "设计师", desc: "视觉与原型创作",
-        nav: ["home", "projects", "experts", "templates", "systems", "community", "brain"],
+        nav: ["home", "projects", "experts", "templates", "skills", "systems", "community", "brain"],
         greetPre: "让我们创建", subPre: "好的作品，从这里开始 —— ", subSig: "和你的 AI 设计搭子一起。",
         ph: "描述你想生成的内容…",
         modes: [
@@ -2260,7 +2316,7 @@
       },
       en: {
         name: "Designer", desc: "Visuals & prototypes",
-        nav: ["home", "projects", "experts", "templates", "systems", "community", "brain"],
+        nav: ["home", "projects", "experts", "templates", "skills", "systems", "community", "brain"],
         greetPre: "Let's create a ", subPre: "Great work starts here — ", subSig: "with your AI design buddy.",
         ph: "Describe what you want to make…",
         modes: [
@@ -2296,7 +2352,7 @@
       grad: "#d6ecff,#7cb8ee", icon: ROLE_ICONS.pm,
       zh: {
         name: "产品经理", desc: "需求与团队评审",
-        nav: ["home", "review", "projects", "experts", "templates", "community"],
+        nav: ["home", "review", "projects", "experts", "templates", "skills", "community"],
         greetPre: "今天，让我们对齐", greetWord: "需求", subPre: "把想法变成清晰的简报 —— ", subSig: "Buddy 起草，你来拍板。",
         ph: "描述你想推进的需求，或让 Buddy 起草一份简报…",
         modes: [
@@ -2329,7 +2385,7 @@
       },
       en: {
         name: "Product Manager", desc: "Briefs & team reviews",
-        nav: ["home", "review", "projects", "experts", "templates", "community"],
+        nav: ["home", "review", "projects", "experts", "templates", "skills", "community"],
         greetPre: "Today, let's align on ", greetWord: "requirements", subPre: "Turn ideas into crisp briefs — ", subSig: "Buddy drafts, you decide.",
         ph: "Describe a requirement, or ask Buddy to draft a brief…",
         modes: [
@@ -2365,7 +2421,7 @@
       grad: "#eadcff,#b39aec", icon: ROLE_ICONS.dev,
       zh: {
         name: "开发者", desc: "代码与交付",
-        nav: ["home", "artifacts", "projects", "experts", "templates", "community"],
+        nav: ["home", "artifacts", "projects", "experts", "templates", "skills", "community"],
         greetPre: "让我们把设计变成", greetWord: "代码", subPre: "设计稿自动变成前端资产 —— ", subSig: "你只管 review 与合并。",
         ph: "描述你想交付的页面，Buddy 会生成前端代码…",
         modes: [
@@ -2398,7 +2454,7 @@
       },
       en: {
         name: "Developer", desc: "Code & delivery",
-        nav: ["home", "artifacts", "projects", "experts", "templates", "community"],
+        nav: ["home", "artifacts", "projects", "experts", "templates", "skills", "community"],
         greetPre: "Let's turn designs into ", greetWord: "code", subPre: "Designs become frontend assets — ", subSig: "you review and merge.",
         ph: "Describe the page to deliver — Buddy generates frontend code…",
         modes: [
@@ -2434,7 +2490,7 @@
       grad: "#ffe6cf,#f5b183", icon: ROLE_ICONS.admin,
       zh: {
         name: "管理者", desc: "团队与用量",
-        nav: ["home", "members", "approvals", "projects", "experts", "community"],
+        nav: ["home", "members", "approvals", "projects", "experts", "templates", "skills", "community"],
         greetPre: "团队的一切，", greetWord: "尽在掌握", subPre: "用量、成员与审批 —— ", subSig: "一个页面全部搞定。",
         ph: "想了解团队的什么情况？问 Buddy…",
         modes: [
@@ -2467,7 +2523,7 @@
       },
       en: {
         name: "Admin", desc: "Team & usage",
-        nav: ["home", "members", "approvals", "projects", "experts", "community"],
+        nav: ["home", "members", "approvals", "projects", "experts", "templates", "skills", "community"],
         greetPre: "Your whole team, ", greetWord: "at a glance", subPre: "Usage, members and approvals — ", subSig: "all in one place.",
         ph: "Ask Buddy about your team's activity…",
         modes: [
@@ -2948,7 +3004,7 @@
     tileBatch: 0,
     tileBatchRole: null,
     suggestionSkillToken: 0,
-    gen: { pid: null, name: "", events: [], status: "idle", runId: 0, timers: [], mod: {}, offline: false, welcome: false, abort: null, mediaTaskId: null, creating: false, createAbort: null, createToken: 0, pendingPrompt: "", createFailed: false },
+    gen: { pid: null, name: "", events: [], status: "idle", runId: 0, timers: [], mod: {}, offline: false, welcome: false, abort: null, mediaTaskId: null, jobId: null, jobProvider: null, creating: false, createAbort: null, createToken: 0, pendingPrompt: "", createFailed: false },
     bnFilter: 0,
     realBrain: null,
     genMode: "landing",
@@ -3152,6 +3208,9 @@
     if (window.StudioExperts && typeof window.StudioExperts.setLanguage === "function") {
       window.StudioExperts.setLanguage(state.lang);
     }
+    if (window.StudioSkills && typeof window.StudioSkills.setLanguage === "function") {
+      window.StudioSkills.setLanguage(state.lang);
+    }
   }
 
   /* 轮换词（仅设计师角色） */
@@ -3327,6 +3386,16 @@
     }
     return "";
   }
+  function latestTextArtifactFileName() {
+    for (var i = state.gen.events.length - 1; i >= 0; i--) {
+      var event = state.gen.events[i];
+      if (event.type === "artifact" && event.payload && event.payload.surface !== "image" && event.payload.surface !== "video" && typeof event.payload.fileName === "string") return event.payload.fileName;
+    }
+    return "";
+  }
+  function generationArtifactFileName(kind) {
+    return latestTextArtifactFileName() || (kind === "deck" ? "generated/slides.html" : "generated/design.html");
+  }
   function projectFileUrl(projectId, fileName) {
     var safe = String(fileName || "").split("/").map(function (part) { return encodeURIComponent(part); }).join("/");
     return "/api/projects/" + encodeURIComponent(projectId) + "/raw/" + safe;
@@ -3363,11 +3432,24 @@
       prompt: prompt,
       locale: state.lang,
       mode: generationModeLabel(),
+      projectId: state.gen.pid,
       projectName: state.gen.name,
+      kind: kind,
+      version: version,
+      artifactFileName: generationArtifactFileName(kind),
       previousHtml: latestTextArtifactHtml()
     }, { signal: signal });
     if (!submitted || !submitted.jobId) throw new Error("Agnes generation job was not created");
     var jobId = String(submitted.jobId);
+    state.gen.jobId = jobId;
+    state.gen.jobProvider = "agnes";
+    genPersist("step", {
+      text: accountL("任务已持久化，可在刷新或重启后恢复", "Job persisted and recoverable after refresh or restart"),
+      jobId: jobId,
+      provider: "agnes",
+      durable: true
+    });
+    renderGen();
     var cancelJob = function () {
       if (typeof fetch !== "function") return;
       fetch("/api/db/agnes/generation-jobs/" + encodeURIComponent(jobId), {
@@ -3387,20 +3469,28 @@
           var result = snapshot.result || {};
           if (typeof result.html !== "string" || result.html.length < 40) throw new Error("Agnes returned no HTML artifact");
           return {
-            name: state.gen.name,
-            version: version,
-            kind: kind,
+            name: result.name || state.gen.name,
+            version: Number(result.version) || version,
+            kind: result.kind || kind,
             surface: "text",
             model: result.model || model,
+            provider: result.provider || "agnes",
+            jobId: result.jobId || jobId,
             html: result.html,
-            latencyMs: Number(result.latencyMs) || null
+            fileName: result.fileName || "",
+            projectFile: result.projectFile || null,
+            fileVersion: result.fileVersion || null,
+            quality: result.quality || null,
+            latencyMs: Number(result.latencyMs) || null,
+            transport: result.transport || "daemon"
           };
         }
-        if (snapshot && (snapshot.status === "failed" || snapshot.status === "canceled")) {
+        if (snapshot && (snapshot.status === "failed" || snapshot.status === "canceled" || snapshot.status === "interrupted")) {
           var failure = snapshot.error && typeof snapshot.error === "object" ? snapshot.error : {};
           var jobError = new Error(apiErrorMessage(snapshot.error, "Agnes generation failed"));
           jobError.status = Number(failure.status) || 0;
           jobError.code = typeof failure.code === "string" ? failure.code : "";
+          jobError.jobId = jobId;
           throw jobError;
         }
         await waitForAgnesPoll(1200, signal);
@@ -3409,9 +3499,11 @@
       var timeoutError = new Error("Agnes generation timed out");
       timeoutError.code = "AGNES_TIMEOUT";
       timeoutError.status = 504;
+      timeoutError.jobId = jobId;
       throw timeoutError;
     } finally {
       if (signal) signal.removeEventListener("abort", cancelJob);
+      if (state.gen.jobId === jobId) { state.gen.jobId = null; state.gen.jobProvider = null; }
     }
   }
   function customModelBrowserFailure(code, message, status) {
@@ -3624,12 +3716,25 @@
         prompt: prompt,
         locale: state.lang,
         mode: generationModeLabel(),
+        projectId: state.gen.pid,
         projectName: state.gen.name,
+        kind: kind,
+        version: version,
+        artifactFileName: generationArtifactFileName(kind),
         previousHtml: latestTextArtifactHtml(),
         provider: provider
       }, { signal: signal });
       if (!submitted || !submitted.jobId) throw new Error("Custom model generation job was not created");
       var jobId = String(submitted.jobId);
+      state.gen.jobId = jobId;
+      state.gen.jobProvider = "custom-model";
+      genPersist("step", {
+        text: accountL("任务已持久化，可在刷新或重启后恢复", "Job persisted and recoverable after refresh or restart"),
+        jobId: jobId,
+        provider: "custom-model",
+        durable: true
+      });
+      renderGen();
       var cancelJob = function () {
         if (typeof fetch !== "function") return;
         fetch("/api/db/custom-model/generation-jobs/" + encodeURIComponent(jobId), {
@@ -3649,20 +3754,28 @@
             var result = snapshot.result || {};
             if (typeof result.html !== "string" || result.html.length < 40) throw new Error("The custom model returned no HTML artifact");
             return {
-              name: state.gen.name,
-              version: version,
-              kind: kind,
+              name: result.name || state.gen.name,
+              version: Number(result.version) || version,
+              kind: result.kind || kind,
               surface: "text",
               model: result.model || entry.model,
+              provider: result.provider || "custom-model",
+              jobId: result.jobId || jobId,
               html: result.html,
-              latencyMs: Number(result.latencyMs) || null
+              fileName: result.fileName || "",
+              projectFile: result.projectFile || null,
+              fileVersion: result.fileVersion || null,
+              quality: result.quality || null,
+              latencyMs: Number(result.latencyMs) || null,
+              transport: result.transport || "daemon"
             };
           }
-          if (snapshot && (snapshot.status === "failed" || snapshot.status === "canceled")) {
+          if (snapshot && (snapshot.status === "failed" || snapshot.status === "canceled" || snapshot.status === "interrupted")) {
             var failure = snapshot.error && typeof snapshot.error === "object" ? snapshot.error : {};
             var jobError = new Error(apiErrorMessage(snapshot.error, "Custom model generation failed"));
             jobError.status = Number(failure.status) || 0;
             jobError.code = typeof failure.code === "string" ? failure.code : "";
+            jobError.jobId = jobId;
             throw jobError;
           }
           await waitForAgnesPoll(1200, signal);
@@ -3671,9 +3784,11 @@
         var timeoutError = new Error("Custom model generation timed out");
         timeoutError.code = "CUSTOM_MODEL_TIMEOUT";
         timeoutError.status = 504;
+        timeoutError.jobId = jobId;
         throw timeoutError;
       } finally {
         if (signal) signal.removeEventListener("abort", cancelJob);
+        if (state.gen.jobId === jobId) { state.gen.jobId = null; state.gen.jobProvider = null; }
       }
     } catch (error) {
       if (error && error.name === "AbortError") throw error;
@@ -3686,10 +3801,14 @@
               "The daemon network is unavailable. Retrying the custom model directly from your browser…"
             ),
             model: entry.model,
+            jobId: error && error.jobId || null,
             transport: "browser"
           });
           renderGen();
-          return invokeCustomModelInBrowser(prompt, kind, version, entry, signal);
+          var browserArtifact = await invokeCustomModelInBrowser(prompt, kind, version, entry, signal);
+          browserArtifact.jobId = error && error.jobId || null;
+          browserArtifact.provider = "custom-model";
+          return browserArtifact;
         }
         throw customModelBrowserFailure(
           "CUSTOM_MODEL_BROWSER_KEY_REQUIRED",
@@ -3783,6 +3902,29 @@
     return prompt.length > 120 ? prompt.slice(0, 117) + "…" : prompt;
   }
 
+  async function persistGeneratedTextArtifact(artifact, prompt, kind, version, model, signal) {
+    if (!artifact || artifact.surface !== "text") return artifact;
+    if (artifact.fileName && artifact.fileVersion && artifact.quality) return artifact;
+    var response = await apiSend(
+      "/api/db/projects/" + encodeURIComponent(state.gen.pid) + "/generated-artifacts",
+      "POST",
+      {
+        html: artifact.html,
+        prompt: prompt,
+        kind: kind,
+        title: artifact.name || state.gen.name,
+        model: artifact.model || model,
+        provider: artifact.provider || "studio",
+        jobId: artifact.jobId || null,
+        version: version,
+        fileName: generationArtifactFileName(kind)
+      },
+      { signal: signal }
+    );
+    if (!response || !response.artifact) throw new Error(accountL("生成结果未能保存为项目文件。", "The generated result was not saved as a project file."));
+    return Object.assign({}, artifact, response.artifact);
+  }
+
   async function startGenTurn(prompt) {
     var requestPrompt = String(prompt || "").trim();
     if (!state.gen.pid || !requestPrompt || state.gen.status === "run" || state.gen.createFailed) return;
@@ -3821,12 +3963,24 @@
           ? await invokeAgnesText(requestPrompt, kind, version, model, controller.signal)
           : await invokeAgnesMedia(requestPrompt, kind, version, model, surface, controller.signal, runId);
       if (!genAlive(runId)) return;
-      genPersist("step", { text: t("genStepCheck") });
+      if (surface === "text") {
+        artifact = await persistGeneratedTextArtifact(artifact, requestPrompt, kind, version, model, controller.signal);
+      }
+      if (!genAlive(runId)) return;
+      var quality = artifact && artifact.quality;
+      var qualityCounts = quality && quality.counts || { p0: 0, p1: 0, p2: 0 };
+      genPersist("step", {
+        text: t("genStepCheck") + (quality ? " · P0 " + (qualityCounts.p0 || 0) + " / P1 " + (qualityCounts.p1 || 0) + " / P2 " + (qualityCounts.p2 || 0) : ""),
+        quality: quality || null
+      });
       genPersist("artifact", artifact);
       genPersist("ai", { text: t(surface === "text" ? "genAiOutro" : "genAiOutroMedia").replace("{v}", "v" + version), model: model });
-      genPersist("done", { version: version, kind: artifact.kind, surface: surface, model: model });
+      genPersist("done", { version: version, kind: artifact.kind, surface: surface, model: model, jobId: artifact.jobId || null, fileName: artifact.fileName || null, quality: quality || null });
       state.gen.status = "done";
+      state.gen.jobId = null;
+      state.gen.jobProvider = null;
       renderGen();
+      if (window.StudioWorkbench && typeof window.StudioWorkbench.reloadFiles === "function") window.StudioWorkbench.reloadFiles();
       loadProjects();
       toast(t("genToastDone").replace("{v}", "v" + version));
     } catch (error) {
@@ -3842,9 +3996,11 @@
         model: model,
         error: true
       });
-      genPersist("stop", { reason: "error", message: message, code: errorCode, status: errorStatus, model: model });
+      genPersist("stop", { reason: "error", message: message, code: errorCode, status: errorStatus, model: model, jobId: error && error.jobId || state.gen.jobId || null });
       state.gen.status = "stop";
       state.gen.mediaTaskId = null;
+      state.gen.jobId = null;
+      state.gen.jobProvider = null;
       renderGen();
       toast(t("genToastError").replace("{message}", message));
     } finally {
@@ -3862,10 +4018,13 @@
     if (state.gen.abort) state.gen.abort.abort();
     state.gen.abort = null;
     state.gen.mediaTaskId = null;
+    var stoppedJobId = state.gen.jobId;
+    state.gen.jobId = null;
+    state.gen.jobProvider = null;
     state.gen.runId++;
     genClearTimers();
     state.gen.status = "stop";
-    genPersist("stop", { reason: "manual" });
+    genPersist("stop", { reason: "manual", jobId: stoppedJobId || null });
     renderGen();
     toast(t("genToastStop"));
   }
@@ -4008,6 +4167,14 @@
   function isMediaArtifact(artifact) {
     return !!(artifact && (artifact.surface === "image" || artifact.surface === "video") && artifact.fileName);
   }
+  function artifactQualityLabel(artifact) {
+    var quality = artifact && artifact.quality;
+    if (!quality) return null;
+    var counts = quality.counts || {};
+    if (quality.status === "passed") return { cls: "passed", text: state.lang === "zh" ? "质量通过" : "Quality passed", title: "P0 0 · P1 0 · P2 0" };
+    if (quality.status === "advisory") return { cls: "advisory", text: state.lang === "zh" ? "有建议" : "Advisories", title: "P0 " + (counts.p0 || 0) + " · P1 " + (counts.p1 || 0) + " · P2 " + (counts.p2 || 0) };
+    return { cls: "needs-attention", text: state.lang === "zh" ? "待优化" : "Needs attention", title: "P0 " + (counts.p0 || 0) + " · P1 " + (counts.p1 || 0) + " · P2 " + (counts.p2 || 0) };
+  }
   function renderGenFiles() {
     var box = $("genFiles");
     if (!box) return;
@@ -4076,6 +4243,14 @@
       time.textContent = genTimeOf(a.at);
       meta.appendChild(name);
       meta.appendChild(version);
+      var qualityLabel = artifactQualityLabel(a);
+      if (qualityLabel) {
+        var qualityBadge = document.createElement("span");
+        qualityBadge.className = "quality " + qualityLabel.cls;
+        qualityBadge.textContent = qualityLabel.text;
+        qualityBadge.title = qualityLabel.title;
+        meta.appendChild(qualityBadge);
+      }
       meta.appendChild(time);
       card.appendChild(meta);
 
@@ -4156,7 +4331,8 @@
       { id: "document", k: "gfNewDoc", d: "M7 3.5h7l4.5 4.5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1zM13.5 3.5V9H19" },
       { id: "upload", k: "gfUpload", d: "M12 16V5m0 0L7.5 9.5M12 5l4.5 4.5M5 19h14" },
       { id: "browser", k: "gfNewBrowser", d: "M4 6.5A1.5 1.5 0 0 1 5.5 5h13A1.5 1.5 0 0 1 20 6.5v11a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-11zM4 9.5h16M6.5 7.3h.01M9 7.3h.01" },
-      { id: "design-system", k: "gfNewDs", d: "M4 7.5h7v7H4zM13 7.5h7v4h-7zM13 13.5h7v3.5h-7zM4 16.5h7" }
+      { id: "design-system", k: "gfNewDs", d: "M4 7.5h7v7H4zM13 7.5h7v4h-7zM13 13.5h7v3.5h-7zM4 16.5h7" },
+      { id: "delivery", k: "gfDelivery", d: "M5 4h14v5H5zM5 12h14v8H5zM9 6.5h6M8 16h8M12 13.5v5" }
     ];
   }
   function renderGenActions() {
@@ -4183,6 +4359,108 @@
     });
   }
 
+  function unfinishedGenerationTurn() {
+    var user = null, finished = false, jobId = null, provider = null;
+    state.gen.events.forEach(function (event) {
+      if (event.type === "user") { user = event; finished = false; jobId = null; provider = null; }
+      else if (user && event.type === "step" && event.payload && event.payload.jobId) {
+        jobId = String(event.payload.jobId);
+        provider = event.payload.provider || provider;
+      } else if (user && (event.type === "done" || event.type === "stop")) finished = true;
+    });
+    return user && !finished ? { user: user, jobId: jobId, provider: provider } : null;
+  }
+  function hasGenerationJobEvent(type, jobId) {
+    return state.gen.events.some(function (event) {
+      return event.type === type && event.payload && String(event.payload.jobId || "") === String(jobId || "");
+    });
+  }
+  function recoveredJobError(snapshot) {
+    var failure = snapshot && snapshot.error && typeof snapshot.error === "object" ? snapshot.error : {};
+    var error = new Error(apiErrorMessage(failure, accountL("生成任务未完成，请重试。", "The generation job did not complete. Retry it.")));
+    error.code = failure.code || "GENERATION_INTERRUPTED";
+    error.status = Number(failure.status) || 503;
+    error.jobId = snapshot && (snapshot.jobId || snapshot.id) || null;
+    return error;
+  }
+  async function finishRecoveredGenerationJob(snapshot, turn) {
+    var jobId = String(snapshot.jobId || snapshot.id || turn.jobId || "");
+    if (snapshot.status === "succeeded") {
+      var artifact = snapshot.result || {};
+      if (typeof artifact.html !== "string" || artifact.html.length < 40) throw new Error(accountL("恢复的任务缺少设计文件。", "The recovered job has no design artifact."));
+      var prompt = turn.user && turn.user.payload && turn.user.payload.text || "";
+      var kind = artifact.kind || genKindOf(prompt + " " + state.gen.name);
+      var version = Number(artifact.version) || genNextVersion();
+      artifact = await persistGeneratedTextArtifact(artifact, prompt, kind, version, artifact.model || "", state.gen.abort && state.gen.abort.signal);
+      artifact.jobId = artifact.jobId || jobId;
+      if (!hasGenerationJobEvent("artifact", jobId)) genPersist("artifact", artifact);
+      if (!hasGenerationJobEvent("done", jobId)) {
+        genPersist("ai", { text: accountL("已恢复持久化任务并载入生成结果。", "Recovered the durable job and loaded its result."), model: artifact.model || "" });
+        genPersist("done", { version: version, kind: artifact.kind, surface: "text", model: artifact.model || "", jobId: jobId, fileName: artifact.fileName || null, quality: artifact.quality || null, recovered: true });
+      }
+      state.gen.status = "done";
+      state.gen.jobId = null;
+      state.gen.jobProvider = null;
+      if (window.StudioWorkbench && typeof window.StudioWorkbench.reloadFiles === "function") window.StudioWorkbench.reloadFiles();
+      renderGen();
+      loadProjects();
+      return;
+    }
+    if (snapshot.status === "failed" || snapshot.status === "canceled" || snapshot.status === "interrupted") {
+      var error = recoveredJobError(snapshot);
+      if (!state.gen.events.some(function (event) { return event.type === "stop" && event.payload && String(event.payload.jobId || "") === jobId; })) {
+        genPersist("ai", { text: t("genToastError").replace("{message}", cleanErrorMessage(error)), message: cleanErrorMessage(error), code: error.code, status: error.status, error: true });
+        genPersist("stop", { reason: "error", message: cleanErrorMessage(error), code: error.code, status: error.status, jobId: jobId, recoverable: true });
+      }
+      state.gen.status = "stop";
+      state.gen.jobId = null;
+      state.gen.jobProvider = null;
+      renderGen();
+    }
+  }
+  async function resumeDurableGenerationJob() {
+    var turn = unfinishedGenerationTurn();
+    if (!turn || !state.gen.pid) return false;
+    var projectId = state.gen.pid;
+    try {
+      var listing = await apiGet("/api/db/projects/" + encodeURIComponent(projectId) + "/generation-jobs?limit=8", { cache: "no-store" });
+      if (state.gen.pid !== projectId) return false;
+      var jobs = listing && Array.isArray(listing.jobs) ? listing.jobs : [];
+      var job = turn.jobId
+        ? jobs.filter(function (item) { return String(item.jobId || item.id) === String(turn.jobId); })[0]
+        : jobs.filter(function (item) { return Number(item.createdAt) >= Number(turn.user.at || 0) - 5000; })[0];
+      if (!job) return false;
+      var jobId = String(job.jobId || job.id);
+      state.gen.jobId = jobId;
+      state.gen.jobProvider = job.provider || turn.provider || null;
+      if (job.status !== "running") {
+        await finishRecoveredGenerationJob(job, turn);
+        return true;
+      }
+      state.gen.status = "run";
+      var controller = new AbortController();
+      state.gen.abort = controller;
+      renderGen();
+      while (!controller.signal.aborted && state.gen.pid === projectId) {
+        var snapshot = await apiGet("/api/db/generation-jobs/" + encodeURIComponent(jobId), { signal: controller.signal, cache: "no-store" });
+        if (snapshot.status !== "running") {
+          await finishRecoveredGenerationJob(snapshot, turn);
+          break;
+        }
+        await waitForAgnesPoll(1200, controller.signal);
+      }
+      if (state.gen.abort === controller) state.gen.abort = null;
+      return true;
+    } catch (error) {
+      if (error && error.name === "AbortError") return true;
+      state.gen.status = "idle";
+      state.gen.jobId = null;
+      state.gen.jobProvider = null;
+      renderGen();
+      return false;
+    }
+  }
+
   /* ── 进入生成视图 ── */
   async function openGen(project, seedPrompt, seedContexts) {
     if (state.gen.creating || state.gen.createFailed) cancelPendingGeneration(false);
@@ -4193,6 +4471,8 @@
     if (state.gen.abort) state.gen.abort.abort();
     state.gen.abort = null;
     state.gen.mediaTaskId = null;
+    state.gen.jobId = null;
+    state.gen.jobProvider = null;
     state.gen.pid = project.id || project.pid || null;
     state.gen.name = project.t || project.name || "";
     state.gen.events = [];
@@ -4220,8 +4500,10 @@
         });
         state.gen.status = deriveGenStatus();
         state.gen.welcome = !state.gen.events.length;
+        if (window.StudioWorkbench && typeof window.StudioWorkbench.reloadFiles === "function") window.StudioWorkbench.reloadFiles();
         renderGen();
         if (!state.gen.events.length && seedPrompt) startGenTurn(seedPrompt);
+        else if (state.gen.events.length) void resumeDurableGenerationJob();
       })
       .catch(function () {
         state.gen.offline = true;
@@ -4428,6 +4710,8 @@
     if (state.gen.abort) state.gen.abort.abort();
     state.gen.abort = null;
     state.gen.mediaTaskId = null;
+    state.gen.jobId = null;
+    state.gen.jobProvider = null;
     state.gen.runId++;
     genClearTimers();
     var controller = new AbortController();
@@ -4586,7 +4870,7 @@
   /* Unbacked artifact/member/approval demos stay out of routing until their
      daemon contracts exist. Keeping their dormant markup avoids pretending a
      local toast is a persisted workflow. */
-  var VIEWS = ["home", "projects", "gen", "brain", "experts", "templates", "systems", "community", "review"];
+  var VIEWS = ["home", "projects", "gen", "brain", "experts", "templates", "skills", "systems", "community", "review"];
   function currentTemplateRoute() {
     var hash = (location.hash || "").replace(/^#\/?/, "");
     var match = /^templates\/([^/]+)(?:\/(\d+))?$/.exec(hash);
@@ -4618,12 +4902,14 @@
       inner.classList.toggle("wide", v === "gen");
       inner.classList.toggle("project-wall", v === "projects");
       inner.classList.toggle("expert-wall", v === "experts");
+      inner.classList.toggle("skills-wall", v === "skills");
       inner.classList.toggle("generation-wall", v === "gen");
     }
     var main = document.querySelector(".main");
     if (main) {
       main.classList.toggle("projects-wall", v === "projects");
       main.classList.toggle("experts-wall", v === "experts");
+      main.classList.toggle("skills-wall", v === "skills");
       main.classList.toggle("generation-workspace", v === "gen");
     }
     var navV = v === "gen" ? "projects" : v;
@@ -6405,16 +6691,24 @@
     else toast(t("examplesSkillUnavailable"));
     return !!resolved;
   }
-  function loadSkills() {
-    if (Array.isArray(state.realSkills) && state.realSkills.length) return Promise.resolve(state.realSkills);
+  function loadSkills(force) {
+    if (!force && Array.isArray(state.realSkills)) {
+      if (window.StudioSkills && typeof window.StudioSkills.setItems === "function") window.StudioSkills.setItems(state.realSkills);
+      return Promise.resolve(state.realSkills);
+    }
     if (skillsLoadPromise) return skillsLoadPromise;
-    skillsLoadPromise = apiGet("/api/skills").then(function (d) {
+    var preserve = Array.isArray(state.realSkills) && state.realSkills.length > 0;
+    if (window.StudioSkills && typeof window.StudioSkills.setLoading === "function") window.StudioSkills.setLoading(preserve);
+    var skillsRequest = force ? apiGet("/api/skills", { cache: "no-store" }) : apiGet("/api/skills");
+    skillsLoadPromise = skillsRequest.then(function (d) {
       state.realSkills = (d && Array.isArray(d.skills)) ? d.skills : [];
       reconcilePendingSuggestionSkill();
       renderTiles();
+      if (window.StudioSkills && typeof window.StudioSkills.setItems === "function") window.StudioSkills.setItems(state.realSkills);
       return state.realSkills;
     }).catch(function () {
-      state.realSkills = null;
+      if (!preserve) state.realSkills = null;
+      if (window.StudioSkills && typeof window.StudioSkills.setError === "function") window.StudioSkills.setError("SKILLS_UNAVAILABLE");
       if (state.selSkill && state.selSkill.pending) {
         state.selSkill = null;
         updateChips();
@@ -8056,6 +8350,19 @@
 
   window.StudioWorkbenchHost = {
     getState: function () { return state; },
+    ensureSkills: function (force) { return loadSkills(!!force); },
+    attachSkill: function (skill) {
+      if (!skill || !skill.id) return false;
+      state.selSkill = { id: skill.id, name: skill.name || skill.id };
+      updateChips();
+      return true;
+    },
+    detachSkill: function (skillId) {
+      if (!state.selSkill || state.selSkill.id !== skillId) return false;
+      state.selSkill = null;
+      updateChips();
+      return true;
+    },
     $: $,
     t: t,
     toast: toast,

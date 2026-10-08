@@ -25,9 +25,12 @@
 //   POST /api/db/agnes/generate    -> bounded synchronous compatibility endpoint
 
 import type { Express } from 'express';
-import { randomUUID } from 'node:crypto';
 import type { RouteDeps } from '../server-context.js';
 import { sendApiError } from '../http/api-errors.js';
+import {
+  persistDesignBuddyHtmlArtifact,
+  reconcileDesignBuddyProjectArtifacts,
+} from '../designbuddy-artifacts.js';
 import {
   proxyDispatcherRequestInit,
   validateUserProviderBaseUrl,
@@ -54,80 +57,43 @@ import {
   DESIGNBUDDY_REVIEW_STATUS_TRANSITIONS,
   DESIGNBUDDY_ROLES,
   appendDesignBuddyGenEvent,
+  cancelDesignBuddyGenerationJob,
+  completeDesignBuddyGenerationJob,
+  countRunningDesignBuddyGenerationJobs,
+  createDesignBuddyGenerationJob,
   createDesignBuddyReview,
   designBuddyStats,
+  failDesignBuddyGenerationJob,
+  getDesignBuddyGenerationJob,
   initializeDesignBuddyStarterProjects,
+  listDesignBuddyGenerationJobs,
   listDesignBuddyGenEvents,
   listDesignBuddyGenSummaries,
   listDesignBuddyReviews,
+  pruneDesignBuddyGenerationJobs,
   readDesignBuddyProfile,
   readDesignBuddyRole,
   readDesignBuddyStarterStatus,
+  reconcileInterruptedDesignBuddyGenerationJobs,
   setDesignBuddyProfile,
   setDesignBuddyReviewStatus,
   setDesignBuddyRole,
+  type DesignBuddyGenerationJob,
+  type DesignBuddyGenerationProvider,
 } from '../designbuddy-store.js';
 
-export interface RegisterDesignBuddyRoutesDeps extends RouteDeps<'db'> {}
-
-type AgnesGenerationJob = {
-  id: string;
-  status: 'running' | 'succeeded' | 'failed' | 'canceled';
-  createdAt: number;
-  updatedAt: number;
-  controller: AbortController;
-  result?: {
-    html: string;
-    model: string;
-    usage: Record<string, unknown> | null;
-    latencyMs: number;
-  };
-  error?: { code: string; message: string; status: number };
-};
-
-const AGNES_GENERATION_JOB_TTL_MS = 15 * 60_000;
-const AGNES_GENERATION_JOB_LIMIT = 4;
-const agnesGenerationJobs = new Map<string, AgnesGenerationJob>();
-
-function pruneAgnesGenerationJobs(now = Date.now()): void {
-  for (const [id, job] of agnesGenerationJobs) {
-    if (job.status !== 'running' && now - job.updatedAt > AGNES_GENERATION_JOB_TTL_MS) {
-      agnesGenerationJobs.delete(id);
-    }
-  }
+export interface RegisterDesignBuddyRoutesDeps extends RouteDeps<'db'> {
+  paths: Pick<RouteDeps<'paths'>['paths'], 'PROJECTS_DIR'>;
 }
+
+const AGNES_GENERATION_JOB_LIMIT = 4;
+const CUSTOM_MODEL_GENERATION_JOB_LIMIT = 4;
+const generationJobControllers = new Map<string, AbortController>();
 
 function normalizeAgnesError(error: unknown): AgnesIntegrationError {
   return error instanceof AgnesIntegrationError
     ? error
     : new AgnesIntegrationError('AGNES_UNAVAILABLE', 'Agnes is currently unavailable.');
-}
-
-type CustomModelGenerationJob = {
-  id: string;
-  status: 'running' | 'succeeded' | 'failed' | 'canceled';
-  createdAt: number;
-  updatedAt: number;
-  controller: AbortController;
-  result?: {
-    html: string;
-    model: string;
-    usage: Record<string, unknown> | null;
-    latencyMs: number;
-  };
-  error?: { code: string; message: string; status: number };
-};
-
-const CUSTOM_MODEL_GENERATION_JOB_TTL_MS = 15 * 60_000;
-const CUSTOM_MODEL_GENERATION_JOB_LIMIT = 4;
-const customModelGenerationJobs = new Map<string, CustomModelGenerationJob>();
-
-function pruneCustomModelGenerationJobs(now = Date.now()): void {
-  for (const [id, job] of customModelGenerationJobs) {
-    if (job.status !== 'running' && now - job.updatedAt > CUSTOM_MODEL_GENERATION_JOB_TTL_MS) {
-      customModelGenerationJobs.delete(id);
-    }
-  }
 }
 
 function resolveCustomModelGenerationConfig(value: unknown): OpenAiCompatibleDesignConfig {
@@ -181,8 +147,119 @@ function normalizeCustomModelError(error: unknown): OpenAiCompatibleDesignError 
       );
 }
 
+class DesignBuddyArtifactPersistError extends Error {
+  readonly code = 'ARTIFACT_PERSIST_FAILED';
+  readonly status = 500;
+
+  constructor() {
+    super('The design was generated, but its project file could not be saved. Retry the request.');
+    this.name = 'DesignBuddyArtifactPersistError';
+  }
+}
+
+function optionalProjectId(db: any, value: unknown): string | null | undefined {
+  if (value === undefined || value === null || value === '') return null;
+  if (typeof value !== 'string' || value.length > 160) return undefined;
+  const project = db.prepare(`SELECT 1 AS ok FROM projects WHERE id = ?`).get(value);
+  return project ? value : undefined;
+}
+
+function generationJobEnvelope(job: DesignBuddyGenerationJob): Record<string, unknown> {
+  const base = {
+    id: job.id,
+    jobId: job.id,
+    provider: job.provider,
+    projectId: job.projectId,
+    status: job.status,
+    createdAt: job.createdAt,
+    updatedAt: job.updatedAt,
+  };
+  if (job.status === 'succeeded') return { ...base, result: job.result };
+  if (job.status !== 'running') {
+    return {
+      ...base,
+      error: job.error ?? {
+        code: 'GENERATION_FAILED',
+        message: 'Generation did not complete.',
+        status: 500,
+      },
+    };
+  }
+  return base;
+}
+
+function boundedRequestText(value: unknown, max: number): string | undefined {
+  return typeof value === 'string' && value.trim() ? value.trim().slice(0, max) : undefined;
+}
+
+async function persistGenerationResult(
+  db: any,
+  projectsRoot: string,
+  job: DesignBuddyGenerationJob,
+  generated: {
+    html: string;
+    model: string;
+    usage: Record<string, unknown> | null;
+    latencyMs: number;
+  },
+): Promise<Record<string, unknown>> {
+  const request = job.request;
+  if (!job.projectId) {
+    return {
+      html: generated.html,
+      model: generated.model,
+      usage: generated.usage,
+      latencyMs: generated.latencyMs,
+      jobId: job.id,
+      provider: job.provider,
+    };
+  }
+  try {
+    const artifact = await persistDesignBuddyHtmlArtifact(db, projectsRoot, {
+      projectId: job.projectId,
+      html: generated.html,
+      prompt: boundedRequestText(request.prompt, 12_000),
+      kind: boundedRequestText(request.kind, 64),
+      title: boundedRequestText(request.projectName, 200),
+      model: generated.model,
+      provider: job.provider,
+      jobId: job.id,
+      version: Number(request.version) || 1,
+      fileName: boundedRequestText(request.artifactFileName, 160),
+      transport: 'daemon',
+    });
+    return {
+      ...artifact,
+      usage: generated.usage,
+      latencyMs: generated.latencyMs,
+    };
+  } catch (error) {
+    console.warn('[designbuddy] failed to persist generated project artifact:', error);
+    throw new DesignBuddyArtifactPersistError();
+  }
+}
+
+function failDurableGenerationJob(
+  db: any,
+  jobId: string,
+  error: unknown,
+  normalize: (error: unknown) => { code: string; message: string; status: number },
+): void {
+  const normalized = error instanceof DesignBuddyArtifactPersistError
+    ? error
+    : normalize(error);
+  failDesignBuddyGenerationJob(db, jobId, {
+    code: normalized.code,
+    message: normalized.message,
+    status: normalized.status,
+  });
+}
+
 export function registerDesignBuddyRoutes(app: Express, ctx: RegisterDesignBuddyRoutesDeps): void {
   const { db } = ctx;
+  const { PROJECTS_DIR } = ctx.paths;
+  reconcileInterruptedDesignBuddyGenerationJobs(db);
+  pruneDesignBuddyGenerationJobs(db);
 
   app.get('/api/db/agnes/config', (_req, res) => {
     res.json({
@@ -223,15 +300,18 @@ export function registerDesignBuddyRoutes(app: Express, ctx: RegisterDesignBuddy
     }
   });
 
-  // Text generation can take longer than browser-facing reverse proxies allow.
-  // Start it in the daemon and let Studio poll a short-lived local job instead
-  // of keeping one HTTPS request open until the model finishes.
+  // Text generation can outlive browser/CDN request deadlines. Jobs are owned
+  // by SQLite, while only the AbortController remains process-local. A daemon
+  // restart reconciles any still-running row to `interrupted` instead of making
+  // the poll URL disappear or falsely reporting success.
   app.post('/api/db/agnes/generation-jobs', (req, res) => {
-    pruneAgnesGenerationJobs();
     const prompt = req.body?.prompt;
     const previousHtml = req.body?.previousHtml;
     if (typeof prompt !== 'string' || !prompt.trim()) {
       return sendApiError(res, 400, 'BAD_REQUEST', 'prompt is required');
+    }
+    if (prompt.length > 12_000) {
+      return sendApiError(res, 413, 'PAYLOAD_TOO_LARGE', 'prompt is too long');
     }
     if (previousHtml !== undefined && typeof previousHtml !== 'string') {
       return sendApiError(res, 400, 'BAD_REQUEST', 'previousHtml must be a string');
@@ -239,22 +319,35 @@ export function registerDesignBuddyRoutes(app: Express, ctx: RegisterDesignBuddy
     if (typeof previousHtml === 'string' && previousHtml.length > 120_000) {
       return sendApiError(res, 413, 'PAYLOAD_TOO_LARGE', 'previousHtml is too large');
     }
-    const activeJobs = Array.from(agnesGenerationJobs.values())
-      .filter((job) => job.status === 'running').length;
-    if (activeJobs >= AGNES_GENERATION_JOB_LIMIT) {
+    const projectId = optionalProjectId(db, req.body?.projectId);
+    if (projectId === undefined) {
+      return sendApiError(res, 404, 'PROJECT_NOT_FOUND', 'project not found');
+    }
+    if (countRunningDesignBuddyGenerationJobs(db, 'agnes') >= AGNES_GENERATION_JOB_LIMIT) {
       return sendApiError(res, 429, 'RATE_LIMITED', 'Too many Agnes generations are already running');
     }
 
-    const now = Date.now();
-    const job: AgnesGenerationJob = {
-      id: randomUUID(),
-      status: 'running',
-      createdAt: now,
-      updatedAt: now,
-      controller: new AbortController(),
-    };
-    agnesGenerationJobs.set(job.id, job);
-    res.status(202).json({ jobId: job.id, status: job.status });
+    const locale = req.body?.locale === 'en' ? 'en' : 'zh';
+    const mode = boundedRequestText(req.body?.mode, 160);
+    const projectName = boundedRequestText(req.body?.projectName, 200);
+    const job = createDesignBuddyGenerationJob(db, {
+      provider: 'agnes',
+      projectId,
+      request: {
+        prompt: prompt.trim(),
+        locale,
+        ...(mode ? { mode } : {}),
+        ...(projectName ? { projectName } : {}),
+        kind: boundedRequestText(req.body?.kind, 64) ?? 'page',
+        version: Math.max(1, Number(req.body?.version) || 1),
+        ...(boundedRequestText(req.body?.artifactFileName, 160)
+          ? { artifactFileName: boundedRequestText(req.body?.artifactFileName, 160) }
+          : {}),
+      },
+    });
+    const controller = new AbortController();
+    generationJobControllers.set(job.id, controller);
+    res.status(202).json({ jobId: job.id, status: job.status, provider: job.provider });
 
     const proxyDispatcher = proxyDispatcherRequestInit(process.env);
     void (async () => {
@@ -262,62 +355,48 @@ export function registerDesignBuddyRoutes(app: Express, ctx: RegisterDesignBuddy
       try {
         const result = await generateAgnesDesign({
           prompt,
-          locale: req.body?.locale === 'en' ? 'en' : 'zh',
-          mode: typeof req.body?.mode === 'string' ? req.body.mode : undefined,
-          projectName: typeof req.body?.projectName === 'string' ? req.body.projectName : undefined,
-          previousHtml,
-          signal: job.controller.signal,
+          locale,
+          ...(mode ? { mode } : {}),
+          ...(projectName ? { projectName } : {}),
+          ...(typeof previousHtml === 'string' ? { previousHtml } : {}),
+          signal: controller.signal,
           requestInit: proxyDispatcher.requestInit,
         });
-        if (job.status === 'canceled') return;
-        job.status = 'succeeded';
-        job.updatedAt = Date.now();
-        job.result = {
+        const current = getDesignBuddyGenerationJob(db, job.id);
+        if (!current || current.status !== 'running') return;
+        const persisted = await persistGenerationResult(db, PROJECTS_DIR, current, {
           html: result.html,
           model: AGNES_TEXT_MODEL,
           usage: result.usage,
           latencyMs: Date.now() - startedAt,
-        };
+        });
+        completeDesignBuddyGenerationJob(db, job.id, persisted);
       } catch (error) {
-        if (job.status === 'canceled') return;
-        const normalized = normalizeAgnesError(error);
-        job.status = 'failed';
-        job.updatedAt = Date.now();
-        job.error = {
-          code: normalized.code,
-          message: normalized.message,
-          status: normalized.status,
-        };
+        const current = getDesignBuddyGenerationJob(db, job.id);
+        if (!current || current.status !== 'running') return;
+        failDurableGenerationJob(db, job.id, error, normalizeAgnesError);
       } finally {
+        generationJobControllers.delete(job.id);
         await proxyDispatcher.close();
       }
     })();
   });
 
   app.get('/api/db/agnes/generation-jobs/:jobId', (req, res) => {
-    pruneAgnesGenerationJobs();
-    const job = agnesGenerationJobs.get(req.params.jobId);
-    if (!job) return sendApiError(res, 404, 'NOT_FOUND', 'Agnes generation job not found');
-    if (job.status === 'succeeded') {
-      return res.json({ status: job.status, result: job.result });
+    const job = getDesignBuddyGenerationJob(db, req.params.jobId);
+    if (!job || job.provider !== 'agnes') {
+      return sendApiError(res, 404, 'NOT_FOUND', 'Agnes generation job not found');
     }
-    if (job.status === 'failed' || job.status === 'canceled') {
-      return res.json({ status: job.status, error: job.error || {
-        code: 'AGNES_CANCELED',
-        message: 'Agnes generation was canceled.',
-        status: 499,
-      } });
-    }
-    return res.json({ status: job.status, createdAt: job.createdAt });
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json(generationJobEnvelope(job));
   });
 
   app.delete('/api/db/agnes/generation-jobs/:jobId', (req, res) => {
-    const job = agnesGenerationJobs.get(req.params.jobId);
-    if (!job) return res.status(204).end();
+    const job = getDesignBuddyGenerationJob(db, req.params.jobId);
+    if (!job || job.provider !== 'agnes') return res.status(204).end();
     if (job.status === 'running') {
-      job.status = 'canceled';
-      job.updatedAt = Date.now();
-      job.controller.abort();
+      cancelDesignBuddyGenerationJob(db, job.id);
+      generationJobControllers.get(job.id)?.abort();
     }
     return res.status(204).end();
   });
@@ -350,7 +429,6 @@ export function registerDesignBuddyRoutes(app: Express, ctx: RegisterDesignBuddy
   });
 
   app.post('/api/db/custom-model/generation-jobs', async (req, res) => {
-    pruneCustomModelGenerationJobs();
     const prompt = req.body?.prompt;
     const previousHtml = req.body?.previousHtml;
     if (typeof prompt !== 'string' || !prompt.trim()) {
@@ -364,6 +442,10 @@ export function registerDesignBuddyRoutes(app: Express, ctx: RegisterDesignBuddy
     }
     if (typeof previousHtml === 'string' && previousHtml.length > 120_000) {
       return sendApiError(res, 413, 'PAYLOAD_TOO_LARGE', 'previousHtml is too large');
+    }
+    const projectId = optionalProjectId(db, req.body?.projectId);
+    if (projectId === undefined) {
+      return sendApiError(res, 404, 'PROJECT_NOT_FOUND', 'project not found');
     }
     let config: OpenAiCompatibleDesignConfig;
     try {
@@ -388,9 +470,7 @@ export function registerDesignBuddyRoutes(app: Express, ctx: RegisterDesignBuddy
           : 'The custom model endpoint is invalid. Fix it in Settings.',
       );
     }
-    const activeJobs = Array.from(customModelGenerationJobs.values())
-      .filter((job) => job.status === 'running').length;
-    if (activeJobs >= CUSTOM_MODEL_GENERATION_JOB_LIMIT) {
+    if (countRunningDesignBuddyGenerationJobs(db, 'custom-model') >= CUSTOM_MODEL_GENERATION_JOB_LIMIT) {
       return sendApiError(
         res,
         429,
@@ -399,16 +479,38 @@ export function registerDesignBuddyRoutes(app: Express, ctx: RegisterDesignBuddy
       );
     }
 
-    const now = Date.now();
-    const job: CustomModelGenerationJob = {
-      id: randomUUID(),
-      status: 'running',
-      createdAt: now,
-      updatedAt: now,
-      controller: new AbortController(),
-    };
-    customModelGenerationJobs.set(job.id, job);
-    res.status(202).json({ jobId: job.id, status: job.status });
+    const locale = req.body?.locale === 'en' ? 'en' : 'zh';
+    const mode = boundedRequestText(req.body?.mode, 160);
+    const projectName = boundedRequestText(req.body?.projectName, 200);
+    const rawProvider = req.body?.provider && typeof req.body.provider === 'object'
+      ? req.body.provider as Record<string, unknown>
+      : {};
+    const job = createDesignBuddyGenerationJob(db, {
+      provider: 'custom-model',
+      projectId,
+      request: {
+        prompt: prompt.trim(),
+        locale,
+        ...(mode ? { mode } : {}),
+        ...(projectName ? { projectName } : {}),
+        kind: boundedRequestText(req.body?.kind, 64) ?? 'page',
+        version: Math.max(1, Number(req.body?.version) || 1),
+        ...(boundedRequestText(req.body?.artifactFileName, 160)
+          ? { artifactFileName: boundedRequestText(req.body?.artifactFileName, 160) }
+          : {}),
+        provider: {
+          protocol: 'openai',
+          baseUrl: config.baseUrl,
+          model: config.model,
+          credentialSource: rawProvider.credentialSource === 'designbuddy_custom_model'
+            ? 'designbuddy_custom_model'
+            : 'manual',
+        },
+      },
+    });
+    const controller = new AbortController();
+    generationJobControllers.set(job.id, controller);
+    res.status(202).json({ jobId: job.id, status: job.status, provider: job.provider });
 
     const proxyDispatcher = proxyDispatcherRequestInit(process.env);
     void (async () => {
@@ -417,71 +519,129 @@ export function registerDesignBuddyRoutes(app: Express, ctx: RegisterDesignBuddy
         const result = await generateOpenAiCompatibleDesign({
           config,
           prompt,
-          locale: req.body?.locale === 'en' ? 'en' : 'zh',
-          ...(typeof req.body?.mode === 'string' ? { mode: req.body.mode } : {}),
-          ...(typeof req.body?.projectName === 'string'
-            ? { projectName: req.body.projectName }
-            : {}),
+          locale,
+          ...(mode ? { mode } : {}),
+          ...(projectName ? { projectName } : {}),
           ...(typeof previousHtml === 'string' ? { previousHtml } : {}),
-          signal: job.controller.signal,
+          signal: controller.signal,
           requestInit: proxyDispatcher.requestInit,
         });
-        if (job.status === 'canceled') return;
-        job.status = 'succeeded';
-        job.updatedAt = Date.now();
-        job.result = {
+        const current = getDesignBuddyGenerationJob(db, job.id);
+        if (!current || current.status !== 'running') return;
+        const persisted = await persistGenerationResult(db, PROJECTS_DIR, current, {
           html: result.html,
           model: result.model,
           usage: result.usage,
           latencyMs: Date.now() - startedAt,
-        };
+        });
+        completeDesignBuddyGenerationJob(db, job.id, persisted);
       } catch (error) {
-        if (job.status === 'canceled') return;
-        const normalized = normalizeCustomModelError(error);
-        job.status = 'failed';
-        job.updatedAt = Date.now();
-        job.error = {
-          code: normalized.code,
-          message: normalized.message,
-          status: normalized.status,
-        };
+        const current = getDesignBuddyGenerationJob(db, job.id);
+        if (!current || current.status !== 'running') return;
+        failDurableGenerationJob(db, job.id, error, normalizeCustomModelError);
       } finally {
+        generationJobControllers.delete(job.id);
         await proxyDispatcher.close();
       }
     })();
   });
 
   app.get('/api/db/custom-model/generation-jobs/:jobId', (req, res) => {
-    pruneCustomModelGenerationJobs();
-    const job = customModelGenerationJobs.get(req.params.jobId);
-    if (!job) {
+    const job = getDesignBuddyGenerationJob(db, req.params.jobId);
+    if (!job || job.provider !== 'custom-model') {
       return sendApiError(res, 404, 'NOT_FOUND', 'Custom-model generation job not found');
     }
-    if (job.status === 'succeeded') {
-      return res.json({ status: job.status, result: job.result });
-    }
-    if (job.status === 'failed' || job.status === 'canceled') {
-      return res.json({
-        status: job.status,
-        error: job.error || {
-          code: 'CUSTOM_MODEL_CANCELED',
-          message: 'Custom-model generation was canceled.',
-          status: 499,
-        },
-      });
-    }
-    return res.json({ status: job.status, createdAt: job.createdAt });
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json(generationJobEnvelope(job));
   });
 
   app.delete('/api/db/custom-model/generation-jobs/:jobId', (req, res) => {
-    const job = customModelGenerationJobs.get(req.params.jobId);
-    if (!job) return res.status(204).end();
+    const job = getDesignBuddyGenerationJob(db, req.params.jobId);
+    if (!job || job.provider !== 'custom-model') return res.status(204).end();
     if (job.status === 'running') {
-      job.status = 'canceled';
-      job.updatedAt = Date.now();
-      job.controller.abort();
+      cancelDesignBuddyGenerationJob(db, job.id);
+      generationJobControllers.get(job.id)?.abort();
     }
     return res.status(204).end();
+  });
+
+  app.get('/api/db/projects/:id/generation-jobs', (req, res) => {
+    const project = db.prepare(`SELECT 1 AS ok FROM projects WHERE id = ?`).get(req.params.id);
+    if (!project) return sendApiError(res, 404, 'PROJECT_NOT_FOUND', 'project not found');
+    const provider = typeof req.query.provider === 'string'
+      && (req.query.provider === 'agnes' || req.query.provider === 'custom-model')
+      ? req.query.provider as DesignBuddyGenerationProvider
+      : undefined;
+    const jobs = listDesignBuddyGenerationJobs(db, {
+      projectId: req.params.id,
+      ...(provider ? { provider } : {}),
+      limit: Number(req.query.limit) || 10,
+    });
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ jobs: jobs.map(generationJobEnvelope) });
+  });
+
+  app.get('/api/db/generation-jobs/:jobId', (req, res) => {
+    const job = getDesignBuddyGenerationJob(db, req.params.jobId);
+    if (!job) return sendApiError(res, 404, 'NOT_FOUND', 'generation job not found');
+    res.setHeader('Cache-Control', 'no-store');
+    res.json(generationJobEnvelope(job));
+  });
+
+  app.delete('/api/db/generation-jobs/:jobId', (req, res) => {
+    const job = getDesignBuddyGenerationJob(db, req.params.jobId);
+    if (!job) return res.status(204).end();
+    if (job.status === 'running') {
+      cancelDesignBuddyGenerationJob(db, job.id);
+      generationJobControllers.get(job.id)?.abort();
+    }
+    return res.status(204).end();
+  });
+
+  // Browser-side custom-model fallback still crosses the same trusted save
+  // boundary: constrain once more, write a project file + manifest + immutable
+  // version, then lint the committed bytes before returning it to Studio.
+  app.post('/api/db/projects/:id/generated-artifacts', async (req, res) => {
+    const html = req.body?.html;
+    if (typeof html !== 'string' || !html.trim()) {
+      return sendApiError(res, 400, 'BAD_REQUEST', 'html is required');
+    }
+    if (Buffer.byteLength(html, 'utf8') > 1024 * 1024) {
+      return sendApiError(res, 413, 'PAYLOAD_TOO_LARGE', 'html is too large');
+    }
+    try {
+      const constrained = constrainOpenAiCompatibleDesignHtml(html);
+      const artifact = await persistDesignBuddyHtmlArtifact(db, PROJECTS_DIR, {
+        projectId: req.params.id,
+        html: constrained,
+        prompt: boundedRequestText(req.body?.prompt, 12_000),
+        kind: boundedRequestText(req.body?.kind, 64),
+        title: boundedRequestText(req.body?.title, 200),
+        model: boundedRequestText(req.body?.model, 160),
+        provider: boundedRequestText(req.body?.provider, 80) ?? 'browser-fallback',
+        jobId: boundedRequestText(req.body?.jobId, 128),
+        version: Number(req.body?.version) || 1,
+        fileName: boundedRequestText(req.body?.fileName, 160),
+        transport: 'browser',
+      });
+      res.status(201).json({ artifact });
+    } catch (error: any) {
+      if (error?.code === 'PROJECT_NOT_FOUND') {
+        return sendApiError(res, 404, 'PROJECT_NOT_FOUND', 'project not found');
+      }
+      if (error instanceof OpenAiCompatibleDesignError) {
+        return res.status(error.status === 413 ? 413 : 422).json({
+          error: { code: error.code, message: error.message },
+        });
+      }
+      console.warn('[designbuddy] browser-generated artifact persistence failed:', error);
+      return sendApiError(
+        res,
+        422,
+        'LIVE_ARTIFACT_STORAGE_FAILED',
+        'The generated design could not be saved as a project artifact. Review placeholder content and retry.',
+      );
+    }
   });
 
   // Keep the synchronous endpoint for API compatibility. Studio uses the job
@@ -623,11 +783,22 @@ export function registerDesignBuddyRoutes(app: Express, ctx: RegisterDesignBuddy
   //   GET  /api/db/projects/:id/gen  -> { events: [...] }
   //   POST /api/db/projects/:id/gen  <- { type, payload } -> 201 { event }
 
-  app.get('/api/db/projects/:id/gen', (req, res) => {
+  app.get('/api/db/projects/:id/gen', async (req, res) => {
+    const project = db.prepare(`SELECT 1 AS ok FROM projects WHERE id = ?`).get(req.params.id);
+    if (!project) return sendApiError(res, 404, 'NOT_FOUND', 'project not found');
+    try {
+      await reconcileDesignBuddyProjectArtifacts(db, PROJECTS_DIR, req.params.id);
+    } catch (error) {
+      // Legacy replay must remain available even if an old artifact no longer
+      // passes today's publication guard. New generations still use the strict
+      // save boundary before their job can succeed.
+      console.warn('[designbuddy] legacy artifact reconciliation failed:', error);
+    }
+    res.setHeader('Cache-Control', 'no-store');
     res.json({ events: listDesignBuddyGenEvents(db, req.params.id) });
   });
 
-  app.post('/api/db/projects/:id/gen', (req, res) => {
+  app.post('/api/db/projects/:id/gen', async (req, res) => {
     const type = req.body?.type;
     if (
       typeof type !== 'string' ||
@@ -640,19 +811,75 @@ export function registerDesignBuddyRoutes(app: Express, ctx: RegisterDesignBuddy
         `type must be one of ${DESIGNBUDDY_GEN_EVENT_TYPES.join('|')}`,
       );
     }
-    const payload = req.body?.payload ?? null;
+    let payload = req.body?.payload ?? null;
     if (payload !== null && (typeof payload !== 'object' || Array.isArray(payload))) {
       return sendApiError(res, 400, 'BAD_REQUEST', 'payload must be an object or null');
     }
+    // Reject oversized legacy/browser payloads before publication guards,
+    // linting, or project-file writes perform work on attacker-controlled data.
     if (Buffer.byteLength(JSON.stringify(payload), 'utf8') > DESIGNBUDDY_GEN_PAYLOAD_LIMIT) {
       return sendApiError(res, 413, 'PAYLOAD_TOO_LARGE', 'payload too large');
     }
     // 只允许绑定到真实存在的项目行，避免生成日志脱离项目。
     const project = db
-      .prepare(`SELECT 1 AS ok FROM projects WHERE id = ?`)
-      .get(req.params.id) as { ok: number } | undefined;
+      .prepare(`SELECT name FROM projects WHERE id = ?`)
+      .get(req.params.id) as { name: string } | undefined;
     if (!project) {
       return sendApiError(res, 404, 'NOT_FOUND', 'project not found');
+    }
+
+    const payloadObject = payload as Record<string, any> | null;
+    const jobId = typeof payloadObject?.jobId === 'string' ? payloadObject.jobId : null;
+    if (jobId && (type === 'artifact' || type === 'done')) {
+      const existing = listDesignBuddyGenEvents(db, req.params.id).find((event) =>
+        event.type === type && event.payload?.jobId === jobId,
+      );
+      if (existing) return res.status(200).json({ event: existing, deduplicated: true });
+    }
+
+    if (
+      type === 'artifact'
+      && payloadObject
+      && typeof payloadObject.html === 'string'
+      && (!payloadObject.fileName || !payloadObject.fileVersion || !payloadObject.quality)
+    ) {
+      const priorEvents = listDesignBuddyGenEvents(db, req.params.id);
+      let prompt: string | null = null;
+      for (let index = priorEvents.length - 1; index >= 0; index -= 1) {
+        const prior = priorEvents[index];
+        if (prior?.type === 'user' && typeof prior.payload?.text === 'string') {
+          prompt = prior.payload.text;
+          break;
+        }
+      }
+      try {
+        const persisted = await persistDesignBuddyHtmlArtifact(db, PROJECTS_DIR, {
+          projectId: req.params.id,
+          html: payloadObject.html,
+          prompt,
+          kind: boundedRequestText(payloadObject.kind, 64),
+          title: boundedRequestText(payloadObject.name, 200) ?? project.name,
+          model: boundedRequestText(payloadObject.model, 160),
+          provider: boundedRequestText(payloadObject.provider, 80) ?? 'studio-event',
+          jobId,
+          version: Number(payloadObject.version) || 1,
+          fileName: boundedRequestText(payloadObject.fileName, 160),
+          transport: boundedRequestText(payloadObject.transport, 40),
+        });
+        payload = { ...payloadObject, ...persisted };
+      } catch (error) {
+        console.warn('[designbuddy] artifact event persistence failed:', error);
+        return sendApiError(
+          res,
+          422,
+          'LIVE_ARTIFACT_STORAGE_FAILED',
+          'The generated design could not be saved as a versioned project file.',
+        );
+      }
+    }
+
+    if (Buffer.byteLength(JSON.stringify(payload), 'utf8') > DESIGNBUDDY_GEN_PAYLOAD_LIMIT) {
+      return sendApiError(res, 413, 'PAYLOAD_TOO_LARGE', 'payload too large');
     }
     const event = appendDesignBuddyGenEvent(
       db,

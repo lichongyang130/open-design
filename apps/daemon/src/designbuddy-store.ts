@@ -93,6 +93,33 @@ export interface DesignBuddyGenSummary {
   updatedAt: number;
 }
 
+export const DESIGNBUDDY_GENERATION_PROVIDERS = ['agnes', 'custom-model'] as const;
+export type DesignBuddyGenerationProvider = (typeof DESIGNBUDDY_GENERATION_PROVIDERS)[number];
+export type DesignBuddyGenerationJobStatus =
+  | 'running'
+  | 'succeeded'
+  | 'failed'
+  | 'canceled'
+  | 'interrupted';
+
+export interface DesignBuddyGenerationJob {
+  id: string;
+  provider: DesignBuddyGenerationProvider;
+  projectId: string | null;
+  status: DesignBuddyGenerationJobStatus;
+  request: Record<string, unknown>;
+  result: Record<string, unknown> | null;
+  error: { code: string; message: string; status: number } | null;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface CreateDesignBuddyGenerationJobInput {
+  provider: DesignBuddyGenerationProvider;
+  projectId?: string | null;
+  request?: Record<string, unknown>;
+}
+
 const DESIGNBUDDY_HTML_ERROR_PATTERN = /(?:<!doctype\s+html\b|<html\b|<head\b|<body\b|<!--\s*\[if\s+[^\]]*\bie\b|&lt;!doctype\s+html\b|&lt;html\b|cf-error-details|cloudflare\s+ray\s+id)/i;
 const DESIGNBUDDY_HTML_ERROR_MESSAGE = 'The upstream gateway returned an HTML error page instead of a model response.';
 
@@ -300,6 +327,25 @@ export function migrateDesignBuddy(db: SqliteDb): void {
 
     CREATE INDEX IF NOT EXISTS idx_designbuddy_gen_project
       ON designbuddy_gen(project_id, seq);
+
+    CREATE TABLE IF NOT EXISTS designbuddy_generation_jobs (
+      id           TEXT PRIMARY KEY,
+      provider     TEXT NOT NULL,
+      project_id   TEXT,
+      status       TEXT NOT NULL,
+      request_json TEXT NOT NULL,
+      result_json  TEXT,
+      error_json   TEXT,
+      created_at   INTEGER NOT NULL,
+      updated_at   INTEGER NOT NULL,
+      FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_designbuddy_generation_jobs_project
+      ON designbuddy_generation_jobs(project_id, created_at DESC);
+
+    CREATE INDEX IF NOT EXISTS idx_designbuddy_generation_jobs_status
+      ON designbuddy_generation_jobs(provider, status, updated_at DESC);
 
     CREATE TRIGGER IF NOT EXISTS trg_designbuddy_gen_project_delete
       AFTER DELETE ON projects
@@ -831,6 +877,196 @@ export function setDesignBuddyReviewStatus(
   if (info.changes === 0) return null;
   const row = db.prepare(`SELECT * FROM designbuddy_reviews WHERE id = ?`).get(id) as DbRow;
   return reviewFromRow(row);
+}
+
+function generationJobJson(value: unknown): Record<string, unknown> | null {
+  if (typeof value !== 'string' || !value) return null;
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? parsed as Record<string, unknown>
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function generationJobFromRow(row: DbRow): DesignBuddyGenerationJob {
+  const provider = (DESIGNBUDDY_GENERATION_PROVIDERS as readonly string[]).includes(row.provider)
+    ? row.provider as DesignBuddyGenerationProvider
+    : 'agnes';
+  const allowedStatuses: readonly DesignBuddyGenerationJobStatus[] = [
+    'running', 'succeeded', 'failed', 'canceled', 'interrupted',
+  ];
+  const status = (allowedStatuses as readonly string[]).includes(row.status)
+    ? row.status as DesignBuddyGenerationJobStatus
+    : 'failed';
+  const rawError = generationJobJson(row.error_json);
+  const error = rawError
+    ? {
+        code: typeof rawError.code === 'string' ? rawError.code : 'GENERATION_FAILED',
+        message: typeof rawError.message === 'string' ? rawError.message : 'Generation failed.',
+        status: Number(rawError.status) || 500,
+      }
+    : null;
+  return {
+    id: String(row.id),
+    provider,
+    projectId: typeof row.project_id === 'string' ? row.project_id : null,
+    status,
+    request: generationJobJson(row.request_json) ?? {},
+    result: generationJobJson(row.result_json),
+    error,
+    createdAt: Number(row.created_at),
+    updatedAt: Number(row.updated_at),
+  };
+}
+
+export function createDesignBuddyGenerationJob(
+  db: SqliteDb,
+  input: CreateDesignBuddyGenerationJobInput,
+): DesignBuddyGenerationJob {
+  const id = randomUUID();
+  const now = Date.now();
+  db.prepare(
+    `INSERT INTO designbuddy_generation_jobs
+       (id, provider, project_id, status, request_json, result_json, error_json, created_at, updated_at)
+     VALUES (?, ?, ?, 'running', ?, NULL, NULL, ?, ?)`,
+  ).run(
+    id,
+    input.provider,
+    input.projectId ?? null,
+    JSON.stringify(input.request ?? {}),
+    now,
+    now,
+  );
+  return getDesignBuddyGenerationJob(db, id) as DesignBuddyGenerationJob;
+}
+
+export function getDesignBuddyGenerationJob(
+  db: SqliteDb,
+  id: string,
+): DesignBuddyGenerationJob | null {
+  const row = db.prepare(
+    `SELECT * FROM designbuddy_generation_jobs WHERE id = ?`,
+  ).get(id) as DbRow | undefined;
+  return row ? generationJobFromRow(row) : null;
+}
+
+export function listDesignBuddyGenerationJobs(
+  db: SqliteDb,
+  options: {
+    projectId?: string;
+    provider?: DesignBuddyGenerationProvider;
+    status?: DesignBuddyGenerationJobStatus;
+    limit?: number;
+  } = {},
+): DesignBuddyGenerationJob[] {
+  const clauses: string[] = [];
+  const params: unknown[] = [];
+  if (options.projectId) {
+    clauses.push('project_id = ?');
+    params.push(options.projectId);
+  }
+  if (options.provider) {
+    clauses.push('provider = ?');
+    params.push(options.provider);
+  }
+  if (options.status) {
+    clauses.push('status = ?');
+    params.push(options.status);
+  }
+  const limit = Math.max(1, Math.min(100, Number(options.limit) || 20));
+  const rows = db.prepare(
+    `SELECT * FROM designbuddy_generation_jobs
+      ${clauses.length ? `WHERE ${clauses.join(' AND ')}` : ''}
+      ORDER BY created_at DESC LIMIT ?`,
+  ).all(...params, limit) as DbRow[];
+  return rows.map(generationJobFromRow);
+}
+
+export function countRunningDesignBuddyGenerationJobs(
+  db: SqliteDb,
+  provider: DesignBuddyGenerationProvider,
+): number {
+  const row = db.prepare(
+    `SELECT COUNT(*) AS count FROM designbuddy_generation_jobs
+      WHERE provider = ? AND status = 'running'`,
+  ).get(provider) as DbRow;
+  return Number(row.count) || 0;
+}
+
+export function completeDesignBuddyGenerationJob(
+  db: SqliteDb,
+  id: string,
+  result: Record<string, unknown>,
+): DesignBuddyGenerationJob | null {
+  const now = Date.now();
+  db.prepare(
+    `UPDATE designbuddy_generation_jobs
+        SET status = 'succeeded', result_json = ?, error_json = NULL, updated_at = ?
+      WHERE id = ? AND status = 'running'`,
+  ).run(JSON.stringify(result), now, id);
+  return getDesignBuddyGenerationJob(db, id);
+}
+
+export function failDesignBuddyGenerationJob(
+  db: SqliteDb,
+  id: string,
+  error: { code: string; message: string; status: number },
+): DesignBuddyGenerationJob | null {
+  const now = Date.now();
+  db.prepare(
+    `UPDATE designbuddy_generation_jobs
+        SET status = 'failed', error_json = ?, updated_at = ?
+      WHERE id = ? AND status = 'running'`,
+  ).run(JSON.stringify(error), now, id);
+  return getDesignBuddyGenerationJob(db, id);
+}
+
+export function cancelDesignBuddyGenerationJob(
+  db: SqliteDb,
+  id: string,
+): DesignBuddyGenerationJob | null {
+  const now = Date.now();
+  db.prepare(
+    `UPDATE designbuddy_generation_jobs
+        SET status = 'canceled', error_json = ?, updated_at = ?
+      WHERE id = ? AND status = 'running'`,
+  ).run(JSON.stringify({
+    code: 'GENERATION_CANCELED',
+    message: 'Generation was canceled.',
+    status: 499,
+  }), now, id);
+  return getDesignBuddyGenerationJob(db, id);
+}
+
+/** Mark daemon-owned requests that cannot survive a process restart. */
+export function reconcileInterruptedDesignBuddyGenerationJobs(
+  db: SqliteDb,
+  now = Date.now(),
+): number {
+  const result = db.prepare(
+    `UPDATE designbuddy_generation_jobs
+        SET status = 'interrupted', error_json = ?, updated_at = ?
+      WHERE status = 'running'`,
+  ).run(JSON.stringify({
+    code: 'GENERATION_INTERRUPTED',
+    message: 'The daemon restarted before generation completed. Retry the request.',
+    status: 503,
+  }), now);
+  return Number(result.changes) || 0;
+}
+
+export function pruneDesignBuddyGenerationJobs(
+  db: SqliteDb,
+  olderThan = Date.now() - 30 * 86_400_000,
+): number {
+  const result = db.prepare(
+    `DELETE FROM designbuddy_generation_jobs
+      WHERE status <> 'running' AND updated_at < ?`,
+  ).run(olderThan);
+  return Number(result.changes) || 0;
 }
 
 function genEventFromRow(row: DbRow): DesignBuddyGenEvent {

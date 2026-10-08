@@ -7831,7 +7831,10 @@ export async function startServer({
 
   // DesignBuddy demo layer (public/ login + role + studio pages): role
   // preference, review queue, and real usage stats, all in app.sqlite.
-  registerDesignBuddyRoutes(app, { db });
+  registerDesignBuddyRoutes(app, {
+    db,
+    paths: { PROJECTS_DIR },
+  });
 
   registerAutomationRoutes(app, {
     paths: { RUNTIME_DATA_DIR },

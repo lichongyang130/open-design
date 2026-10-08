@@ -42,6 +42,7 @@
     upload: { items: [] },
     browser: null,
     designSystem: null,
+    delivery: null,
     pollTimer: null
   };
 
@@ -1143,6 +1144,182 @@
     catch (error) { if (W.designSystem === d) { d.jobError = cleanError(error); renderDesignSystemJob(); } }
   }
 
+  function latestDeliveryArtifact() {
+    var events = state().gen.events || [];
+    for (var i = events.length - 1; i >= 0; i--) {
+      var event = events[i];
+      if (event.type === "artifact" && event.payload && event.payload.surface !== "image" && event.payload.surface !== "video") return event.payload;
+    }
+    return null;
+  }
+  function deliveryQualityCounts(quality) {
+    var counts = quality && quality.counts || {};
+    return { p0: Number(counts.p0) || 0, p1: Number(counts.p1) || 0, p2: Number(counts.p2) || 0 };
+  }
+  function deliveryFileName(manifest, artifact) {
+    if (artifact && artifact.fileName) return artifact.fileName;
+    if (manifest && manifest.entryFile) return manifest.entryFile;
+    var html = W.files.filter(function (file) { return /\.html?$/i.test(file.name || ""); })[0];
+    return html ? html.name : "";
+  }
+  async function loadDeliveryQuality(entryFile) {
+    if (!entryFile || !/\.html?$/i.test(entryFile)) return null;
+    var response = await fetch(currentProjectPath(entryFile), { cache: "no-store" });
+    if (!response.ok) throw new Error("HTTP " + response.status);
+    var html = await response.text();
+    return H.apiSend("/api/artifacts/lint", "POST", { html: html });
+  }
+  async function loadDelivery() {
+    var delivery = W.delivery;
+    if (!delivery || !W.projectId) return;
+    delivery.loading = true; delivery.error = ""; renderDelivery();
+    try {
+      var manifest = await H.apiGet("/api/projects/" + encodeURIComponent(W.projectId) + "/export/manifest");
+      if (W.delivery !== delivery) return;
+      delivery.manifest = manifest;
+      delivery.artifact = latestDeliveryArtifact();
+      delivery.entryFile = deliveryFileName(manifest, delivery.artifact);
+      delivery.deck = !!(delivery.artifact && delivery.artifact.kind === "deck") || !!((manifest.artifacts || []).some(function (item) { return item.file === delivery.entryFile && item.kind === "deck"; }));
+      delivery.quality = delivery.artifact && delivery.artifact.quality || null;
+      if (!delivery.quality && delivery.entryFile) {
+        var lint = await loadDeliveryQuality(delivery.entryFile);
+        if (W.delivery !== delivery) return;
+        var findings = lint && Array.isArray(lint.findings) ? lint.findings : [];
+        var counts = { p0: 0, p1: 0, p2: 0 };
+        findings.forEach(function (finding) {
+          if (finding.severity === "P0") counts.p0++;
+          else if (finding.severity === "P1") counts.p1++;
+          else counts.p2++;
+        });
+        delivery.quality = {
+          status: counts.p0 + counts.p1 ? "needs-attention" : counts.p2 ? "advisory" : "passed",
+          counts: counts,
+          findings: findings,
+          agentMessage: lint && lint.agentMessage || "",
+          checkedAt: Date.now()
+        };
+      }
+    } catch (error) {
+      if (W.delivery === delivery) delivery.error = cleanError(error);
+    } finally {
+      if (W.delivery === delivery) { delivery.loading = false; renderDelivery(); }
+    }
+  }
+  function exportCard(id, label, detail, tag, disabled, note) {
+    return '<button type="button" class="gw-delivery-export" data-delivery-export="' + E(id) + '"' + (disabled ? ' disabled' : '') + '><span class="gw-delivery-format">' + E(tag) + '</span><span><b>' + E(label) + '</b><small>' + E(detail) + '</small>' + (note ? '<em>' + E(note) + '</em>' : '') + '</span><i>↓</i></button>';
+  }
+  function renderDelivery() {
+    var d = W.delivery;
+    if (!d) return;
+    var manifest = d.manifest || {};
+    var files = Array.isArray(manifest.files) ? manifest.files : [];
+    var artifacts = Array.isArray(manifest.artifacts) ? manifest.artifacts : [];
+    var quality = d.quality;
+    var counts = deliveryQualityCounts(quality);
+    var qualityClass = quality ? quality.status || "advisory" : "pending";
+    var qualityTitle = !quality
+      ? L("等待质量检查", "Quality check pending")
+      : quality.status === "passed"
+        ? L("质量检查通过", "Quality checks passed")
+        : quality.status === "advisory"
+          ? L("有改进建议", "Advisories found")
+          : L("需要优化", "Needs attention");
+    var findings = quality && Array.isArray(quality.findings) ? quality.findings : [];
+    var findingHtml = findings.length
+      ? findings.slice(0, 20).map(function (finding) {
+          return '<article class="gw-quality-finding ' + E(String(finding.severity || "P2").toLowerCase()) + '"><span>' + E(finding.severity || "P2") + '</span><div><b>' + E(finding.message || finding.id || L("质量建议", "Quality finding")) + '</b><p>' + E(finding.fix || "") + '</p>' + (finding.snippet ? '<code>' + E(finding.snippet) + '</code>' : '') + '</div></article>';
+        }).join("")
+      : '<div class="gw-delivery-clean"><b>' + E(L("没有发现阻断问题", "No blocking issues found")) + '</b><span>' + E(L("产物已完成确定性 anti-slop 检查。", "The artifact passed deterministic anti-slop checks.")) + '</span></div>';
+    var noEntry = !d.entryFile;
+    var body = '<div class="gw-delivery">' +
+      (d.error ? '<div class="gw-banner error">' + E(d.error) + '</div>' : '') +
+      '<section class="gw-delivery-hero"><div><span class="gw-delivery-eyebrow">DELIVERY READY</span><h2>' + E(W.projectName || L("当前项目", "Current project")) + '</h2><p>' + E(d.entryFile || L("尚无可交付入口文件", "No deliverable entry file yet")) + '</p></div><div class="gw-delivery-stats"><span><b>' + E(String(files.length)) + '</b>' + E(L("文件", "Files")) + '</span><span><b>' + E(String(artifacts.length)) + '</b>' + E(L("产物", "Artifacts")) + '</span><span><b>' + E(d.deck ? L("演示", "Deck") : L("页面", "Page")) + '</b>' + E(L("类型", "Type")) + '</span></div></section>' +
+      '<section class="gw-delivery-section"><div class="gw-delivery-section-head"><div><span>01</span><h3>' + E(L("选择交付格式", "Choose a delivery format")) + '</h3></div><p>' + E(L("所有格式均调用项目现有的真实导出接口。", "Every format uses the project’s production export endpoints.")) + '</p></div><div class="gw-delivery-grid">' +
+        exportCard("html", L("独立 HTML", "Standalone HTML"), L("依赖内联，可直接交付", "Dependencies inlined and portable"), "HTML", noEntry, "") +
+        exportCard("zip", L("项目源码包", "Project source package"), L("完整文件树与资源", "Complete file tree and assets"), "ZIP", noEntry, "") +
+        exportCard("pdf", L("高保真 PDF", "High-fidelity PDF"), L("按页面或幻灯片渲染", "Rendered page or slide output"), "PDF", noEntry, "") +
+        exportCard("pptx", L("演示文稿", "Presentation deck"), L("一页一张高保真幻灯片", "One pixel-perfect image per slide"), "PPTX", noEntry || !d.deck, d.deck ? "" : L("仅演示型产物", "Deck artifacts only")) +
+        exportCard("image", L("预览图片", "Preview image"), L("PNG 全页或首张幻灯片", "Full page or first-slide PNG"), "PNG", noEntry, "") +
+        exportCard("manifest", L("交付清单", "Delivery manifest"), L("机器可读文件与产物索引", "Machine-readable file and artifact index"), "JSON", !d.manifest, "") +
+      '</div>' + (d.exporting ? '<div class="gw-delivery-progress"><i></i><span>' + E(L("正在准备 ", "Preparing ") + String(d.exporting).toUpperCase()) + '…</span></div>' : '') + '</section>' +
+      '<section class="gw-delivery-section"><div class="gw-delivery-section-head"><div><span>02</span><h3>' + E(L("质量检查", "Quality checks")) + '</h3></div><button type="button" class="gw-btn" id="gwDeliveryRelint"' + (noEntry || d.qualityLoading ? ' disabled' : '') + '>' + E(d.qualityLoading ? L("检查中…", "Checking…") : L("重新检查", "Run again")) + '</button></div><div class="gw-quality-summary ' + E(qualityClass) + '"><div><i></i><span><b>' + E(qualityTitle) + '</b><small>' + E(L("基于已保存项目文件", "Based on the saved project file")) + '</small></span></div><dl><div><dt>P0</dt><dd>' + counts.p0 + '</dd></div><div><dt>P1</dt><dd>' + counts.p1 + '</dd></div><div><dt>P2</dt><dd>' + counts.p2 + '</dd></div></dl></div><div class="gw-quality-list">' + findingHtml + '</div></section>' +
+      '<section class="gw-delivery-section"><div class="gw-delivery-section-head"><div><span>03</span><h3>' + E(L("清单范围", "Manifest scope")) + '</h3></div><p>' + E(L("入口文件、产物清单和支持资源均来自 daemon。", "Entry, artifacts, and supporting assets are daemon-authored.")) + '</p></div><div class="gw-manifest-files">' + (files.slice(0, 12).map(function (file) { return '<span><b>' + E(file.name || "") + '</b><small>' + E(file.role || file.kind || "file") + '</small></span>'; }).join("") || '<p>' + E(L("暂无项目文件。", "No project files yet.")) + '</p>') + '</div></section>' +
+    '</div>';
+    frame({ title: L("交付中心", "Delivery Center"), subtitle: L("版本化文件 · 多格式导出 · 质量门禁", "Versioned files · multi-format export · quality gate"), showSaveState: false }, body);
+    Array.prototype.forEach.call(W.root.querySelectorAll("[data-delivery-export]"), function (button) {
+      button.addEventListener("click", function () { void runDeliveryExport(button.getAttribute("data-delivery-export")); });
+    });
+    var relint = document.getElementById("gwDeliveryRelint");
+    if (relint) relint.addEventListener("click", function () { void refreshDeliveryQuality(); });
+  }
+  function downloadBlob(blob, filename) {
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement("a");
+    link.href = url; link.download = filename; document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+  }
+  function deliveryFilename(response, fallback) {
+    var value = String(response.headers.get("content-disposition") || "");
+    var utf = /filename\*=UTF-8''([^;]+)/i.exec(value);
+    if (utf) { try { return decodeURIComponent(utf[1]); } catch (error) {} }
+    var plain = /filename="([^"]+)"/i.exec(value);
+    return plain ? plain[1] : fallback;
+  }
+  async function deliveryResponseError(response) {
+    var text = await response.text();
+    try {
+      var body = JSON.parse(text);
+      return cleanError(body && body.error && (body.error.message || body.error) || body.message || "HTTP " + response.status);
+    } catch (error) { return cleanError(text || "HTTP " + response.status); }
+  }
+  async function runDeliveryExport(format) {
+    var d = W.delivery;
+    if (!d || d.exporting || (!d.entryFile && format !== "manifest")) return;
+    d.exporting = format; d.error = ""; renderDelivery();
+    try {
+      if (format === "manifest") {
+        downloadBlob(new Blob([JSON.stringify(d.manifest, null, 2)], { type: "application/json" }), safeBaseName(W.projectName, "project") + "-manifest.json");
+      } else {
+        var root = "/api/projects/" + encodeURIComponent(W.projectId);
+        var url = format === "zip" ? root + "/archive" : root + "/export/" + (format === "pdf" ? "pdf-image" : format);
+        var options = format === "zip" ? { method: "GET" } : {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fileName: d.entryFile, title: W.projectName, deck: d.deck, imageFormat: "png", index: 0 })
+        };
+        var response = await fetch(url, options);
+        if (!response.ok) throw new Error(await deliveryResponseError(response));
+        var fallback = safeBaseName(W.projectName, "project") + (format === "html" ? ".html" : format === "image" ? ".png" : format === "pdf" ? ".pdf" : format === "pptx" ? ".pptx" : ".zip");
+        downloadBlob(await response.blob(), deliveryFilename(response, fallback));
+      }
+      H.toast(L("交付文件已开始下载", "Your delivery download has started"));
+    } catch (error) {
+      if (W.delivery === d) d.error = cleanError(error);
+    } finally {
+      if (W.delivery === d) { d.exporting = ""; renderDelivery(); }
+    }
+  }
+  async function refreshDeliveryQuality() {
+    var d = W.delivery;
+    if (!d || d.qualityLoading || !d.entryFile) return;
+    d.qualityLoading = true; d.error = ""; renderDelivery();
+    try {
+      var lint = await loadDeliveryQuality(d.entryFile);
+      if (W.delivery !== d) return;
+      var findings = lint && Array.isArray(lint.findings) ? lint.findings : [];
+      var counts = { p0: 0, p1: 0, p2: 0 };
+      findings.forEach(function (finding) { if (finding.severity === "P0") counts.p0++; else if (finding.severity === "P1") counts.p1++; else counts.p2++; });
+      d.quality = { status: counts.p0 + counts.p1 ? "needs-attention" : counts.p2 ? "advisory" : "passed", counts: counts, findings: findings, agentMessage: lint && lint.agentMessage || "", checkedAt: Date.now() };
+      H.toast(L("质量检查已更新", "Quality checks updated"));
+    } catch (error) { if (W.delivery === d) d.error = cleanError(error); }
+    finally { if (W.delivery === d) { d.qualityLoading = false; renderDelivery(); } }
+  }
+  async function openDelivery() {
+    W.delivery = { loading: true, qualityLoading: false, exporting: "", error: "", manifest: null, artifact: latestDeliveryArtifact(), entryFile: "", deck: false, quality: null };
+    renderDelivery();
+    await loadDelivery();
+  }
+
   async function saveCurrent(quiet) {
     if (W.kind === "document") return saveDocument(quiet);
     if (W.kind === "sketch") return saveSketch(quiet);
@@ -1172,6 +1349,7 @@
     clearSaveTimer();
     if (W.kind === "browser") { await closeBrowserSession(); W.browser = null; }
     if (W.kind === "design-system") W.designSystem = null;
+    if (W.kind === "delivery") W.delivery = null;
     clearTimeout(W.pollTimer); W.pollTimer = null;
     W.kind = null; W.dirty = false; W.root.hidden = true; W.root.innerHTML = "";
     if (H.renderGenFiles) H.renderGenFiles();
@@ -1189,6 +1367,7 @@
       else if (kind === "upload") renderUpload();
       else if (kind === "browser") await openBrowser(options || {});
       else if (kind === "design-system") { W.designSystem = defaultDesignSystem(); renderDesignSystem(); }
+      else if (kind === "delivery") await openDelivery();
     } finally { W.opening = false; }
   }
   async function beforeProjectChange() {
@@ -1211,6 +1390,7 @@
     else if (W.kind === "upload") renderUpload();
     else if (W.kind === "browser") renderBrowser();
     else if (W.kind === "design-system") renderDesignSystem();
+    else if (W.kind === "delivery") renderDelivery();
   }
 
   window.StudioWorkbench = {
