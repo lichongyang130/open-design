@@ -542,6 +542,7 @@ export function lintArtifact(rawHtml: unknown): LintFinding[] {
       /\baria-label\s*=\s*(["'])\s*[^\s"'][\s\S]*?\1/i.test(attrs) ||
       /\baria-labelledby\s*=\s*(["'])\s*[^\s"'][\s\S]*?\1/i.test(attrs) ||
       /\btitle\s*=\s*(["'])\s*[^\s"'][\s\S]*?\1/i.test(attrs) ||
+      /<img\b[^>]*\balt\s*=\s*(["'])\s*[^\s"'][\s\S]*?\1/i.test(linkMatch[2] ?? '') ||
       inner.length > 0;
     if (!hasAccessibleLabel) {
       out.push({
