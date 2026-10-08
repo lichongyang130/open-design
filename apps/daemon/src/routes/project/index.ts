@@ -5754,6 +5754,7 @@ export function registerProjectArtifactRoutes(app: Express, ctx: RegisterProject
         path: file,
         url: `/artifacts/${path.basename(dir)}/index.html`,
         lint: findings,
+        agentMessage: renderFindingsForAgent(findings),
       });
     } catch (err: any) {
       res.status(500).json({ error: String(err) });
