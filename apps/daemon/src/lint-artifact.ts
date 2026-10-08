@@ -512,8 +512,8 @@ export function lintArtifact(rawHtml: unknown): LintFinding[] {
   // the image should be ignored by assistive technology). This rule is
   // intentionally scoped to <img> elements and does not attempt to
   // infer whether remote assets actually load.
-  const imgTags = html.match(/<img\\b[^>]*>/gi) ?? [];
-  const missingAlt = imgTags.find((tag) => !/\\balt\\s*=\\s*(["'])/i.test(tag));
+  const imgTags = html.match(/<img\b[^>]*>/gi) ?? [];
+  const missingAlt = imgTags.find((tag) => !/\balt\s*=\s*(["'])/i.test(tag));
   if (missingAlt) {
     out.push({
       severity: 'P1',
@@ -528,20 +528,20 @@ export function lintArtifact(rawHtml: unknown): LintFinding[] {
   // A button may be named by visible text, aria-label, aria-labelledby,
   // or title. Strip nested markup before checking visible text so an
   // icon-only SVG button is flagged unless it has an explicit name.
-  const buttonRe = /<button\\b([^>]*)>([\\s\\S]*?)<\\/button\\s*>/gi;
+  const buttonRe = /<button\b([^>]*)>([\s\S]*?)<\/button\s*>/gi;
   let buttonMatch: RegExpExecArray | null;
   while ((buttonMatch = buttonRe.exec(html)) !== null) {
     const attrs = buttonMatch[1] ?? '';
     const inner = (buttonMatch[2] ?? '')
-      .replace(/<script\\b[^>]*>[\\s\\S]*?<\\/script\\s*>/gi, '')
-      .replace(/<style\\b[^>]*>[\\s\\S]*?<\\/style\\s*>/gi, '')
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, '')
+      .replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, '')
       .replace(/<[^>]+>/g, ' ')
       .replace(/&nbsp;|&#160;/gi, ' ')
       .trim();
     const hasAccessibleLabel =
-      /\\baria-label\\s*=\\s*(["'])\\s*[^\\s"'][\\s\\S]*?\\1/i.test(attrs) ||
-      /\\baria-labelledby\\s*=\\s*(["'])\\s*[^\\s"'][\\s\\S]*?\\1/i.test(attrs) ||
-      /\\btitle\\s*=\\s*(["'])\\s*[^\\s"'][\\s\\S]*?\\1/i.test(attrs) ||
+      /\baria-label\s*=\s*(["'])\s*[^\s"'][\s\S]*?\1/i.test(attrs) ||
+      /\baria-labelledby\s*=\s*(["'])\s*[^\s"'][\s\S]*?\1/i.test(attrs) ||
+      /\btitle\s*=\s*(["'])\s*[^\s"'][\s\S]*?\1/i.test(attrs) ||
       inner.length > 0;
     if (!hasAccessibleLabel) {
       out.push({
@@ -556,7 +556,7 @@ export function lintArtifact(rawHtml: unknown): LintFinding[] {
   }
 
   // ── P2-4: placeholder / unsafe navigation links ───────────────────
-  const placeholderLink = /<a\\b[^>]*\\bhref\\s*=\\s*(["'])(?:#|javascript\\s*:[^"']*)\\1[^>]*>/i.exec(html);
+  const placeholderLink = /<a\b[^>]*\bhref\s*=\s*(["'])(?:#|javascript\s*:[^"']*)\1[^>]*>/i.exec(html);
   if (placeholderLink) {
     out.push({
       severity: 'P2',
@@ -571,7 +571,7 @@ export function lintArtifact(rawHtml: unknown): LintFinding[] {
   // Full HTML documents need a viewport declaration for predictable
   // mobile rendering. Do not flag fragments, which are common in
   // component/deck artifacts and are rendered inside a host document.
-  if (/<html\\b/i.test(html) && !/<meta\\b[^>]*name\\s*=\\s*(["'])viewport\\1/i.test(html)) {
+  if (/<html\b/i.test(html) && !/<meta\b[^>]*name\s*=\s*(["'])viewport\1/i.test(html)) {
     out.push({
       severity: 'P1',
       id: 'missing-viewport',
@@ -583,7 +583,7 @@ export function lintArtifact(rawHtml: unknown): LintFinding[] {
   // ── P2-3: missing document language ───────────────────────────────
   // The document language helps screen readers choose pronunciation
   // rules and helps browsers/tools process text correctly.
-  if (/<html\\b/i.test(html) && !/<html\\b[^>]*\\blang\\s*=/i.test(html)) {
+  if (/<html\b/i.test(html) && !/<html\b[^>]*\blang\s*=/i.test(html)) {
     out.push({
       severity: 'P2',
       id: 'missing-document-language',
