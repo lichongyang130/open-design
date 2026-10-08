@@ -506,6 +506,32 @@ export function lintArtifact(rawHtml: unknown): LintFinding[] {
     }
   }
 
+
+  // ── P1-4: missing viewport metadata ───────────────────────────────
+  // Full HTML documents need a viewport declaration for predictable
+  // mobile rendering. Do not flag fragments, which are common in
+  // component/deck artifacts and are rendered inside a host document.
+  if (/<html\\b/i.test(html) && !/<meta\\b[^>]*name\\s*=\\s*(["'])viewport\\1/i.test(html)) {
+    out.push({
+      severity: 'P1',
+      id: 'missing-viewport',
+      message: 'Full HTML document has no viewport meta tag; mobile layouts may render at a desktop-sized viewport.',
+      fix: 'Add <meta name="viewport" content="width=device-width, initial-scale=1"> inside <head> and verify the layout at a narrow viewport.',
+    });
+  }
+
+  // ── P2-3: missing document language ───────────────────────────────
+  // The document language helps screen readers choose pronunciation
+  // rules and helps browsers/tools process text correctly.
+  if (/<html\\b/i.test(html) && !/<html\\b[^>]*\\blang\\s*=/i.test(html)) {
+    out.push({
+      severity: 'P2',
+      id: 'missing-document-language',
+      message: 'HTML document does not declare a language on its root element.',
+      fix: 'Add the correct BCP 47 language tag to the <html> element (for example, lang="zh-CN" for Simplified Chinese or lang="en" for English).',
+    });
+  }
+
   return out;
 }
 
