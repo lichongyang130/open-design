@@ -513,7 +513,7 @@ export function lintArtifact(rawHtml: unknown): LintFinding[] {
   // intentionally scoped to <img> elements and does not attempt to
   // infer whether remote assets actually load.
   const imgTags = html.match(/<img\b[^>]*>/gi) ?? [];
-  const missingAlt = imgTags.find((tag) => !/\balt\s*=\s*(["'])/i.test(tag));
+  const missingAlt = imgTags.find((tag) => !/\balt\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/i.test(tag));
   if (missingAlt) {
     out.push({
       severity: 'P1',
