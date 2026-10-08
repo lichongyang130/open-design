@@ -57,6 +57,28 @@ describe('artifact lint CLI end-to-end', () => {
         failOn: 'p0',
         counts: { p0: 0 },
       });
+
+      // Exercise the new accessibility rules through the real CLI + daemon
+      // boundary, not only through direct unit calls to lintArtifact().
+      const accessibilityPath = join(suite.scratchDir, 'accessibility-basics.html');
+      await writeFile(
+        accessibilityPath,
+        '<main><img src="/hero.png"><button><svg aria-hidden="true"></svg></button><a href="#">More</a></main>',
+        'utf8',
+      );
+      const accessibility = await odLint(
+        daemonUrl,
+        ['lint', accessibilityPath, '--json'],
+      );
+      expect(accessibility.code, accessibility.stderr || accessibility.stdout).toBe(0);
+      const accessibilityReport = JSON.parse(accessibility.stdout) as {
+        findings: Array<{ id: string; severity: string }>;
+      };
+      expect(accessibilityReport.findings).toEqual(expect.arrayContaining([
+        expect.objectContaining({ id: 'image-missing-alt', severity: 'P1' }),
+        expect.objectContaining({ id: 'button-missing-name', severity: 'P1' }),
+        expect.objectContaining({ id: 'placeholder-link', severity: 'P2' }),
+      ]));
     });
   }, 180_000);
 });
