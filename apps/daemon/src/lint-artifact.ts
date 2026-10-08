@@ -539,9 +539,9 @@ export function lintArtifact(rawHtml: unknown): LintFinding[] {
       .replace(/&nbsp;|&#160;/gi, ' ')
       .trim();
     const hasAccessibleLabel =
-      /\baria-label\s*=\s*(["'])\s*[^\s"'][\s\S]*?\1/i.test(attrs) ||
-      /\baria-labelledby\s*=\s*(["'])\s*[^\s"'][\s\S]*?\1/i.test(attrs) ||
-      /\btitle\s*=\s*(["'])\s*[^\s"'][\s\S]*?\1/i.test(attrs) ||
+      /\baria-label\s*=\s*(?:"[^"\s][^"]*"|'[^'\s][^']*'|[^\s>]+)/i.test(attrs) ||
+      /\baria-labelledby\s*=\s*(?:"[^"\s][^"]*"|'[^'\s][^']*'|[^\s>]+)/i.test(attrs) ||
+      /\btitle\s*=\s*(?:"[^"\s][^"]*"|'[^'\s][^']*'|[^\s>]+)/i.test(attrs) ||
       inner.length > 0;
     if (!hasAccessibleLabel) {
       out.push({
@@ -570,10 +570,10 @@ export function lintArtifact(rawHtml: unknown): LintFinding[] {
       .replace(/&nbsp;|&#160;/gi, ' ')
       .trim();
     const hasAccessibleLabel =
-      /\baria-label\s*=\s*(["'])\s*[^\s"'][\s\S]*?\1/i.test(attrs) ||
-      /\baria-labelledby\s*=\s*(["'])\s*[^\s"'][\s\S]*?\1/i.test(attrs) ||
-      /\btitle\s*=\s*(["'])\s*[^\s"'][\s\S]*?\1/i.test(attrs) ||
-      /<img\b[^>]*\balt\s*=\s*(["'])\s*[^\s"'][\s\S]*?\1/i.test(linkMatch[2] ?? '') ||
+      /\baria-label\s*=\s*(?:"[^"\s][^"]*"|'[^'\s][^']*'|[^\s>]+)/i.test(attrs) ||
+      /\baria-labelledby\s*=\s*(?:"[^"\s][^"]*"|'[^'\s][^']*'|[^\s>]+)/i.test(attrs) ||
+      /\btitle\s*=\s*(?:"[^"\s][^"]*"|'[^'\s][^']*'|[^\s>]+)/i.test(attrs) ||
+      /<img\b[^>]*\balt\s*=\s*(?:"[^"\s][^"]*"|'[^'\s][^']*'|[^\s>]+)/i.test(linkMatch[2] ?? '') ||
       inner.length > 0;
     if (!hasAccessibleLabel) {
       out.push({
