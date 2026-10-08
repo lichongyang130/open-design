@@ -1254,6 +1254,11 @@ describe('accessibility and interaction basics', () => {
     expect(requiredFinding(findings, 'image-missing-alt').severity).toBe('P1');
   });
 
+  it('accepts unquoted alt text on an image', () => {
+    const findings = lintArtifact('<main><img src="/brand.svg" alt=Brand></main>');
+    expect(findings.find((f) => f.id === 'image-missing-alt')).toBeUndefined();
+  });
+
   it('accepts informative and decorative images with alt attributes', () => {
     const findings = lintArtifact('<main><img src="/hero.png" alt="Product dashboard"><img src="/divider.svg" alt=""></main>');
     expect(findings.find((f) => f.id === 'image-missing-alt')).toBeUndefined();
