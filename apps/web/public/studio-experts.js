@@ -14,6 +14,8 @@
       detailAbout: "专家介绍", detailSkills: "专业能力", detailPrompts: "推荐任务", rating: "用户评分", calls: "次召唤", response: "响应时间",
       ready: "已将 {name} 添加到创作器", connectedToast: "已连接 {name}", disconnectedToast: "已断开 {name}",
       skillContext: "技能市场", skillSub: "为 Buddy 装配专业工作流", connectorContext: "连接器中心", connectorSub: "连接你的日常工具与数据",
+      shFeatured: "精选技能", shShuffle: "换一换", shTabRec: "推荐", shTabHub: "SkillHub", shTabSuite: "套件",
+      shAdded: "已添加 {name}", shRemoved: "已移除 {name}", shAdd: "添加", shAddedLabel: "已添加",
       close: "关闭专家详情"
     },
     en: {
@@ -25,6 +27,8 @@
       detailAbout: "About", detailSkills: "Expertise", detailPrompts: "Suggested tasks", rating: "Rating", calls: "calls", response: "Response",
       ready: "{name} is ready in the composer", connectedToast: "Connected {name}", disconnectedToast: "Disconnected {name}",
       skillContext: "Skill marketplace", skillSub: "Equip Buddy with professional workflows", connectorContext: "Connector hub", connectorSub: "Connect the tools and data you use every day",
+      shFeatured: "Featured skills", shShuffle: "Shuffle", shTabRec: "Recommended", shTabHub: "SkillHub", shTabSuite: "Suites",
+      shAdded: "Added {name}", shRemoved: "Removed {name}", shAdd: "Add", shAddedLabel: "Added",
       close: "Close expert details"
     }
   };
@@ -136,6 +140,81 @@
     { id: "dropbox", category: "content", icon: "◆", name: "Dropbox", desc: { zh: "安全引用团队文件与共享素材。", en: "Securely reference team files and shared assets." }, tone: ["#dfe8f1", "#386d9d"] }
   ];
 
+  /* SkillHub-style marketplace rendered under the vertical spotlight columns. */
+  var HUB_CATEGORIES = [
+    { id: "all", zh: "全部", en: "All" },
+    { id: "opc", zh: "OPC·一人公司", en: "Solo business" },
+    { id: "office", zh: "办公协同", en: "Office" },
+    { id: "dev", zh: "开发工具", en: "Dev tools" },
+    { id: "invest", zh: "投资理财", en: "Investing" },
+    { id: "productivity", zh: "效率工具", en: "Productivity" },
+    { id: "content", zh: "内容创作", en: "Content" },
+    { id: "news", zh: "信息资讯", en: "News" },
+    { id: "edu", zh: "教育学习", en: "Education" },
+    { id: "data", zh: "数据分析", en: "Data analysis" },
+    { id: "deploy", zh: "网站部署", en: "Web deploy" },
+    { id: "life", zh: "生活服务", en: "Life services" },
+    { id: "biz", zh: "商业运营", en: "Business ops" },
+    { id: "knowledge", zh: "知识与学习", en: "Knowledge" }
+  ];
+
+  function hubSkill(id, category, icon, hue, users, zhName, enName, zhDesc, enDesc, tagsZh, tagsEn, flags) {
+    return Object.assign({
+      id: id, category: category, icon: icon, hue: hue, users: users,
+      name: { zh: zhName, en: enName }, desc: { zh: zhDesc, en: enDesc },
+      tags: { zh: tagsZh, en: tagsEn },
+      prompt: { zh: "用「" + zhName + "」技能协助我完成任务：先说明目标，再分步骤执行并给出结果。", en: "Use the “" + enName + "” skill: state the goal first, then execute step by step." }
+    }, flags || {});
+  }
+
+  var HUB_SKILLS = [
+    hubSkill("tmarketing-reject", "biz", "营", ["#dce9f4", "#2b6cb0"], 8600, "腾讯营销-拒审答疑助手", "Tencent Ads rejection Q&A", "面向广告或素材被拒审，或对审核规则有疑虑的客户，在需要审核答疑的情况下，输入问题或提供拒审信息即可获得规则解读与修改建议。", "For advertisers whose creatives were rejected or who question review rules—input the issue to get rule interpretations and revision advice.", ["广告审核", "答疑"], ["Ad review", "Q&A"], { featured: true }),
+    hubSkill("weiyun", "office", "云", ["#dceaf6", "#1f6fd6"], 15200, "腾讯微云", "Tencent Weiyun", "管理腾讯微云网盘文件（列表、上传、下载、删除、分享）", "Manage Weiyun drive files (list, upload, download, delete, share).", ["网盘", "文件"], ["Drive", "Files"], { featured: true, suite: true }),
+    hubSkill("wenjuan", "office", "卷", ["#d9f0e4", "#189a66"], 9800, "腾讯问卷", "Tencent Survey", "腾讯问卷操作（创建、修改、逻辑设置、统计）", "Operate Tencent Survey (create, edit, logic settings, statistics).", ["问卷", "统计"], ["Survey", "Stats"], { featured: true }),
+    hubSkill("piyao", "news", "辟", ["#f4e3d7", "#c05621"], 6400, "鹅厂辟谣助手", "Rumor check assistant", "面向腾讯相关传闻的辟谣辅助 Skill，结合内部参考与实时联网核查，给出结论、事实依据和防诈提醒。", "Fact-checks Tencent-related rumors with internal references and live verification, returning conclusions, evidence, and fraud warnings.", ["辟谣", "核查"], ["Fact-check", "Verify"], { featured: true }),
+    hubSkill("meeting", "office", "会", ["#dcebf7", "#2f80ed"], 18700, "腾讯会议", "Tencent Meeting", "腾讯会议管理助手，支持预约/创建/修改/取消会议、查询录制与转写、获取AI智能纪要", "Tencent Meeting assistant: schedule, create, edit, cancel meetings, fetch recordings, transcripts, and AI minutes.", ["会议", "纪要"], ["Meeting", "Minutes"], { featured: true, suite: true }),
+    hubSkill("tencent-docs", "office", "文", ["#e0ecff", "#3564d8"], 21400, "腾讯文档", "Tencent Docs", "在线文档、表格与收集表的创建、编辑和协作管理。", "Create, edit, and collaborate on online docs, sheets, and forms.", ["文档", "协作"], ["Docs", "Collab"], { featured: true, suite: true }),
+    hubSkill("wecom", "office", "企", ["#e2f1ea", "#218358"], 12600, "企业微信助手", "WeCom assistant", "消息、日程、会议与审批等企业微信能力的统一入口。", "One entry point for WeCom messaging, calendar, meetings, and approvals.", ["企业微信", "办公"], ["WeCom", "Office"], { featured: true, suite: true }),
+    hubSkill("weread", "knowledge", "读", ["#e9e4f6", "#5b4bb7"], 7800, "微信读书助手", "WeRead assistant", "书架管理、笔记摘录与阅读统计的个性化助手。", "A personal assistant for bookshelves, notes, and reading stats.", ["阅读", "笔记"], ["Reading", "Notes"], { featured: true }),
+    hubSkill("ai-self-check", "dev", "检", ["#e3e8f4", "#31456e"], 5400, "AI交付前全自动自检技能", "Pre-delivery self-check", "AI交付前全自动自检技能。任何一次向用户交付结果（present_files、最终总结、结论、状态汇报）之前，自动执行完整自检流程。", "Fully automatic self-check before any delivery (files, summaries, conclusions, status reports) reaches the user.", ["交付", "自检"], ["Delivery", "Check"]),
+    hubSkill("neodata", "invest", "N", ["#e1e7fb", "#274bcc"], 8300, "NeoData金融搜索服务", "NeoData finance search", "自然语言查询股票、基金、宏观、外汇、大宗商品等金融数据", "Natural-language queries for stocks, funds, macro, FX, and commodity data.", ["金融", "搜索"], ["Finance", "Search"]),
+    hubSkill("excel-table", "office", "表", ["#e2f2e6", "#1e7a46"], 22100, "Excel 表格处理", "Excel spreadsheets", "创建、编辑、分析 Excel 表格：公式、图表、透视表与格式设置。", "Create, edit, and analyze Excel workbooks: formulas, charts, pivot tables, and formatting.", ["Excel", "表格"], ["Excel", "Sheets"]),
+    hubSkill("web-access", "dev", "W", ["#e2e8f6", "#2b5cd9"], 16800, "Web Access（浏览器自动化）", "Web Access (browser automation)", "CDP 直连本地 Chrome，智能调度联网工具，支持登录态、并行批量操作", "CDP direct connection to local Chrome with smart tool scheduling, logged-in sessions, and parallel batch operations.", ["浏览器", "自动化"], ["Browser", "Automation"]),
+    hubSkill("ppt", "office", "P", ["#f6e3da", "#c2542c"], 19500, "PPT 演示文稿", "PPT presentations", "创建、读取、编辑 .pptx/potx 演示文稿：幻灯片、版式、备注与模板。", "Create, read, and edit .pptx/.potx decks: slides, layouts, notes, and templates.", ["PPT", "演示"], ["PPT", "Decks"]),
+    hubSkill("qq-music", "life", "♪", ["#e6f2d9", "#4d8a1f"], 11200, "QQ音乐助手", "QQ Music assistant", "QQ音乐官方智能助手，支持歌曲搜索、每日推荐、AI歌单、排行榜、听歌报告与AI音乐解读。", "Official QQ Music assistant: search, daily picks, AI playlists, charts, listening reports, and AI music insights.", ["音乐", "助手"], ["Music", "Assistant"]),
+    hubSkill("markitdown", "productivity", "M", ["#f7e9d8", "#c07b28"], 14300, "MarkItDown", "MarkItDown", "文档转 Markdown（PDF/Word/PPT/图片OCR/音频转写/网页）", "Convert documents to Markdown (PDF/Word/PPT/image OCR/audio transcription/web).", ["Markdown", "转换"], ["Markdown", "Convert"]),
+    hubSkill("minimax-h3", "content", "M", ["#fbe3ea", "#d13c6c"], 6900, "MiniMax H3 提示词编写", "MiniMax H3 prompt writer", "为 T2VA、I2VA、FL2VA、L2VA 和 Ref2VA 编写 MiniMax H3 视频生成提示词。用于将多模态请求转为高质量视频提示词。", "Writes MiniMax H3 video-generation prompts for T2VA, I2VA, FL2VA, L2VA, and Ref2VA multimodal requests.", ["视频", "提示词"], ["Video", "Prompts"]),
+    hubSkill("fbs-bookwriter", "content", "书", ["#efe6f7", "#7a4bc0"], 5200, "fbs-bookwriter", "fbs-bookwriter", "福帮手出品｜高质量长文档手稿工具链：书籍、手册、白皮书、行业指南、长篇报道、深度专题。", "A long-form manuscript toolchain: books, manuals, whitepapers, industry guides, and deep-dive features.", ["写作", "长文档"], ["Writing", "Long-form"]),
+    hubSkill("skill-guide", "dev", "技", ["#fde5e5", "#d33f3f"], 9100, "技能创建指南", "Skill creation guide", "创建和维护自定义技能的指南", "A guide for creating and maintaining custom skills.", ["技能", "指南"], ["Skills", "Guide"]),
+    hubSkill("systematic-debug", "dev", "系", ["#eaf0e2", "#5a7030"], 7600, "系统化问题定位", "Systematic debugging", "用可复现证据定位问题根因，再给出范围受控的修复建议和验证办法。", "Locates root causes with reproducible evidence, then proposes scoped fixes and verification steps.", ["调试", "根因"], ["Debug", "Root cause"]),
+    hubSkill("zixuangu", "invest", "股", ["#fde8e8", "#d24848"], 10800, "腾讯自选股-金融数据查询", "Tencent stock data query", "由腾讯自选股团队提供。查询A股、港股、美股个股/指数/ETF的详细数据，包括：K线/分时、财务与公告。", "From the Tencent Zixuangu team: detailed A/H/US stock, index, and ETF data—candles, intraday, financials, filings.", ["股票", "数据"], ["Stocks", "Data"]),
+    hubSkill("grill-me", "productivity", "G", ["#e8f0e0", "#4c7a2a"], 4800, "grill-me", "grill-me", "深度追问式方案审查：逐层拆解设计决策，直到达成共识", "Interrogative plan review: unpack design decisions layer by layer until consensus.", ["审查", "共识"], ["Review", "Consensus"]),
+    hubSkill("excel-file", "office", "E", ["#e2f2e6", "#1e7a46"], 13700, "Excel 文件处理", "Excel file handling", "Excel 文件创建与分析", "Excel file creation and analysis.", ["Excel"]),
+    hubSkill("startup-learn", "knowledge", "创", ["#f9e8d9", "#ca6a2b"], 6100, "创业可以学", "Startup learning", "服务创业者和管理者，解答创业/商业/管理问题，引发深度思考", "Serves founders and managers with startup, business, and management answers that provoke deep thinking.", ["创业", "管理"], ["Startup", "Management"]),
+    hubSkill("markitdown-batch", "productivity", "M", ["#e0ebfa", "#3a6fd8"], 8900, "MarkItDown", "MarkItDown", "批量提取文档、网页、邮件、图片、音视频、压缩包及授权工程文件，生成带来源说明的 Markdown。", "Batch-extracts docs, web pages, emails, images, A/V, archives, and project files into sourced Markdown.", ["提取", "批量"], ["Extract", "Batch"]),
+    hubSkill("dingtalk", "office", "钉", ["#e0ecfb", "#2f6ede"], 17400, "钉钉套件", "DingTalk suite", "钉钉 CLI 套件，覆盖消息、日历、待办、审批、考勤、日志、文档、AI 表格、钉盘、AI 听记。", "DingTalk CLI suite covering messages, calendar, todos, approvals, attendance, logs, docs, AI sheets, drive, and minutes.", ["钉钉", "套件"], ["DingTalk", "Suite"], { suite: true }),
+    hubSkill("word", "office", "W", ["#e4ecf8", "#2b579a"], 15900, "Word 文档生成", "Word document generation", "Word 文档生成与编辑", "Word document generation and editing.", ["Word"]),
+    hubSkill("daily-report", "productivity", "报", ["#f3e8f0", "#a04a86"], 5600, "润泽小馆·日报撰写", "Daily report writer", "撰写简洁清晰的工作日报。", "Writes concise, clear daily work reports.", ["日报"], ["Reports"]),
+    hubSkill("a-share", "invest", "A", ["#fcebe0", "#cf5a1f"], 9400, "A股全栈数据", "A-share full-stack data", "A 股行情、研报、资金流、公告与财报查询工具包。", "A-share quotes, research reports, capital flows, announcements, and financials toolkit.", ["A股", "财报"], ["A-shares", "Financials"]),
+    hubSkill("karpathy", "dev", "K", ["#ece7f6", "#6a50c8"], 12100, "Karpathy行为准则", "Karpathy coding guidelines", "减少LLM编码常见错误的行为准则。写代码、审查或重构时使用，避免过度复杂、做手术式修改。", "Behavioral guidelines that reduce common LLM coding mistakes—use when writing, reviewing, or refactoring code.", ["准则", "编码"], ["Guidelines", "Coding"]),
+    hubSkill("imap-smtp", "office", "M", ["#fde4e1", "#d04437"], 7300, "IMAP/SMTP邮件", "IMAP/SMTP email", "通过 IMAP/SMTP 收发邮件，支持多账户和附件", "Send and receive email over IMAP/SMTP with multi-account and attachment support.", ["邮件"], ["Email"]),
+    hubSkill("wechat-typeset", "content", "公", ["#e6e4fa", "#5a4fd0"], 8800, "公众号排版引擎", "WeChat typesetting engine", "微信公众号文章排版引擎，将 Markdown / Word / PDF / 纯文本一键转换为可直接复制粘贴到公众号的排版。", "WeChat article typesetting engine: converts Markdown/Word/PDF/text into paste-ready layouts.", ["公众号", "排版"], ["WeChat", "Layout"]),
+    hubSkill("wps", "office", "金", ["#e2ecfb", "#2f6bd8"], 14800, "金山文档|WPS云文档", "WPS cloud docs", "金山文档官方 Skill。对话即操作——知识一键存入、碎片内容整理、接龙转表格、文档转换。", "Official WPS skill—conversation as action: save knowledge, organize fragments, turn chains into sheets, convert docs.", ["WPS", "云文档"], ["WPS", "Cloud"], { suite: true }),
+    hubSkill("tradebee", "deploy", "T", ["#f8e4da", "#c65a2e"], 4300, "Tradebee 网站内容管理", "Tradebee content manager", "通过明确的 action 管理 Tradebee 网站内容：博客、博客分组、FAQ、FAQ 分组、自定义页面。", "Manages Tradebee site content through explicit actions: blogs, blog groups, FAQs, FAQ groups, and custom pages.", ["CMS", "网站"], ["CMS", "Site"])
+  ];
+
+  /* Keep the earlier built-in skills reachable from the SkillHub tab. */
+  var SKILL_HUB_CATEGORY = {
+    "design-system": "dev", "research-synthesis": "productivity", "executive-writing": "content",
+    "content-calendar": "content", "data-storytelling": "data", "sql-analysis": "data",
+    "frontend-audit": "dev", "api-contract": "dev", "growth-experiment": "biz",
+    "brand-voice": "biz", "meeting-to-plan": "productivity", "risk-register": "office"
+  };
+  SKILLS.forEach(function (item) { item.hubCategory = SKILL_HUB_CATEGORY[item.id] || "productivity"; });
+
+  /* Vertical spotlight columns map onto hub category chips in skills mode. */
+  var SPOTLIGHT_HUB_CATEGORY = { content: "content", finance: "invest", solo: "opc", growth: "biz", data: "data", advisory: "knowledge" };
+
   var state = {
     lang: document.documentElement.lang && document.documentElement.lang.toLowerCase().indexOf("zh") === 0 ? "zh" : "en",
     mode: "experts",
@@ -145,7 +224,11 @@
     query: "",
     mineOnly: false,
     saved: readSet("db-saved-experts"),
-    connected: readSet("db-expert-connectors")
+    connected: readSet("db-expert-connectors"),
+    hubTab: "rec",
+    hubCategory: "all",
+    hubFeaturedOffset: 0,
+    hubAdded: readSet("db-added-skills")
   };
   var lastFocus = null;
   var previousBodyOverflow = "";
@@ -278,6 +361,53 @@
     return '<div class="expert-empty"><div><div class="expert-empty-icon">' + (mine ? "☆" : "⌕") + '</div><h3>' + esc(mine ? c("noMine") : c("noResult")) + '</h3><p>' + esc(mine ? c("noMineBody") : c("noResultBody")) + '</p><button type="button" data-action="clear-filters">' + esc(c("browse")) + '</button></div></div>';
   }
 
+  function hubCategoryOf(item) { return item.hubCategory || item.category; }
+
+  function hubFeaturedList() {
+    var pool = HUB_SKILLS.filter(function (item) { return item.featured; });
+    if (!pool.length) return [];
+    var offset = ((state.hubFeaturedOffset % pool.length) + pool.length) % pool.length;
+    var out = [];
+    for (var i = 0; i < Math.min(5, pool.length); i += 1) out.push(pool[(offset + i) % pool.length]);
+    return out;
+  }
+
+  function hubGridList() {
+    var list;
+    if (state.hubTab === "suite") list = HUB_SKILLS.filter(function (item) { return item.suite; });
+    else if (state.hubTab === "hub") list = HUB_SKILLS.concat(SKILLS);
+    else list = HUB_SKILLS.filter(function (item) { return !item.featured; });
+    if (state.hubCategory !== "all") list = list.filter(function (item) { return hubCategoryOf(item) === state.hubCategory; });
+    var query = state.query.trim().toLowerCase();
+    if (query) list = list.filter(function (item) { return searchable(item).indexOf(query) >= 0; });
+    return list;
+  }
+
+  function skillHubCard(item) {
+    var added = state.hubAdded.has(item.id);
+    return '<article class="skill-card" tabindex="0" role="button" data-action="detail" data-kind="skill" data-id="' + esc(item.id) + '" aria-label="' + esc(text(item.name)) + '">' +
+      '<div class="skill-card-top"><span class="skill-card-icon" style="--skill-bg:' + esc(item.hue[0]) + ';--skill-ink:' + esc(item.hue[1]) + '">' + esc(item.icon) + '</span>' +
+      '<h3>' + esc(text(item.name)) + '</h3>' +
+      '<button type="button" class="skill-add' + (added ? " added" : "") + '" data-action="hub-add" data-id="' + esc(item.id) + '" aria-pressed="' + (added ? "true" : "false") + '" aria-label="' + esc((added ? c("shAddedLabel") : c("shAdd")) + " " + text(item.name)) + '">' + (added ? "✓" : "+") + "</button></div>" +
+      "<p>" + esc(text(item.desc)) + "</p></article>";
+  }
+
+  function renderSkillHub() {
+    var hub = document.getElementById("skillHub");
+    if (!hub || hub.hidden) return;
+    document.getElementById("skillHubFeaturedTitle").textContent = c("shFeatured");
+    document.getElementById("skillHubShuffleLabel").textContent = c("shShuffle");
+    document.getElementById("skillFeatured").innerHTML = hubFeaturedList().map(skillHubCard).join("");
+    document.getElementById("skillHubTabs").innerHTML = [["rec", c("shTabRec")], ["hub", c("shTabHub")], ["suite", c("shTabSuite")]].map(function (tab) {
+      return '<button type="button" class="skill-hub-tab' + (state.hubTab === tab[0] ? " active" : "") + '" data-action="hub-tab" data-tab="' + esc(tab[0]) + '">' + esc(tab[1]) + "</button>";
+    }).join("");
+    document.getElementById("skillHubChips").innerHTML = HUB_CATEGORIES.map(function (item) {
+      return '<button type="button" class="skill-hub-chip' + (state.hubCategory === item.id ? " active" : "") + '" data-action="hub-category" data-category="' + esc(item.id) + '">' + esc(item[state.lang]) + "</button>";
+    }).join("");
+    var list = hubGridList();
+    document.getElementById("skillHubGrid").innerHTML = list.length ? list.map(skillHubCard).join("") : emptyState();
+  }
+
   function renderCatalog() {
     var list = filteredItems();
     var grid = document.getElementById("expertGrid");
@@ -300,6 +430,7 @@
     mineButton.classList.toggle("active", state.mineOnly);
     mineButton.setAttribute("aria-pressed", state.mineOnly ? "true" : "false");
     document.getElementById("expertMineCount").textContent = String(state.saved.size);
+    if (state.mode === "skills") renderSkillHub();
   }
 
   function renderShell() {
@@ -315,7 +446,9 @@
     search.setAttribute("aria-label", search.placeholder);
     document.getElementById("expertMineLabel").textContent = c("mine");
     document.getElementById("expertMine").hidden = state.mode !== "experts";
-    document.getElementById("expertSpotlightShell").hidden = state.mode !== "experts";
+    document.getElementById("expertSpotlightShell").hidden = state.mode === "connectors";
+    document.getElementById("skillHub").hidden = state.mode !== "skills";
+    document.getElementById("expertCatalog").hidden = state.mode === "skills";
     document.getElementById("expertCatalogTabs").hidden = state.mode !== "experts";
     document.getElementById("expertSort").hidden = state.mode === "connectors";
     document.getElementById("expertPeopleLabel").textContent = c("people");
@@ -324,15 +457,15 @@
     document.getElementById("expertSortHot").textContent = c("hot");
     document.getElementById("expertSortNew").textContent = c("new");
     var context = document.getElementById("expertContextCopy");
-    context.hidden = state.mode === "experts";
-    if (state.mode !== "experts") context.innerHTML = '<strong>' + esc(c(state.mode === "skills" ? "skillContext" : "connectorContext")) + '</strong><span>' + esc(c(state.mode === "skills" ? "skillSub" : "connectorSub")) + '</span>';
+    context.hidden = state.mode !== "connectors";
+    if (state.mode === "connectors") context.innerHTML = '<strong>' + esc(c("connectorContext")) + '</strong><span>' + esc(c("connectorSub")) + '</span>';
     renderSpotlights();
     renderCategories();
     renderCatalog();
   }
 
   function findItem(kind, id) {
-    var list = kind === "team" ? TEAMS : kind === "skill" ? SKILLS : EXPERTS;
+    var list = kind === "team" ? TEAMS : kind === "skill" ? SKILLS.concat(HUB_SKILLS) : EXPERTS;
     return list.filter(function (item) { return item.id === id; })[0] || null;
   }
 
@@ -350,7 +483,10 @@
     var tags = item.tags && item.tags[state.lang] || [];
     var calls = kind === "skill" ? item.users : Math.max(1200, (item.heat || 80) * 137);
     var rating = item.rating || (4.8).toFixed(1);
-    document.getElementById("expertDetailBody").innerHTML = '<div class="expert-detail-identity">' + avatarMarkup(item, index) + '<div><h2 id="expertDetailTitle">' + esc(text(item.name)) + '</h2><span class="expert-verified">✓ ' + esc(c("verified")) + '</span></div></div><p class="expert-detail-description">' + esc(text(item.desc)) + '</p><div class="expert-detail-stats"><div class="expert-detail-stat"><b>' + esc(rating) + '</b><span>' + esc(c("rating")) + '</span></div><div class="expert-detail-stat"><b>' + esc(pluralNumber(calls)) + '</b><span>' + esc(c("calls")) + '</span></div><div class="expert-detail-stat"><b>&lt; 30s</b><span>' + esc(c("response")) + '</span></div></div><section class="expert-detail-section"><h3>' + esc(c("detailSkills")) + '</h3><div class="expert-detail-tags">' + tags.map(function (tag) { return '<span>' + esc(tag) + '</span>'; }).join("") + '</div></section><section class="expert-detail-section"><h3>' + esc(c("detailPrompts")) + '</h3><div class="expert-prompt-list">' + itemPrompts(item).map(function (prompt, promptIndex) { return '<button type="button" class="expert-prompt" data-action="use-prompt" data-kind="' + esc(kind) + '" data-id="' + esc(item.id) + '" data-prompt-index="' + promptIndex + '"><span>↗</span>' + esc(prompt) + '</button>'; }).join("") + '</div></section>';
+    var identityArt = kind === "skill" && item.icon
+      ? '<span class="expert-skill-icon expert-skill-icon-lg" style="--skill-bg:' + esc(item.hue[0]) + ';--skill-ink:' + esc(item.hue[1]) + '" aria-hidden="true">' + esc(item.icon) + '</span>'
+      : avatarMarkup(item, index);
+    document.getElementById("expertDetailBody").innerHTML = '<div class="expert-detail-identity">' + identityArt + '<div><h2 id="expertDetailTitle">' + esc(text(item.name)) + '</h2><span class="expert-verified">✓ ' + esc(c("verified")) + '</span></div></div><p class="expert-detail-description">' + esc(text(item.desc)) + '</p><div class="expert-detail-stats"><div class="expert-detail-stat"><b>' + esc(rating) + '</b><span>' + esc(c("rating")) + '</span></div><div class="expert-detail-stat"><b>' + esc(pluralNumber(calls)) + '</b><span>' + esc(c("calls")) + '</span></div><div class="expert-detail-stat"><b>&lt; 30s</b><span>' + esc(c("response")) + '</span></div></div><section class="expert-detail-section"><h3>' + esc(c("detailSkills")) + '</h3><div class="expert-detail-tags">' + tags.map(function (tag) { return '<span>' + esc(tag) + '</span>'; }).join("") + '</div></section><section class="expert-detail-section"><h3>' + esc(c("detailPrompts")) + '</h3><div class="expert-prompt-list">' + itemPrompts(item).map(function (prompt, promptIndex) { return '<button type="button" class="expert-prompt" data-action="use-prompt" data-kind="' + esc(kind) + '" data-id="' + esc(item.id) + '" data-prompt-index="' + promptIndex + '"><span>↗</span>' + esc(prompt) + '</button>'; }).join("") + '</div></section>';
     var saved = state.saved.has(item.id);
     var save = document.getElementById("expertDetailSave");
     save.classList.toggle("saved", saved);
@@ -446,7 +582,8 @@
   root.addEventListener("input", function (event) {
     if (event.target.id !== "expertSearch") return;
     state.query = event.target.value;
-    renderCatalog();
+    if (state.mode === "skills") renderSkillHub();
+    else renderCatalog();
   });
 
   root.addEventListener("click", function (event) {
@@ -469,7 +606,29 @@
     if (action === "mine") { state.mineOnly = !state.mineOnly; renderCatalog(); return; }
     if (action === "favorite") { event.stopPropagation(); toggleFavorite(button.getAttribute("data-id")); return; }
     if (action === "category") { state.category = button.getAttribute("data-category"); renderCategories(); renderCatalog(); return; }
+    if (action === "hub-shuffle") { state.hubFeaturedOffset += 5; renderSkillHub(); return; }
+    if (action === "hub-tab") { state.hubTab = button.getAttribute("data-tab") || "rec"; renderSkillHub(); return; }
+    if (action === "hub-category") { state.hubCategory = button.getAttribute("data-category") || "all"; renderSkillHub(); return; }
+    if (action === "hub-add") {
+      event.stopPropagation();
+      var hubId = button.getAttribute("data-id");
+      var hubItem = findItem("skill", hubId);
+      var nowAdded;
+      if (state.hubAdded.has(hubId)) { state.hubAdded.delete(hubId); nowAdded = false; }
+      else { state.hubAdded.add(hubId); nowAdded = true; }
+      saveSet("db-added-skills", state.hubAdded);
+      renderSkillHub();
+      notify(c(nowAdded ? "shAdded" : "shRemoved").replace("{name}", hubItem ? text(hubItem.name) : ""));
+      return;
+    }
     if (action === "spotlight") {
+      if (state.mode === "skills") {
+        state.hubCategory = SPOTLIGHT_HUB_CATEGORY[button.getAttribute("data-category")] || "all";
+        renderSkillHub();
+        var hub = document.getElementById("skillHub");
+        if (hub && typeof hub.scrollIntoView === "function") hub.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
       state.category = button.getAttribute("data-category");
       renderCategories();
       renderCatalog();
