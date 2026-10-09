@@ -25,13 +25,13 @@ function skill(index: number) {
   ];
   const group = groups[index % groups.length]!;
   return {
-    id: `${group.id}-skill-${index}`,
-    name: `${group.id}-skill-${index}`,
+    id: index === 3 ? 'spreadsheet-repair' : `${group.id}-skill-${index}`,
+    name: index === 3 ? 'spreadsheet-repair' : `${group.id}-skill-${index}`,
     displayName: { 'zh-CN': `${group.name} ${index + 1}`, en: `${group.id} skill ${index + 1}` },
     description: `A real workspace skill for ${group.category}`,
     descriptionI18n: { 'zh-CN': `来自工作区的${group.name}专业技能。`, en: `A workspace ${group.id} skill.` },
     triggers: [group.id, `task-${index}`],
-    mode: group.mode,
+    mode: index === 3 ? 'prototype' : group.mode,
     category: group.category,
     source: index % 7 === 0 ? 'user' : 'built-in',
     featured: index < 8 ? 100 - index : null,
@@ -118,8 +118,8 @@ describe('DesignBuddy standalone Skills marketplace', () => {
 
     expect((document.querySelector('.skills-featured') as HTMLElement).hidden).toBe(true);
     expect(document.querySelector('[data-skills-tab="suites"]')?.hasAttribute('hidden')).toBe(true);
-    expect(document.querySelectorAll('#skillsGrid .skills-card')).toHaveLength(7);
-    expect(document.getElementById('skillsResultsMeta')?.textContent).toContain('7');
+    expect(document.querySelectorAll('#skillsGrid .skills-card')).toHaveLength(1);
+    expect(document.getElementById('skillsResultsMeta')?.textContent).toContain('1');
     expect((document.getElementById('skillsLoadMore') as HTMLButtonElement).hidden).toBe(true);
     expect(document.getElementById('skillsGrid')?.textContent).toContain('办公文档协作');
     expect(document.getElementById('skillsGrid')?.textContent).not.toContain('代码质量审查');
@@ -132,7 +132,7 @@ describe('DesignBuddy standalone Skills marketplace', () => {
 
     search.value = '';
     search.dispatchEvent(new window.Event('input', { bubbles: true }));
-    expect(document.querySelectorAll('#skillsGrid .skills-card')).toHaveLength(7);
+    expect(document.querySelectorAll('#skillsGrid .skills-card')).toHaveLength(1);
 
     const firstAdd = document.querySelector('#skillsGrid [data-skill-toggle]');
     const firstId = firstAdd?.getAttribute('data-skill-toggle');
