@@ -616,6 +616,10 @@ def run(argv: list[str] | None = None) -> int:
             include_hidden_sheets=args.include_hidden_sheets,
             dry_run=args.dry_run,
         )
+    if report.get("details_truncated"):
+        report["warnings"].append(
+            f"Only the first {MAX_RECORDED_ITEMS:,} detailed changes/findings are recorded; summary counts include all processed data."
+        )
     report["completed_at"] = utc_now()
     write_report(report_path, report, overwrite=args.overwrite_output)
     print(json.dumps({
