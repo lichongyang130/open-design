@@ -1978,7 +1978,7 @@ function fail(error) {
   if (process.platform === 'win32') {
     await writeFile(
       bin,
-      ['@echo off', `"${process.execPath}" "${scriptPath}" %*`, ''].join('\\r\\n'),
+      ['@echo off', `"${process.execPath}" "${scriptPath}" %*`, ''].join('\r\n'),
       'utf8',
     );
   } else {
