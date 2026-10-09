@@ -152,17 +152,17 @@ async function readCellDateFormats(zip: JSZip): Promise<Map<number, string>> {
   const formats = new Map<number, string>();
   if (!xml) return formats;
   const customFormats = new Map<number, string>();
-  for (const match of xml.matchAll(/<numFmt\\b([^>]*)\\/?\s*>/g)) {
+  for (const match of xml.matchAll(/<numFmt\b([^>]*)\/?\s*>/g)) {
     const attrs = parseAttrs(match[1] ?? '');
     const id = Number(attrs.numFmtId);
     const code = attrs.formatCode ?? '';
-    const normalized = code.replace(/\"[^\"]*\"/g, '').replace(/\\\\./g, '');
+    const normalized = code.replace(/"[^"]*"/g, '').replace(/\\./g, '');
     if (Number.isInteger(id) && /[ydhs]/i.test(normalized)) customFormats.set(id, code);
   }
   const builtInDateFormats = new Set([14, 15, 16, 17, 18, 19, 20, 21, 22, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 45, 46, 47, 50, 51, 52, 53, 54, 55, 56, 57, 58]);
-  const xfs = extractFirst(xml, /<cellXfs\\b[^>]*>([\\s\\S]*?)<\\/cellXfs>/);
+  const xfs = extractFirst(xml, /<cellXfs\b[^>]*>([\s\S]*?)<\/cellXfs>/);
   let styleIndex = 0;
-  for (const match of xfs.matchAll(/<xf\\b([^>]*)\\/?\s*>/g)) {
+  for (const match of xfs.matchAll(/<xf\b([^>]*)\/?\s*>/g)) {
     const attrs = parseAttrs(match[1] ?? '');
     const numFmtId = Number(attrs.numFmtId ?? 0);
     const custom = customFormats.get(numFmtId);
