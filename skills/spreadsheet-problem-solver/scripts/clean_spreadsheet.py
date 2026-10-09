@@ -449,7 +449,8 @@ def clean_workbook(
                 for cell in writable_cells:
                     if cell.value is not None:
                         old_value = cell.value
-                        cell.value = None
+                        if not dry_run:
+                            cell.value = None
                         _record(
                             report["changes"],
                             {
