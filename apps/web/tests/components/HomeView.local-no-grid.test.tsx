@@ -82,6 +82,26 @@ describe('HomeView in the local shell', () => {
     }
   });
 
+  it('does not silently send an office quick action when the spreadsheet skill is unavailable', async () => {
+    stubFetch();
+    const onSubmit = vi.fn(async () => true);
+    render(
+      <I18nProvider initial="en">
+        <HomeView
+          projects={PROJECTS as never}
+          skills={[]}
+          onSubmit={onSubmit}
+          onOpenProject={() => undefined}
+        />
+      </I18nProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Check and repair Excel/i }));
+
+    expect(await screen.findByText(/spreadsheet repair skill is unavailable/i)).toBeTruthy();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
   it('hands the selected spreadsheet skill and uploaded workbook to the same run request', async () => {
     stubFetch();
     const workbook = new File(['id,date,total\\n1,2026-10-01,42'], 'office-audit.xlsx', {
