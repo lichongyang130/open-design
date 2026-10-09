@@ -4547,15 +4547,20 @@ export function ProjectView({
     fingerprint: string;
   }>());
 
-  // Clear timers and file witnesses when this view changes project/workspace.
+  // Clear timers and file witnesses when this view changes project/workspace,
+  // and on unmount so a delayed audit cannot steer a run from a closed view.
   useEffect(() => {
-    for (const pending of artifactLintTimersRef.current.values()) {
-      window.clearTimeout(pending.timer);
-    }
-    artifactLintTimersRef.current.clear();
+    const clearPendingAudits = () => {
+      for (const pending of artifactLintTimersRef.current.values()) {
+        window.clearTimeout(pending.timer);
+      }
+      artifactLintTimersRef.current.clear();
+    };
+    clearPendingAudits();
     artifactLintFileSnapshotRef.current = null;
     artifactLintSubmittedRef.current.clear();
     htmlContentCacheRef.current.clear();
+    return clearPendingAudits;
   }, [project.id, projectRunAuthorityKey]);
 
   useEffect(() => {
