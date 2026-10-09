@@ -1735,13 +1735,13 @@ export function kindFor(name) {
   }
   if (['.mp4', '.mov', '.webm'].includes(ext)) return 'video';
   if (['.mp3', '.wav', '.m4a'].includes(ext)) return 'audio';
-  if (['.md', '.txt'].includes(ext)) return 'text';
+  if (['.md', '.txt', '.csv'].includes(ext)) return 'text';
   if (['.js', '.mjs', '.cjs', '.ts', '.tsx', '.json', '.css', '.py'].includes(ext)) {
     return 'code';
   }
   if (ext === '.pdf') return 'pdf';
   if (ext === '.docx') return 'document';
   if (ext === '.pptx') return 'presentation';
-  if (ext === '.xlsx') return 'spreadsheet';
+  if (['.xlsx', '.xlsm'].includes(ext)) return 'spreadsheet';
   return 'binary';
 }
