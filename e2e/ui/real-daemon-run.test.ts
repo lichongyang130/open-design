@@ -1864,6 +1864,124 @@ async function enableExperienceSurvey(page: Page) {
   });
 }
 
+async function createArtifactLintRepairRuntime(
+  root: string,
+  initialHtml: string,
+  repairedHtml: string,
+): Promise<{ bin: string; env: Record<string, string>; steeringPath: string }> {
+  await mkdir(root, { recursive: true });
+  const scriptPath = join(root, 'fake-claude-artifact-lint-loop.cjs');
+  const steeringPath = join(root, 'received-lint-feedback.txt');
+  const readyPath = join(root, 'generated-artifact-ready');
+  const bin = process.platform === 'win32'
+    ? join(root, 'fake-claude-artifact-lint-loop.cmd')
+    : scriptPath;
+
+  const script = `#!/usr/bin/env node
+const fs = require('node:fs');
+const initialHtml = ${JSON.stringify(initialHtml)};
+const repairedHtml = ${JSON.stringify(repairedHtml)};
+const steeringPath = ${JSON.stringify(steeringPath)};
+const readyPath = ${JSON.stringify(readyPath)};
+function writeJson(value) { process.stdout.write(JSON.stringify(value) + '\\n'); }
+if (process.argv.includes('--version')) {
+  process.stdout.write('claude-artifact-lint-e2e 1.0.0\\n');
+  process.exit(0);
+}
+if (process.argv.includes('--help')) {
+  process.stdout.write('--add-dir --include-partial-messages\\n');
+  process.exit(0);
+}
+writeJson({ type: 'system', subtype: 'init', model: 'fake-claude-artifact-lint', session_id: 'artifact-lint-loop' });
+writeJson({
+  type: 'assistant',
+  parent_tool_use_id: null,
+  message: {
+    id: 'msg-artifact-lint-wait',
+    content: [{ type: 'tool_use', id: 'tu_artifact_lint_wait', name: 'Task', input: { prompt: 'Hold for artifact quality feedback' } }],
+    stop_reason: 'tool_use',
+  },
+});
+let buffer = '';
+let framesSeen = 0;
+let finished = false;
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (chunk) => {
+  buffer += chunk;
+  let index;
+  while ((index = buffer.indexOf('\\n')) >= 0) {
+    const line = buffer.slice(0, index);
+    buffer = buffer.slice(index + 1);
+    if (!line.trim()) continue;
+    let frame;
+    try { frame = JSON.parse(line); } catch { continue; }
+    const text = frame && frame.message && Array.isArray(frame.message.content)
+      ? (frame.message.content.find((part) => part && part.type === 'text') || {}).text
+      : undefined;
+    framesSeen += 1;
+    if (framesSeen === 1) {
+      void saveArtifact(initialHtml).then(() => {
+        fs.writeFileSync(readyPath, 'generated');
+      }).catch(fail);
+      continue;
+    }
+    if (finished) return;
+    finished = true;
+    fs.writeFileSync(steeringPath, String(text == null ? '' : text));
+    void saveArtifact(repairedHtml).then(() => new Promise((resolve) => setTimeout(resolve, 1800)))
+      .then(() => {
+        writeJson({
+          type: 'assistant',
+          parent_tool_use_id: null,
+          message: {
+            id: 'msg-artifact-lint-repaired',
+            content: [{ type: 'text', text: 'Repaired index.html in place after the artifact lint feedback.' }],
+            stop_reason: 'end_turn',
+          },
+        });
+        writeJson({ type: 'result', subtype: 'success', is_error: false, result: 'done' });
+        setTimeout(() => process.exit(0), 30);
+      })
+      .catch(fail);
+    return;
+  }
+});
+async function saveArtifact(content) {
+  const projectId = process.env.OD_PROJECT_ID;
+  const daemonUrl = process.env.OD_DAEMON_URL;
+  if (!projectId || !daemonUrl) {
+    throw new Error('artifact lint fixture requires OD_PROJECT_ID and OD_DAEMON_URL');
+  }
+  const response = await fetch(new URL('/api/projects/' + encodeURIComponent(projectId) + '/files', daemonUrl), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'index.html', content }),
+  });
+  if (!response.ok) {
+    throw new Error('artifact file write failed: HTTP ' + response.status + ' ' + (await response.text()).slice(0, 500));
+  }
+}
+function fail(error) {
+  process.stderr.write(String(error && error.stack || error) + '\\n');
+  process.exitCode = 1;
+  setTimeout(() => process.exit(1), 20);
+}
+`;
+
+  await writeFile(scriptPath, script, 'utf8');
+  if (process.platform === 'win32') {
+    await writeFile(
+      bin,
+      `@echo off\\r\\n"${process.execPath}" "${scriptPath}" %*\\r\\n`,
+      'utf8',
+    );
+  } else {
+    await chmod(bin, 0o755);
+  }
+
+  return { bin, env: { CLAUDE_BIN: bin }, steeringPath };
+}
+
 async function configureFakeAgent(page: Page, agentId: FakeAgentId) {
   const runtime = fakeRuntimes[agentId];
   const response = await page.request.put('/api/app-config', {
