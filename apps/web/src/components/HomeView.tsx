@@ -3106,14 +3106,16 @@ export function HomeView({
       ];
   const startOfficeQuickTask = (task: typeof officeQuickTasks[number]) => {
     const skill = selectableSkills.find((candidate) => candidate.id === task.skillId);
-    if (skill) {
-      useSkill(skill, task.prompt);
+    if (!skill) {
+      // These actions promise the dedicated office workflow, not merely a
+      // prompt that resembles it. Fail closed rather than silently sending a
+      // task without the selected Skill in the run context.
+      setError(locale.startsWith('zh')
+        ? '表格修复技能当前不可用，任务尚未发送。请刷新技能列表后重试。'
+        : 'The spreadsheet repair skill is unavailable, so this task was not sent. Refresh the skill list and try again.');
       return;
     }
-    setPrompt(task.prompt);
-    setPromptEditedByUser(false);
-    setError(null);
-    inputRef.current?.focusEnd();
+    useSkill(skill, task.prompt);
   };
 
   // #5517: with no projects yet the home (logo + heading + composer) centers
