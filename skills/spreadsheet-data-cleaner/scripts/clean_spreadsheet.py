@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import io
 import json
 import os
 import re
@@ -23,7 +24,7 @@ from typing import Any, Iterable
 
 MAX_CELLS_PER_SHEET = 1_000_000
 MAX_RECORDED_ITEMS = 5_000
-SUPPORTED_CSV_ENCODINGS = ("utf-8-sig", "utf-8", "gb18030", "cp1252")
+SUPPORTED_CSV_ENCODINGS = ("utf-8", "gb18030", "cp1252")
 
 
 class CleanerError(Exception):
@@ -96,13 +97,17 @@ def _read_csv(input_path: Path) -> tuple[list[list[str]], str, str]:
     payload = input_path.read_bytes()
     decoded: str | None = None
     encoding = "utf-8"
-    for candidate in SUPPORTED_CSV_ENCODINGS:
-        try:
-            decoded = payload.decode(candidate)
-            encoding = candidate
-            break
-        except UnicodeDecodeError:
-            continue
+    if payload.startswith(b"\\xef\\xbb\\xbf"):
+        decoded = payload.decode("utf-8-sig")
+        encoding = "utf-8-sig"
+    else:
+        for candidate in SUPPORTED_CSV_ENCODINGS:
+            try:
+                decoded = payload.decode(candidate)
+                encoding = candidate
+                break
+            except UnicodeDecodeError:
+                continue
     if decoded is None:
         raise CleanerError(
             "Could not decode this CSV as UTF-8, GB18030, or a common single-byte encoding. "
@@ -110,7 +115,7 @@ def _read_csv(input_path: Path) -> tuple[list[list[str]], str, str]:
         )
     delimiter = _choose_delimiter(decoded)
     try:
-        rows = list(csv.reader(decoded.splitlines(), delimiter=delimiter))
+        rows = list(csv.reader(io.StringIO(decoded, newline=""), delimiter=delimiter))
     except csv.Error as exc:
         raise CleanerError(f"CSV parse failed: {exc}") from exc
     return rows, delimiter, encoding
@@ -346,7 +351,8 @@ def clean_workbook(
                     if isinstance(cell.value, str) and cell.value.startswith("="):
                         summary["formula_cells_preserved"] += 1
 
-            values = tuple(_json_value(cell.value) for cell in cells)
+
+            values = tuple((type(cell.value).__name__, _json_value(cell.value)) for cell in cells)
             if all(is_blank(value) for value in values):
                 summary["blank_rows_detected"] += 1
                 _record(
