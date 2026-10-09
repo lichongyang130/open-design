@@ -194,8 +194,13 @@ test('[P0] Studio automatically repairs generated HTML after artifact lint feedb
   // This response proves the Studio watcher posted the generated snapshot and
   // the daemon steered the still-running model, without a manual API call.
   const firstFeedback = await firstFeedbackPromise;
-  expect(firstFeedback.ok(), await firstFeedback.text()).toBeTruthy();
-  const firstBody = await firstFeedback.json() as { ok: boolean; steered?: boolean; findings?: Array<{ id: string }> };
+  const firstFeedbackText = await firstFeedback.text();
+  expect(firstFeedback.ok(), firstFeedbackText).toBeTruthy();
+  const firstBody = JSON.parse(firstFeedbackText) as {
+    ok: boolean;
+    steered?: boolean;
+    findings?: Array<{ id: string }>;
+  };
   expect(firstBody.ok).toBe(true);
   expect(firstBody.steered).toBe(true);
   expect(firstBody.findings?.map((finding) => finding.id)).toContain('image-missing-alt');
@@ -204,8 +209,9 @@ test('[P0] Studio automatically repairs generated HTML after artifact lint feedb
   // Hold the run open briefly so the frontend can submit the changed snapshot
   // and the daemon can return a clean lint result before the run ends.
   const repairedFeedback = await repairedFeedbackPromise;
-  expect(repairedFeedback.ok(), await repairedFeedback.text()).toBeTruthy();
-  const repairedBody = await repairedFeedback.json() as {
+  const repairedFeedbackText = await repairedFeedback.text();
+  expect(repairedFeedback.ok(), repairedFeedbackText).toBeTruthy();
+  const repairedBody = JSON.parse(repairedFeedbackText) as {
     ok: boolean;
     clean?: boolean;
     steered?: boolean;
@@ -1972,7 +1978,7 @@ function fail(error) {
   if (process.platform === 'win32') {
     await writeFile(
       bin,
-      `@echo off\\r\\n"${process.execPath}" "${scriptPath}" %*\\r\\n`,
+      ['@echo off', `"${process.execPath}" "${scriptPath}" %*`, ''].join('\\r\\n'),
       'utf8',
     );
   } else {
