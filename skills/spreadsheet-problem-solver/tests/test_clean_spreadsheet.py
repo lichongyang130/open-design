@@ -213,6 +213,30 @@ class WorkbookCleaningTests(unittest.TestCase):
         self.assertEqual(report["summary"]["duplicate_rows_detected"], 1)
         self.assertEqual(report["summary"]["duplicate_rows_cleared"], 1)
 
+    def test_dry_run_counts_all_duplicate_rows_without_mutating_the_workbook_model(self) -> None:
+        workbook = openpyxl.Workbook()
+        worksheet = workbook.active
+        worksheet.append(["Order", "Amount"])
+        worksheet.append(["A-1", 100])
+        worksheet.append(["A-1", 100])
+        worksheet.append(["A-1", 100])
+        workbook.save(self.input_path)
+        workbook.close()
+
+        report = cleaner._build_report(self.input_path, self.output_path, "xlsx", True)
+        cleaner.clean_workbook(self.input_path, self.output_path, report=report, dedupe=True, dry_run=True)
+
+        self.assertFalse(self.output_path.exists())
+        self.assertEqual(report["summary"]["duplicate_rows_detected"], 2)
+        self.assertEqual(report["summary"]["duplicate_rows_planned_for_clearing"], 2)
+        self.assertEqual(report["summary"]["duplicate_rows_cleared"], 0)
+        source = openpyxl.load_workbook(self.input_path, data_only=False)
+        try:
+            self.assertEqual(source.active["A3"].value, "A-1")
+            self.assertEqual(source.active["A4"].value, "A-1")
+        finally:
+            source.close()
+
     def test_formula_bearing_duplicate_row_is_not_cleared(self) -> None:
         workbook = openpyxl.Workbook()
         worksheet = workbook.active
