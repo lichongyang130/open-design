@@ -40,6 +40,10 @@ def is_blank(value: Any) -> bool:
     return value is None or (isinstance(value, str) and value.strip() == "")
 
 
+def looks_formula_like_text(value: Any) -> bool:
+    return isinstance(value, str) and value.lstrip().startswith(FORMULA_LIKE_PREFIXES)
+
+
 def could_become_formula(value: Any) -> bool:
     return (
         isinstance(value, str)
@@ -186,14 +190,18 @@ def clean_csv(
         new_row = list(row)
         if trim_text:
             for column_index, value in enumerate(row, start=1):
-                if could_become_formula(value):
+                if looks_formula_like_text(value):
                     _record(
                         report["findings"],
                         {
                             "kind": "formula_like_text_preserved",
                             "row": line_number,
                             "column": column_index,
-                            "action": "preserved_to_avoid_changing_cell_interpretation",
+                            "action": (
+                                "preserved_to_avoid_changing_cell_interpretation"
+                                if could_become_formula(value)
+                                else "preserved_for_review_before_opening_csv_in_spreadsheet"
+                            ),
                         },
                         report,
                     )
