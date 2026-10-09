@@ -436,6 +436,9 @@ def reconcile(
     matched_diff = 0
     field_diff_count = 0
     for key in sorted(comparable, key=key_label):
+        if not columns:
+            # Key presence is known, but attribute equality cannot be claimed.
+            continue
         a_record = unique_a[key]
         b_record = unique_b[key]
         key_differences = 0
