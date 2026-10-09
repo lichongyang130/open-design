@@ -247,7 +247,7 @@ describe('historyWithApiAttachmentContext', () => {
   });
 
   it('reads a CSV attachment as text even before project-file metadata refreshes', async () => {
-    mockedFetchProjectFileText.mockResolvedValue('Date,Amount\\n2026-10-01,12.50');
+    mockedFetchProjectFileText.mockResolvedValue('Date,Amount\n2026-10-01,12.50');
 
     const history = await historyWithApiAttachmentContext(
       [userMessage('msg-csv', 'Check this CSV', [{ path: 'sales.csv', name: 'sales.csv', kind: 'file' }])],
