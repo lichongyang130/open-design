@@ -182,27 +182,50 @@ async function readWorkbook(zip: JSZip): Promise<WorkbookSheet[]> {
 
 function extractWorksheetRows(xml: string, sharedStrings: string[]): string[] {
   const rows: string[] = [];
-  for (const row of xml.matchAll(/<row\b[\s\S]*?<\/row>/g)) {
-    const values: string[] = [];
-    for (const cell of row[0].matchAll(/<c\b([^>]*)>([\s\S]*?)<\/c>/g)) {
-      const attrs = parseAttrs(cell[1] ?? '');
+  for (const row of xml.matchAll(/<row\\b([^>]*)>([\\s\\S]*?)<\\/row>/g)) {
+    const rowAttrs = parseAttrs(row[1] ?? '');
+    const rowNumber = rowAttrs.r || String(rows.length + 1);
+    const rowBody = row[2] ?? '';
+    const cells: string[] = [];
+    for (const cell of rowBody.matchAll(/<c\\b([^>]*)>([\\s\\S]*?)<\\/c>|<c\\b([^>]*)\\/>/g)) {
+      const attrs = parseAttrs(cell[1] ?? cell[3] ?? '');
       const body = cell[2] ?? '';
+      const ref = attrs.r || ('row ' + rowNumber + ' cell ' + (cells.length + 1));
+      const formulaMatch = body.match(/<f\\b([^>]*)>([\\s\\S]*?)<\\/f>|<f\\b([^>]*)\\/>/);
+      const formulaAttrs = parseAttrs(formulaMatch?.[1] ?? formulaMatch?.[3] ?? '');
+      const formulaText = decodeXml(formulaMatch?.[2] ?? '').trim();
+      const formula = formulaMatch
+        ? (formulaText || ('shared formula' + (formulaAttrs.si ? ' si=' + formulaAttrs.si : '') + (formulaAttrs.ref ? ' ref=' + formulaAttrs.ref : '')))
+        : '';
+      const rawValue = extractFirst(body, /<v>([\\s\\S]*?)<\\/v>/);
       let value = '';
+      let textValue = false;
       if (attrs.t === 's') {
-        const idx = Number(extractFirst(body, /<v>([\s\S]*?)<\/v>/));
-        value = Number.isInteger(idx) ? sharedStrings[idx] ?? '' : '';
+        const index = Number(rawValue);
+        value = Number.isInteger(index) ? sharedStrings[index] ?? '' : '';
+        textValue = true;
       } else if (attrs.t === 'inlineStr') {
         value = extractTextRuns(body).join('');
+        textValue = true;
       } else {
-        value = decodeXml(extractFirst(body, /<v>([\s\S]*?)<\/v>/));
+        value = decodeXml(rawValue);
+        textValue = attrs.t === 'str';
       }
-      if (value.trim()) values.push(value.trim());
+      const displayValue = value.length === 0 ? '(blank)' : textValue ? JSON.stringify(value) : value;
+      if (formula && attrs.t === 'e') {
+        cells.push(ref + ' formula=' + formula + ' error=' + displayValue);
+      } else if (formula) {
+        cells.push(ref + ' formula=' + formula + (rawValue.length > 0 ? ' cached=' + displayValue : ' cached=(none)'));
+      } else if (attrs.t === 'e') {
+        cells.push(ref + ' error=' + displayValue);
+      } else {
+        cells.push(ref + '=' + displayValue);
+      }
     }
-    if (values.length > 0) rows.push(values.join(' | '));
+    if (cells.length > 0) rows.push('Row ' + rowNumber + ': ' + cells.join(' | '));
   }
   return rows;
 }
-
 function extractParagraphs(xml: string, paragraphPattern: RegExp): string[] {
   return Array.from(xml.matchAll(paragraphPattern))
     .map((m) => extractTextRuns(m[0]).join(' ').replace(/\s+/g, ' ').trim())
