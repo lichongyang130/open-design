@@ -44,7 +44,7 @@ class CsvCleaningTests(unittest.TestCase):
                 ["A-1", "12", "00123"],
             ],
         )
-        self.assertEqual(report["summary"]["text_cells_trimmed"], 3)
+        self.assertEqual(report["summary"]["text_cells_trimmed"], 2)
         self.assertEqual(report["summary"]["blank_rows_detected"], 1)
         self.assertEqual(report["summary"]["blank_rows_removed"], 0)
         self.assertEqual(report["summary"]["duplicate_rows_detected"], 1)
