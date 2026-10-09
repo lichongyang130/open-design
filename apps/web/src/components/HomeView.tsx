@@ -3110,6 +3110,8 @@ export function HomeView({
       // These actions promise the dedicated office workflow, not merely a
       // prompt that resembles it. Fail closed rather than silently sending a
       // task without the selected Skill in the run context.
+      setActiveSkill(null);
+      setActiveSkillCatalogScope(null);
       setError(locale.startsWith('zh')
         ? '表格修复技能当前不可用，任务尚未发送。请刷新技能列表后重试。'
         : 'The spreadsheet repair skill is unavailable, so this task was not sent. Refresh the skill list and try again.');
