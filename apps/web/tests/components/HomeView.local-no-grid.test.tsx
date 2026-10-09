@@ -6,7 +6,7 @@
 // the grid brought along leave Home with it.
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 vi.mock('../../src/components/home-hero/PlaceholderCarousel', () => ({
   PlaceholderCarousel: () => null,
@@ -37,11 +37,11 @@ afterEach(() => {
 
 describe('HomeView in the local shell', () => {
   it('routes all four office quick actions through the real spreadsheet-repair skill when available', async () => {
-    const taskNames = [
-      'Check and repair Excel',
-      'Remove duplicate records',
-      'Normalize formats and dates',
-      'Verify formulas and totals',
+    const tasks = [
+      { name: 'Check and repair Excel', promptEvidence: 'formula errors, missing values, and anomalies' },
+      { name: 'Remove duplicate records', promptEvidence: 'List suspected duplicate rows by sheet and row number' },
+      { name: 'Normalize formats and dates', promptEvidence: 'Normalize only clearly equivalent formats' },
+      { name: 'Verify formulas and totals', promptEvidence: 'formula gaps and summary anomalies' },
     ];
     const spreadsheetSkill = {
       id: 'spreadsheet-repair',
@@ -54,22 +54,31 @@ describe('HomeView in the local shell', () => {
       aggregatesExamples: false,
     };
 
-    for (const taskName of taskNames) {
+    for (const task of tasks) {
       cleanup();
       stubFetch();
+      const onSubmit = vi.fn(async () => true);
       render(
         <I18nProvider initial="en">
           <HomeView
             projects={PROJECTS as never}
             skills={[spreadsheetSkill] as never}
-            onSubmit={() => undefined}
+            onSubmit={onSubmit}
             onOpenProject={() => undefined}
           />
         </I18nProvider>,
       );
-      fireEvent.click(screen.getByRole('button', { name: new RegExp(taskName, 'i') }));
+      fireEvent.click(screen.getByRole('button', { name: new RegExp(task.name, 'i') }));
       expect(screen.getByTestId('home-hero-active-skill').textContent).toContain('Spreadsheet Troubleshooting & Repair');
       expect(screen.queryByTestId('office-quick-actions')).toBeNull();
+      const submitButton = screen.getByTestId('home-hero-submit');
+      expect(submitButton).not.toBeDisabled();
+      fireEvent.click(submitButton);
+      await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+      expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
+        skillId: 'spreadsheet-repair',
+        prompt: expect.stringContaining(task.promptEvidence),
+      }));
     }
   });
 
