@@ -19,7 +19,7 @@ function skill(index: number) {
     { id: 'development', category: 'developer-tools', mode: 'prototype', name: '代码质量审查' },
     { id: 'content', category: 'content-writing', mode: 'template', name: '品牌内容写作' },
     { id: 'data', category: 'data-analysis', mode: 'template', name: '数据洞察分析' },
-    { id: 'office', category: 'office-collaboration', mode: 'deck', name: '办公文档协作' },
+    { id: 'office', category: 'office-collaboration', mode: 'utility', name: '办公文档协作' },
     { id: 'commerce', category: 'business-operations', mode: 'template', name: '商业运营规划' },
     { id: 'knowledge', category: 'knowledge-learning', mode: 'template', name: '知识研究整理' },
   ];
@@ -116,22 +116,23 @@ describe('DesignBuddy standalone Skills marketplace', () => {
     }).StudioSkills;
     api.setItems(items);
 
-    expect(document.querySelectorAll('#skillsFeaturedGrid .skills-feature-card')).toHaveLength(5);
-    expect(document.querySelectorAll('#skillsGrid .skills-card')).toHaveLength(30);
-    expect(document.getElementById('skillsResultsMeta')?.textContent).toContain('42');
-    expect((document.getElementById('skillsLoadMore') as HTMLButtonElement).hidden).toBe(false);
+    expect((document.querySelector('.skills-featured') as HTMLElement).hidden).toBe(true);
+    expect(document.querySelector('[data-skills-tab="suites"]')?.hasAttribute('hidden')).toBe(true);
+    expect(document.querySelectorAll('#skillsGrid .skills-card')).toHaveLength(7);
+    expect(document.getElementById('skillsResultsMeta')?.textContent).toContain('7');
+    expect((document.getElementById('skillsLoadMore') as HTMLButtonElement).hidden).toBe(true);
+    expect(document.getElementById('skillsGrid')?.textContent).toContain('办公文档协作');
+    expect(document.getElementById('skillsGrid')?.textContent).not.toContain('代码质量审查');
 
     const search = document.getElementById('skillsSearch') as HTMLInputElement;
-    search.value = '代码质量审查 1';
+    search.value = '办公文档协作 4';
     search.dispatchEvent(new window.Event('input', { bubbles: true }));
-    expect(document.querySelectorAll('#skillsGrid .skills-card').length).toBeGreaterThan(0);
-    expect(document.getElementById('skillsGrid')?.textContent).toContain('代码质量审查');
+    expect(document.querySelectorAll('#skillsGrid .skills-card')).toHaveLength(1);
+    expect(document.getElementById('skillsGrid')?.textContent).toContain('办公文档协作');
 
     search.value = '';
     search.dispatchEvent(new window.Event('input', { bubbles: true }));
-    click(window, document.querySelector('[data-skills-category="development"]'));
     expect(document.querySelectorAll('#skillsGrid .skills-card')).toHaveLength(7);
-    expect(document.getElementById('skillsGrid')?.textContent).toContain('代码质量审查');
 
     const firstAdd = document.querySelector('#skillsGrid [data-skill-toggle]');
     const firstId = firstAdd?.getAttribute('data-skill-toggle');
@@ -148,17 +149,15 @@ describe('DesignBuddy standalone Skills marketplace', () => {
     expect(window.location.hash).toBe('#/home');
     expect((document.getElementById('prompt') as HTMLTextAreaElement).value).toContain('请使用');
 
-    click(window, document.querySelector('[data-skills-tab="suites"]'));
-    expect(document.querySelectorAll('#skillsGrid .skills-suite-card')).toHaveLength(6);
-    const suiteAction = document.querySelector('#skillsGrid [data-suite-open="development"]');
-    click(window, suiteAction);
+    click(window, document.querySelector('[data-skills-tab="hub"]'));
     expect(document.querySelector('[data-skills-tab="hub"]')?.classList.contains('active')).toBe(true);
-    expect(document.querySelector('[data-skills-category="development"]')?.classList.contains('active')).toBe(true);
+    expect(document.querySelectorAll('#skillsGrid .skills-card')).toHaveLength(1);
+    expect(document.getElementById('skillsGrid')?.textContent).toContain('办公文档协作 4');
 
     click(window, document.getElementById('skillsRefresh'));
     await new Promise((resolvePromise) => window.setTimeout(resolvePromise, 0));
     expect(refreshes).toBe(1);
-    expect(document.querySelectorAll('#skillsFeaturedGrid .skills-feature-card')).toHaveLength(5);
+    expect((document.querySelector('.skills-featured') as HTMLElement).hidden).toBe(true);
 
     api.setLanguage('en');
     expect(document.querySelector('[data-skills-tab="recommended"]')?.textContent).toBe('Recommended');
