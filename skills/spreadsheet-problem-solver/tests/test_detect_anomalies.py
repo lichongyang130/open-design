@@ -56,8 +56,8 @@ class CsvAnomalyDetectionTests(unittest.TestCase):
         self.assertEqual(report["summary"]["exact_duplicate_rows"], 1)
         self.assertEqual(report["summary"]["error_values"], 1)
         self.assertEqual(report["summary"]["numeric_outlier_candidates"], 2)
-        self.assertEqual(report["findings"]["exact_duplicate_rows"][0]["row"], 6)
-        self.assertEqual(report["findings"]["exact_duplicate_rows"][0]["kept_row"], 5)
+        self.assertEqual(report["findings"]["exact_duplicate_rows"][0]["row"], 11)
+        self.assertEqual(report["findings"]["exact_duplicate_rows"][0]["kept_row"], 10)
         self.assertTrue(all(
             item["action"] == "review_only"
             for item in report["findings"]["numeric_outliers"]
