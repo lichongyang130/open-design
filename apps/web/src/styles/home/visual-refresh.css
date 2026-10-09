@@ -1,0 +1,164 @@
+/* ============================================================
+   Home visual refresh
+   A restrained workspace-first layer: tighter hero rhythm, clearer
+   typography, and quieter surfaces without changing component behavior.
+   ============================================================ */
+
+.home-view {
+  gap: clamp(20px, 2.4vw, 32px);
+  padding-bottom: clamp(24px, 4vw, 48px);
+}
+
+.home-view > .home-hero {
+  max-width: 1040px;
+}
+
+.home-hero {
+  gap: 16px;
+  padding: clamp(52px, 8vh, 88px) 0 24px;
+}
+
+.home-hero__logo-wrap {
+  width: min(224px, 54vw);
+  margin-bottom: 4px;
+}
+
+.home-hero__title {
+  max-width: min(760px, 92vw);
+  margin-bottom: 0;
+  font-family: var(--sans, Inter, ui-sans-serif, system-ui, sans-serif);
+  font-size: clamp(28px, 3vw, 38px);
+  font-weight: 650;
+  line-height: 1.18;
+  letter-spacing: -0.04em;
+  color: var(--text-strong);
+  text-wrap: balance;
+}
+
+.home-hero__subtitle {
+  max-width: 600px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.65;
+  color: var(--text-muted);
+  text-wrap: pretty;
+}
+
+.home-hero .home-hero__composer-card {
+  border: 1px solid var(--border-strong, var(--border));
+  border-radius: 20px;
+  background: var(--bg-panel);
+  box-shadow:
+    0 2px 5px color-mix(in srgb, #18273c 3%, transparent),
+    0 16px 42px color-mix(in srgb, #18273c 7%, transparent);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.home-hero .home-hero__composer-card:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--border-strong, var(--border)));
+  box-shadow:
+    0 2px 5px color-mix(in srgb, #18273c 3%, transparent),
+    0 18px 48px color-mix(in srgb, #18273c 10%, transparent);
+}
+
+.home-view > .recent-projects {
+  margin-top: 0;
+}
+
+.recent-projects {
+  gap: 16px;
+}
+
+.recent-projects__title {
+  font-family: var(--sans, Inter, ui-sans-serif, system-ui, sans-serif);
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+
+.recent-projects__description {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.recent-projects__row--grid {
+  gap: clamp(12px, 1.5vw, 20px);
+}
+
+.recent-projects__card-thumb,
+.recent-projects__card {
+  border-radius: 12px;
+}
+
+.recent-projects__card-thumb::after {
+  border-radius: inherit;
+  border-color: color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+.recent-projects__card-main:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 58%, transparent);
+  outline-offset: 3px;
+}
+
+@media (max-width: 760px) {
+  .home-view {
+    gap: 20px;
+  }
+
+  .home-hero {
+    gap: 14px;
+    padding: 36px 0 12px;
+  }
+
+  .home-hero__logo-wrap {
+    width: min(188px, 52vw);
+  }
+
+  .home-hero__title {
+    font-size: clamp(26px, 7vw, 32px);
+    letter-spacing: -0.035em;
+  }
+
+  .home-hero__subtitle {
+    max-width: 34rem;
+    padding-inline: 12px;
+    font-size: 13px;
+  }
+
+  .home-hero .home-hero__composer-card {
+    border-radius: 16px;
+  }
+
+  .recent-projects__head {
+    align-items: flex-start;
+  }
+
+  .recent-projects__title-block {
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-hero .home-hero__composer-card {
+    transition: none;
+  }
+}
+
+[data-theme="dark"] .home-hero .home-hero__composer-card {
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.12),
+    0 16px 42px rgba(0, 0, 0, 0.18);
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme]) .home-hero .home-hero__composer-card {
+    box-shadow:
+      0 2px 5px rgba(0, 0, 0, 0.12),
+      0 16px 42px rgba(0, 0, 0, 0.18);
+  }
+}
