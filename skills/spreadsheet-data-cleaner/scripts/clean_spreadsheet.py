@@ -617,6 +617,7 @@ def run(argv: list[str] | None = None) -> int:
     write_report(report_path, report, overwrite=args.overwrite_output)
     print(json.dumps({
         "ok": True,
+        "dry_run": args.dry_run,
         "input": str(input_path),
         "output": None if args.dry_run else str(output_path),
         "report": str(report_path),
