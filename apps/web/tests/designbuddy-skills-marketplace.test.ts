@@ -52,14 +52,18 @@ describe('DesignBuddy standalone Skills marketplace', () => {
 
     const roleNavs = [...studio.matchAll(/nav: \[([^\]]+)]/g)].map((match) => match[1]!);
     expect(roleNavs).toHaveLength(8);
-    roleNavs.forEach((nav) => {
+    expect(roleNavs.slice(0, 2)).toEqual(['"home", "projects", "skills"', '"home", "projects", "skills"']);
+    roleNavs.slice(2).forEach((nav) => {
       expect(nav).toContain('"templates"');
       expect(nav).toContain('"skills"');
       expect(nav.indexOf('"skills"')).toBeGreaterThan(nav.indexOf('"templates"'));
       expect(nav.slice(nav.indexOf('"templates"'))).toMatch(/^"templates", "skills"/);
     });
+    expect(studio).toContain('officeNavLabels');
+    expect(studio).toContain('办公技能');
 
-    expect(skillsStyles).toContain('grid-template-columns: repeat(5, minmax(0, 1fr))');
+    expect(skillsStyles).toContain('grid-template-columns: repeat(auto-fit, minmax(260px, 1fr))');
+    expect(skillsStyles).toContain('.skills-categories { display: none !important; }');
     expect(skillsStyles).toContain('.main-inner.skills-wall');
     expect(skillsStyles).toContain('@media (max-width: 620px)');
   });
