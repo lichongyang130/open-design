@@ -49,6 +49,7 @@ describe('Home creation hierarchy i18n', () => {
       expect(dict['homeHero.chip.prototype'].trim()).not.toBe('');
       expect(dict['homeHero.chip.prototype']).not.toBe('UI Mockup');
       expect(dict['homeHero.chip.webgl']).toBe('WebGL');
+      expect(dict['homeHero.chip.spreadsheetProblem'].trim()).not.toBe('');
     }
   });
 
