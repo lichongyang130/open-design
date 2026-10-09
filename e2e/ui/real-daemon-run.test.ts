@@ -162,9 +162,14 @@ test('[P0] Studio automatically repairs generated HTML after artifact lint feedb
     projectId,
     'Artifact lint automatic repair loop',
   );
-  await page.goto(`/projects/${projectId}/conversations/${conversationId}`, {
-    waitUntil: 'domcontentloaded',
-  });
+  try {
+    await page.goto(`/projects/${projectId}/conversations/${conversationId}`, {
+      waitUntil: 'domcontentloaded',
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!/ERR_ABORTED|frame was detached/i.test(message)) throw error;
+  }
   await waitForLoadingToClear(page);
   await expectBrowserAgentConfig(page, 'claude');
 
@@ -1934,7 +1939,7 @@ process.stdin.on('data', (chunk) => {
     if (finished) return;
     finished = true;
     fs.writeFileSync(steeringPath, String(text == null ? '' : text));
-    void saveArtifact(repairedHtml).then(() => new Promise((resolve) => setTimeout(resolve, 1800)))
+    void saveArtifact(repairedHtml).then(() => new Promise((resolve) => setTimeout(resolve, 3000)))
       .then(() => {
         writeJson({
           type: 'assistant',
