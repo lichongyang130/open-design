@@ -33,6 +33,11 @@ jobs:
           .venv/bin/python -m pip install --upgrade pip
           .venv/bin/python -m pip install openpyxl
 
+      - name: Compile spreadsheet scripts and tests
+        run: |
+          .venv/bin/python -m py_compile skills/spreadsheet-problem-solver/scripts/*.py
+          .venv/bin/python -m py_compile skills/spreadsheet-problem-solver/tests/*.py
+
       - name: Run spreadsheet skill tests
         run: |
           .venv/bin/python -m unittest discover -s skills/spreadsheet-problem-solver/tests -v
