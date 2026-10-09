@@ -131,11 +131,12 @@ async function previewPptx(zip: JSZip): Promise<PreviewSection[]> {
 
 async function previewXlsx(zip: JSZip): Promise<PreviewSection[]> {
   const sharedStrings = await readSharedStrings(zip);
+  const dateFormats = await readCellDateFormats(zip);
   const workbook = await readWorkbook(zip);
   const sections: PreviewSection[] = [];
   for (const sheet of workbook) {
     const xml = await readZipText(zip, sheet.path).catch(() => '');
-    const lines = extractWorksheetRows(xml, sharedStrings);
+    const lines = extractWorksheetRows(xml, sharedStrings, dateFormats);
     sections.push({
       title: sheet.name,
       lines: lines.length > 0 ? lines : ['No readable cell values found.'],
@@ -144,6 +145,32 @@ async function previewXlsx(zip: JSZip): Promise<PreviewSection[]> {
   return sections.length > 0
     ? sections
     : [{ title: 'Spreadsheet', lines: ['No readable sheets found.'] }];
+}
+
+async function readCellDateFormats(zip: JSZip): Promise<Map<number, string>> {
+  const xml = await readZipText(zip, 'xl/styles.xml').catch(() => '');
+  const formats = new Map<number, string>();
+  if (!xml) return formats;
+  const customFormats = new Map<number, string>();
+  for (const match of xml.matchAll(/<numFmt\\b([^>]*)\\/?\s*>/g)) {
+    const attrs = parseAttrs(match[1] ?? '');
+    const id = Number(attrs.numFmtId);
+    const code = attrs.formatCode ?? '';
+    const normalized = code.replace(/\"[^\"]*\"/g, '').replace(/\\\\./g, '');
+    if (Number.isInteger(id) && /[ydhs]/i.test(normalized)) customFormats.set(id, code);
+  }
+  const builtInDateFormats = new Set([14, 15, 16, 17, 18, 19, 20, 21, 22, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 45, 46, 47, 50, 51, 52, 53, 54, 55, 56, 57, 58]);
+  const xfs = extractFirst(xml, /<cellXfs\\b[^>]*>([\\s\\S]*?)<\\/cellXfs>/);
+  let styleIndex = 0;
+  for (const match of xfs.matchAll(/<xf\\b([^>]*)\\/?\s*>/g)) {
+    const attrs = parseAttrs(match[1] ?? '');
+    const numFmtId = Number(attrs.numFmtId ?? 0);
+    const custom = customFormats.get(numFmtId);
+    if (custom) formats.set(styleIndex, custom);
+    else if (builtInDateFormats.has(numFmtId)) formats.set(styleIndex, 'built-in date/time format (numFmtId=' + numFmtId + ')');
+    styleIndex += 1;
+  }
+  return formats;
 }
 
 async function readSharedStrings(zip: JSZip): Promise<string[]> {
@@ -180,7 +207,11 @@ async function readWorkbook(zip: JSZip): Promise<WorkbookSheet[]> {
     .map((name, i) => ({ name: `Sheet ${i + 1}`, path: name }));
 }
 
-function extractWorksheetRows(xml: string, sharedStrings: string[]): string[] {
+function extractWorksheetRows(
+  xml: string,
+  sharedStrings: string[],
+  dateFormats: Map<number, string>,
+): string[] {
   const rows: string[] = [];
   for (const row of xml.matchAll(/<row\b([^>]*)>([\s\S]*?)<\/row>/g)) {
     const rowAttrs = parseAttrs(row[1] ?? '');
@@ -212,14 +243,19 @@ function extractWorksheetRows(xml: string, sharedStrings: string[]): string[] {
         textValue = attrs.t === 'str';
       }
       const displayValue = value.length === 0 ? '(blank)' : textValue ? JSON.stringify(value) : value;
+      const styleIndex = Number(attrs.s);
+      const dateFormat = attrs.s !== undefined && Number.isInteger(styleIndex)
+        ? dateFormats.get(styleIndex)
+        : undefined;
+      const styleHint = dateFormat ? ' format=' + JSON.stringify(dateFormat) : '';
       if (formula && attrs.t === 'e') {
-        cells.push(ref + ' formula=' + formula + ' error=' + displayValue);
+        cells.push(ref + ' formula=' + formula + ' error=' + displayValue + styleHint);
       } else if (formula) {
-        cells.push(ref + ' formula=' + formula + (rawValue.length > 0 ? ' cached=' + displayValue : ' cached=(none)'));
+        cells.push(ref + ' formula=' + formula + (rawValue.length > 0 ? ' cached=' + displayValue : ' cached=(none)') + styleHint);
       } else if (attrs.t === 'e') {
-        cells.push(ref + ' error=' + displayValue);
+        cells.push(ref + ' error=' + displayValue + styleHint);
       } else {
-        cells.push(ref + '=' + displayValue);
+        cells.push(ref + '=' + displayValue + styleHint);
       }
     }
     if (cells.length > 0) rows.push('Row ' + rowNumber + ': ' + cells.join(' | '));
