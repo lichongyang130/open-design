@@ -36,4 +36,6 @@ jobs:
           .venv/bin/python -m pip install openpyxl
 
       - name: Run spreadsheet cleaner tests
-        run: .venv/bin/python -m unittest discover -s skills/spreadsheet-data-cleaner/tests -v
+        run: |
+          .venv/bin/python -m unittest discover -s skills/spreadsheet-data-cleaner/tests -v
+          .venv/bin/python -m unittest discover -s skills/spreadsheet-formula-diagnostics/tests -v
