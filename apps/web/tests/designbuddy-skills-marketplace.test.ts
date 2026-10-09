@@ -160,8 +160,8 @@ describe('DesignBuddy standalone Skills marketplace', () => {
     expect((document.querySelector('.skills-featured') as HTMLElement).hidden).toBe(true);
 
     api.setLanguage('en');
-    expect(document.querySelector('[data-skills-tab="recommended"]')?.textContent).toBe('Recommended');
-    expect(document.getElementById('skillsSearch')?.getAttribute('placeholder')).toBe('Search skills');
+    expect(document.querySelector('[data-skills-tab="recommended"]')?.textContent).toBe('Office problem solving');
+    expect(document.getElementById('skillsSearch')?.getAttribute('placeholder')).toBe('Search office tasks, e.g. formulas, duplicates, formatting');
 
     // The same plus button removes a selected skill instead of creating a fake duplicate.
     click(window, document.querySelector(`#skillsGrid [data-skill-toggle="${firstId}"]`));
