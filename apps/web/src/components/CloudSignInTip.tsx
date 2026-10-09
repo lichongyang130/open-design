@@ -224,7 +224,7 @@ export function CloudSignInTip({
         event.preventDefault();
         void begin();
       }}
-      aria-label={t('entry.cloudCalloutTitle')}
+      aria-label={presentation === 'button' ? '使用 OpenDesign Cloud 登录' : t('entry.cloudCalloutTitle')}
       data-testid="entry-cloud-signin-tip"
     >
       {signing ? (
