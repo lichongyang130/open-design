@@ -143,7 +143,7 @@ describe('POST /api/runs/:id/steer', () => {
     expect(afterRefusal.some((message) => message.content === 'too late')).toBe(false);
   }, 45_000);
 
-  it('sends artifact lint findings into the live run and caps repair steering', async () => {
+  it('sends artifact lint findings into the live run and refuses feedback after the run closes', async () => {
     binDir = await mkdtemp(path.join(os.tmpdir(), 'od-artifact-lint-steer-'));
     const readyPath = path.join(binDir, 'ready');
     const sinkPath = path.join(binDir, 'steered.txt');
