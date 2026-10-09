@@ -21,6 +21,12 @@ import detect_anomalies as detector  # noqa: E402
 
 
 class CsvAnomalyDetectionTests(unittest.TestCase):
+    def test_leading_zero_identifiers_are_not_numeric_measurements(self) -> None:
+        self.assertIsNone(detector.numeric_value("00123"))
+        self.assertIsNone(detector.numeric_value("00123.45"))
+        self.assertEqual(detector.numeric_value("0"), 0.0)
+        self.assertEqual(detector.numeric_value("0.25"), 0.25)
+
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory(prefix="od-anomaly-detection-")
         self.root = Path(self.temp.name)
