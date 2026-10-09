@@ -223,12 +223,12 @@ function inferProjectFileKind(name: string): ProjectFileKind {
   }
   if (/\.(mp4|mov|webm)$/.test(lower)) return 'video';
   if (/\.(mp3|wav|m4a)$/.test(lower)) return 'audio';
-  if (/\.(md|txt)$/.test(lower)) return 'text';
+  if (/\.(md|txt|csv)$/.test(lower)) return 'text';
   if (/\.(js|mjs|cjs|ts|tsx|json|css|py)$/.test(lower)) return 'code';
   if (lower.endsWith('.pdf')) return 'pdf';
   if (lower.endsWith('.docx')) return 'document';
   if (lower.endsWith('.pptx')) return 'presentation';
-  if (lower.endsWith('.xlsx')) return 'spreadsheet';
+  if (/\.(xlsx|xlsm|xlsb|xls)$/.test(lower)) return 'spreadsheet';
   return 'binary';
 }
 
