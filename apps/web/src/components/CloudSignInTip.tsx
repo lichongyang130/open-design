@@ -49,7 +49,7 @@ interface CloudSignInTipProps {
   /** Render as a compact primary action inside the public auth landing page. */
   presentation?: 'card' | 'button';
   /** Called after the existing Vela flow confirms authentication. */
-  onSignedIn?: () => void;
+  onSignedIn?: (status: VelaLoginStatus | null) => void;
 }
 
 /**
@@ -144,7 +144,7 @@ export function CloudSignInTip({
     const current = await fetchVelaLoginStatus();
     if (cancelledRef.current || !mountedRef.current) return;
     if (isAmrSessionAuthenticated(current)) {
-      finishSignedIn();
+      finishSignedIn(current);
       return;
     }
     const result = await startVelaLogin();
@@ -163,7 +163,7 @@ export function CloudSignInTip({
       if (next) setStatus(next);
       const outcome = amrLoginPollOutcome(next, startedAt);
       if (outcome === 'signed-in') {
-        finishSignedIn();
+        finishSignedIn(next);
         return;
       }
       if (outcome === 'stopped' || outcome === 'timed-out') {
@@ -180,14 +180,14 @@ export function CloudSignInTip({
     }
   }
 
-  function finishSignedIn() {
+  function finishSignedIn(authenticatedStatus: VelaLoginStatus | null = null) {
     notifyAmrLoginStatusChanged();
     notifyWorkspaceContextRefresh();
     notifyWorkspaceBillingRefresh();
     notifyTeamProjectsChanged();
     if (mountedRef.current) {
       setState('idle');
-      onSignedIn?.();
+      onSignedIn?.(authenticatedStatus ?? status);
     }
   }
 
