@@ -405,6 +405,8 @@ def reconcile(
             "key_label": key_label(key),
             "rows_a": [record["row_number"] for record in rows_a],
             "rows_b": [record["row_number"] for record in rows_b],
+            "records_a": [{"row_number": record["row_number"], "values": row_as_json(record)} for record in rows_a],
+            "records_b": [{"row_number": record["row_number"], "values": row_as_json(record)} for record in rows_b],
             "count_a": len(rows_a),
             "count_b": len(rows_b),
             "issue": "duplicate_key_ambiguous_match",
@@ -553,12 +555,14 @@ def write_xlsx_report(path: Path, report: dict[str, Any], overwrite: bool) -> No
         ]])
 
     duplicates = workbook.create_sheet("Duplicate Keys")
-    duplicates.append([*[safe_cell(column) for column in key_columns], "Rows in A", "Rows in B", "Count A", "Count B", "Issue"])
+    duplicates.append([*[safe_cell(column) for column in key_columns], "Rows in A", "Rows in B", "Values in A", "Values in B", "Count A", "Count B", "Issue"])
     for item in report["duplicate_keys"]:
         duplicates.append([
             *[safe_cell(display_value(item["key"].get(column))) for column in key_columns],
             ", ".join(map(str, item["rows_a"])),
             ", ".join(map(str, item["rows_b"])),
+            safe_cell(json.dumps(item["records_a"], ensure_ascii=False)),
+            safe_cell(json.dumps(item["records_b"], ensure_ascii=False)),
             item["count_a"], item["count_b"], item["issue"],
         ])
 
