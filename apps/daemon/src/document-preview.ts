@@ -155,7 +155,7 @@ async function previewXlsx(zip: JSZip): Promise<PreviewSection[]> {
   }
   return sections.length > 0
     ? sections
-    : [{ title: 'Spreadsheet', lines: ['No readable sheets found.'] }];
+    : [{ title: 'Spreadsheet', lines: ['No readable sheet list was found in the workbook metadata. Do not assume the workbook is empty or claim it was audited.'] }];
 }
 
 async function readCellDateFormats(zip: JSZip): Promise<Map<number, string>> {
