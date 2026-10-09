@@ -708,3 +708,38 @@
   .skills-card,
   .skills-suite-card { transition: none; }
 }
+
+
+/* Office skills catalog: remove decorative marketplace clutter and use a quiet paper-white surface. */
+.skills-categories { display: none !important; }
+.skills-grid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  max-width: 920px;
+  gap: 12px;
+}
+.skills-card {
+  min-height: 112px;
+  border-radius: 12px;
+  background: #fff;
+  border-color: #e2e8f0;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, .025);
+}
+.skills-card:hover {
+  border-color: #bfdbfe;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, .055);
+}
+.skills-tab.active::after { background: #2563eb; }
+.skills-tab.active { color: #172033; }
+.skills-search {
+  border-color: #e2e8f0;
+  background: #fff;
+}
+.skills-search:focus-within {
+  border-color: #93c5fd;
+  background: #fff;
+}
+.skills-category.active { color: #172033; background: #eff6ff; }
+.skills-state { background: #fff; border-color: #dbe3ee; }
+@media (max-width: 620px) {
+  .skills-grid { grid-template-columns: 1fr; }
+}
