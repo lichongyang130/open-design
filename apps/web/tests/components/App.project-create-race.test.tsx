@@ -1317,6 +1317,46 @@ describe('App project creation routing', () => {
     );
   });
 
+  it('hands the uploaded workbook and selected skill into the same first-message handoff', async () => {
+    mockedListProjects.mockResolvedValue([]);
+    mockedCreateProject.mockResolvedValue({
+      project: {
+        ...freshProject,
+        name: 'Spreadsheet project',
+        skillId: 'spreadsheet-repair',
+        pendingPrompt: 'Inspect the uploaded workbook read-only first',
+      },
+      conversationId: 'conv-new',
+    });
+    mockedUploadProjectFiles.mockResolvedValue({
+      uploaded: [{
+        path: 'office-audit.xlsx',
+        name: 'office-audit.xlsx',
+        kind: 'file',
+        size: 13,
+      }],
+      failed: [],
+    });
+
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Create spreadsheet project' }));
+
+    await screen.findByTestId('project-view');
+    await waitFor(() => {
+      expect(mockedCreateProject).toHaveBeenCalledWith(expect.objectContaining({
+        skillId: 'spreadsheet-repair',
+        pendingPrompt: 'Inspect the uploaded workbook read-only first',
+      }));
+      expect(window.sessionStorage.getItem('od:auto-send-first:project-new')).toBe('1');
+    });
+    expect(JSON.parse(
+      window.sessionStorage.getItem('od:auto-send-attachments:project-new') ?? '[]',
+    )).toEqual([expect.objectContaining({
+      path: 'office-audit.xlsx',
+      name: 'office-audit.xlsx',
+    })]);
+  });
+
   it('does not auto-send a Home task when its attachment upload fails', async () => {
     mockedListProjects.mockResolvedValue([]);
     mockedCreateProject.mockResolvedValue({
