@@ -12,9 +12,15 @@ triggers:
   - "清理重复数据"
   - "统一表格格式"
   - "检查异常数据"
+  - "Excel 重复行"
+  - "日期格式异常"
+  - "公式断档"
   - "spreadsheet repair"
+  - "spreadsheet audit"
   - "Excel formula errors"
   - "clean duplicate rows"
+  - "normalize Excel dates"
+  - "verify spreadsheet totals"
 od:
   mode: utility
   surface: web
