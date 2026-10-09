@@ -11,6 +11,13 @@ describe('spreadsheet document preview', () => {
     expect(kindFor('sales.xlsm')).toBe('spreadsheet');
   });
 
+  it('rejects legacy binary spreadsheet formats instead of pretending to preview them', async () => {
+    await expect(buildDocumentPreview({ name: 'legacy.xls', buffer: Buffer.from('not an xlsx zip') }))
+      .rejects.toThrow('unsupported preview type');
+    await expect(buildDocumentPreview({ name: 'binary.xlsb', buffer: Buffer.from('not an xlsx zip') }))
+      .rejects.toThrow('unsupported preview type');
+  });
+
   it('preserves cell addresses, formulas, cached values, and formula error evidence', async () => {
     const zip = new JSZip();
     zip.file(
