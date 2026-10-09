@@ -4,11 +4,9 @@ on:
   pull_request:
     paths:
       - "skills/spreadsheet-problem-solver/**"
-      - "skills/spreadsheet-problem-solver/**"
       - ".github/workflows/spreadsheet-skill-tests.yml"
   push:
     paths:
-      - "skills/spreadsheet-problem-solver/**"
       - "skills/spreadsheet-problem-solver/**"
       - ".github/workflows/spreadsheet-skill-tests.yml"
   workflow_dispatch:
@@ -22,7 +20,7 @@ concurrency:
 
 jobs:
   python-tests:
-    name: Spreadsheet cleaner regression tests
+    name: Spreadsheet skill regression tests
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -35,6 +33,6 @@ jobs:
           .venv/bin/python -m pip install --upgrade pip
           .venv/bin/python -m pip install openpyxl
 
-      - name: Run spreadsheet cleaner tests
+      - name: Run spreadsheet skill tests
         run: |
           .venv/bin/python -m unittest discover -s skills/spreadsheet-problem-solver/tests -v
