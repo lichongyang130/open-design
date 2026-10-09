@@ -45,6 +45,13 @@ export function resetCloudSignInTipDismissal(): void {
 
 type TipState = 'idle' | 'signing' | 'error';
 
+interface CloudSignInTipProps {
+  /** Render as a compact primary action inside the public auth landing page. */
+  presentation?: 'card' | 'button';
+  /** Called after the existing Vela flow confirms authentication. */
+  onSignedIn?: () => void;
+}
+
 /**
  * recvqgpXSYFNTq: the rail's bottom-left callout slot goes visibly blank
  * between "sign-in just succeeded" and "the workspace context resolved" —
@@ -111,7 +118,10 @@ export function RailAccountRecoveryTip() {
  * link fallback — and on success every workspace surface is nudged to
  * re-read, which swaps the rail to the signed-in form (unmounting the card).
  */
-export function CloudSignInTip() {
+export function CloudSignInTip({
+  presentation = 'card',
+  onSignedIn,
+}: CloudSignInTipProps = {}) {
   const { t } = useI18n();
   const [state, setState] = useState<TipState>('idle');
   const [status, setStatus] = useState<VelaLoginStatus | null>(null);
@@ -175,7 +185,10 @@ export function CloudSignInTip() {
     notifyWorkspaceContextRefresh();
     notifyWorkspaceBillingRefresh();
     notifyTeamProjectsChanged();
-    if (mountedRef.current) setState('idle');
+    if (mountedRef.current) {
+      setState('idle');
+      onSignedIn?.();
+    }
   }
 
   async function cancel() {
@@ -201,7 +214,7 @@ export function CloudSignInTip() {
     <section
       role="button"
       tabIndex={signing ? -1 : 0}
-      className={`entry-local-mode-tip${signing ? ' is-signing' : ''}`}
+      className={`entry-local-mode-tip${signing ? ' is-signing' : ''}${presentation === 'button' ? ' entry-local-mode-tip--button' : ''}`}
       onClick={() => {
         if (!signing) void begin();
       }}
@@ -255,10 +268,17 @@ export function CloudSignInTip() {
           <p role="alert">{t('settings.amrLoginErrorCompact')}</p>
         </>
       ) : (
-        <>
-          <p>{t('entry.cloudCalloutBody')}</p>
-          {headBadge}
-        </>
+        presentation === 'button' ? (
+          <span className="entry-local-mode-tip__button-label">
+            <Icon name="log-in" size={17} />
+            <span>使用 OpenDesign Cloud 登录</span>
+          </span>
+        ) : (
+          <>
+            <p>{t('entry.cloudCalloutBody')}</p>
+            {headBadge}
+          </>
+        )
       )}
     </section>
   );
