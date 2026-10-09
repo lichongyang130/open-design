@@ -304,6 +304,10 @@ def diagnose_workbook(
             report["warnings"].append(
                 "Read-only diagnosis: no workbook copy was written. Use --apply-safe-repairs to create a copy containing only proven formula-gap repairs."
             )
+        if report.get("details_truncated"):
+            report["warnings"].append(
+                f"Only the first {MAX_RECORDED_ITEMS:,} findings are listed; summary counts include all processed cells and safe repairs."
+            )
         return report
     finally:
         formulas.close()
