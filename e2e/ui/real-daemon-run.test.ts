@@ -132,6 +132,109 @@ test('[P0] real daemon run streams, persists, and previews an artifact', async (
   await expectProjectFileToContain(page, projectId, GENERATED_FILE, GENERATED_HEADING);
 });
 
+test('[P0] Studio automatically repairs generated HTML after artifact lint feedback', async ({ page, toolsDev }) => {
+  test.setTimeout(180_000);
+
+  const initialHtml = '<!doctype html><html lang="en"><head><title>Product overview</title></head><body><main><h1>Product overview</h1><img src="/hero.png"></main></body></html>';
+  const repairedHtml = '<!doctype html><html lang="en"><head><title>Product overview</title><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><main><h1>Product overview</h1><img src="/hero.png" alt="Product overview dashboard"></main></body></html>';
+  const runtime = await createArtifactLintRepairRuntime(
+    join(toolsDev.root, 'scratch', `fake-artifact-lint-loop-${Date.now()}`),
+    initialHtml,
+    repairedHtml,
+  );
+
+  const configResponse = await page.request.put('/api/app-config', {
+    data: {
+      onboardingCompleted: true,
+      agentId: 'claude',
+      agentModels: { claude: { model: 'default', reasoning: 'default' } },
+      agentCliEnv: { claude: runtime.env },
+      skillId: null,
+      designSystemId: null,
+    },
+  });
+  expect(configResponse.ok()).toBeTruthy();
+  await page.evaluate(installConfig, { key: STORAGE_KEY, id: 'claude', env: runtime.env });
+
+  const projectId = `artifact-lint-loop-${Date.now()}`;
+  const { conversationId } = await createProjectViaApi(
+    page,
+    projectId,
+    'Artifact lint automatic repair loop',
+  );
+  await page.goto(`/projects/${projectId}/conversations/${conversationId}`, {
+    waitUntil: 'domcontentloaded',
+  });
+  await waitForLoadingToClear(page);
+  await expectBrowserAgentConfig(page, 'claude');
+
+  const isLintFeedbackResponse = (response: Response) =>
+    response.url().includes('/artifact-lint-feedback')
+    && response.request().method() === 'POST';
+  const firstFeedbackPromise = page.waitForResponse(isLintFeedbackResponse, { timeout: T.long });
+  const repairedFeedbackPromise = page.waitForResponse((response) => {
+    if (!isLintFeedbackResponse(response)) return false;
+    try {
+      const body = response.request().postDataJSON() as { html?: string };
+      return typeof body.html === 'string'
+        && body.html.includes('alt="Product overview dashboard"');
+    } catch {
+      return false;
+    }
+  }, { timeout: T.long });
+
+  const createRunResponse = await sendPrompt(
+    page,
+    'Create a product overview page. The automated quality checker should repair any issues it finds.',
+    T.long,
+  );
+  const createdRun = await createRunResponse.json() as { runId: string };
+  expect(createdRun.runId).toBeTruthy();
+
+  // This response proves the Studio watcher posted the generated snapshot and
+  // the daemon steered the still-running model, without a manual API call.
+  const firstFeedback = await firstFeedbackPromise;
+  expect(firstFeedback.ok(), await firstFeedback.text()).toBeTruthy();
+  const firstBody = await firstFeedback.json() as { ok: boolean; steered?: boolean; findings?: Array<{ id: string }> };
+  expect(firstBody.ok).toBe(true);
+  expect(firstBody.steered).toBe(true);
+  expect(firstBody.findings?.map((finding) => finding.id)).toContain('image-missing-alt');
+
+  // The fixture only edits the file after consuming that steering message.
+  // Hold the run open briefly so the frontend can submit the changed snapshot
+  // and the daemon can return a clean lint result before the run ends.
+  const repairedFeedback = await repairedFeedbackPromise;
+  expect(repairedFeedback.ok(), await repairedFeedback.text()).toBeTruthy();
+  const repairedBody = await repairedFeedback.json() as {
+    ok: boolean;
+    clean?: boolean;
+    steered?: boolean;
+    findings?: unknown[];
+  };
+  expect(repairedBody).toMatchObject({ ok: true, clean: true, findings: [] });
+  expect(repairedBody.steered).not.toBe(true);
+
+  await expectProjectFileToContain(
+    page,
+    projectId,
+    'index.html',
+    'alt="Product overview dashboard"',
+  );
+  const persisted = await readProjectFile(page, projectId, 'index.html');
+  expect(persisted).toBe(repairedHtml);
+
+  const steeringText = await readFile(runtime.steeringPath, 'utf8');
+  expect(steeringText).toContain('Target artifact path: "index.html"');
+  expect(steeringText).toContain('image-missing-alt');
+  expect(steeringText).toContain('Edit the specified existing HTML file in place');
+
+  await expect.poll(async () => {
+    const response = await page.request.get(`/api/runs/${encodeURIComponent(createdRun.runId)}`);
+    if (!response.ok()) return null;
+    return (await response.json() as { status?: string }).status ?? null;
+  }, { timeout: T.long }).toBe('succeeded');
+});
+
 test('[P1] execution plan connector stops before completed status markers', async ({ page }) => {
   await createProject(page, 'Execution plan connector geometry', 'claude');
   await expectWorkspaceReady(page);
