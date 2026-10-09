@@ -3329,6 +3329,7 @@ function AppInner() {
           current?.projectId === optimisticProjectId ? { ...current, created: true } : current,
         );
         let firstMessageAttachments: ChatAttachment[] = [];
+        let homeAttachmentUploadFailed = false;
         if (!workingDirHandoffFailed && pendingFiles.length > 0) {
           // Home composer attaches stay client-side until submit lands a
           // project; the actual upload happens here. v2 doc wants one
@@ -3369,8 +3370,15 @@ function AppInner() {
           const failedUploads = outcomes.flatMap((outcome) => outcome.failed);
           const firstUploadError = outcomes.find((outcome) => outcome.error)?.error;
           const partial = failedUploads.length > 0;
+          homeAttachmentUploadFailed = partial;
           if (partial) {
             console.warn('Some Home attachments failed to upload', failedUploads);
+            // Never auto-send a task with a missing input file. The project
+            // remains available so the user can re-upload the failed file and
+            // send the preserved prompt manually.
+            setProjectCreateError(
+              '附件上传失败，首条任务未自动发送。请在项目中重新上传失败的文件，再发送任务。',
+            );
           }
           trackFileUploadResult(analytics.track, {
             page_name: 'home',
@@ -3405,6 +3413,7 @@ function AppInner() {
         // reload after the run has started does not refire.
         if (
           !workingDirHandoffFailed &&
+          !homeAttachmentUploadFailed &&
           input.autoSendFirstMessage &&
           (derivedPendingPrompt !== undefined || firstMessageAttachments.length > 0)
         ) {
