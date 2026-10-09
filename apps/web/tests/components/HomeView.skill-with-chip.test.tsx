@@ -246,8 +246,7 @@ describe('HomeView — spreadsheet problem shortcut', () => {
     const onSubmit = submitSpy();
     renderHome(onSubmit, [PROTOTYPE_SKILL, DECK_SKILL, SPREADSHEET_SKILL]);
 
-    fireEvent.click(screen.getByTestId('home-hero-shortcuts-trigger'));
-    fireEvent.click(await screen.findByTestId('home-hero-rail-spreadsheet-problem'));
+    fireEvent.click(screen.getByTestId('home-hero-spreadsheet-problem'));
 
     await waitFor(() => {
       expect(screen.getByTestId('home-hero-active-skill')).toBeTruthy();
