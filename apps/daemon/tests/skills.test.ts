@@ -277,6 +277,19 @@ describe('listSkills', () => {
     }
   });
 
+  it('loads the real spreadsheet repair skill with inspect-first and verification safeguards', async () => {
+    const skills = await listSkills(skillsRoot);
+    const skill = skills.find((entry) => entry.id === 'spreadsheet-repair');
+
+    expect(skill).toBeDefined();
+    expect(skill).toMatchObject({ id: 'spreadsheet-repair', mode: 'utility', surface: 'web', category: 'office' });
+    expect(skill?.body).toContain('只读检查并建立基线');
+    expect(skill?.body).toContain('工作表名 + 单元格地址/行号');
+    expect(skill?.body).toContain('默认另存为新的修复副本');
+    expect(skill?.body).toContain('必须重新打开修复副本');
+    expect(skill?.body).toContain('不得编造工作表、单元格、公式、问题数量或修复结果');
+  });
+
   it('includes the built-in live-artifact skill catalog entry', async () => {
     const skills = await listSkills(designTemplatesRoot);
     const skill = skills.find((entry: { id: string }) => entry.id === 'live-artifact');
