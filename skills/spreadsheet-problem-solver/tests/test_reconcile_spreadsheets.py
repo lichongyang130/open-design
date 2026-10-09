@@ -79,6 +79,8 @@ class ReconciliationCsvTests(unittest.TestCase):
         self.assertEqual(report["only_in_a"][0]["key"]["OrderID"], "003")
         self.assertEqual(report["only_in_b"][0]["key"]["OrderID"], "005")
         self.assertEqual(report["duplicate_keys"][0]["action"], "not_auto_paired")
+        self.assertEqual(len(report["duplicate_keys"][0]["records_a"]), 2)
+        self.assertEqual(report["duplicate_keys"][0]["records_b"][0]["values"]["Amount"], "10")
         self.assertEqual(report["needs_review"][0]["issue"], "blank_key")
 
     def test_numeric_text_compares_equal_but_leading_zero_keys_are_preserved(self) -> None:
