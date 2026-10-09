@@ -30,6 +30,7 @@ export function homeHeroChipLabel(chipId: string, t: Translate): string {
     case 'create-plugin': return t('homeHero.chip.createPlugin');
     case 'figma': return t('homeHero.chip.figma');
     case 'template': return t('homeHero.chip.template');
+    case 'spreadsheet-problem': return t('homeHero.chip.spreadsheetProblem');
     default: return chipId;
   }
 }
