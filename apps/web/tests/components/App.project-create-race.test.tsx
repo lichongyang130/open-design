@@ -208,6 +208,24 @@ vi.mock('../../src/components/EntryView', () => ({
       </button>
       <button
         type="button"
+        onClick={() => {
+          void Promise.resolve(onCreateProject({
+            name: 'Spreadsheet project',
+            skillId: 'spreadsheet-repair',
+            designSystemId: null,
+            pendingPrompt: 'Inspect the uploaded workbook read-only first',
+            pendingFiles: [new File(['workbook bytes'], 'office-audit.xlsx', {
+              type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            })],
+            autoSendFirstMessage: true,
+            metadata: { kind: 'prototype' },
+          })).catch(() => {});
+        }}
+      >
+        Create spreadsheet project
+      </button>
+      <button
+        type="button"
         onClick={() => void onCreatePluginShareProject(
           'plugin-source',
           'publish-github',
@@ -1315,13 +1333,13 @@ describe('App project creation routing', () => {
     });
 
     render(<App />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Create prompted project' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Create spreadsheet project' }));
 
     await screen.findByTestId('project-view');
     expect(window.sessionStorage.getItem('od:auto-send-first:project-new')).toBeNull();
     expect(window.sessionStorage.getItem('od:auto-send-attachments:project-new')).toBeNull();
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      '附件上传失败，首条任务未自动发送。',
+      '附件上传失败，表格任务未自动发送。',
     );
   });
 
