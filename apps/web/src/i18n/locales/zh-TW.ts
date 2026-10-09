@@ -1022,6 +1022,7 @@ export const zhTW: Dict = {
   "homeHero.chip.audio": "音訊",
   "homeHero.chip.createBrandKit": "建立品牌套件",
   "homeHero.chip.createPlugin": "建立外掛",
+  "homeHero.chip.spreadsheetProblem": "試算表問題處理",
   "homeHero.chip.figma": "從 Figma 匯入",
   "homeHero.chip.folder": "從資料夾匯入",
   "homeHero.chip.template": "從範本建立",
