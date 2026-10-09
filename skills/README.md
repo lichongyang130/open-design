@@ -16,8 +16,6 @@ Skills in this directory are Apache-2.0 unless their own `LICENSE` says otherwis
 
 ## Office problem-solving skills
 
-- `spreadsheet-problem-solver/` is the routing entry for real spreadsheet tasks.
-- `spreadsheet-data-cleaner/` provides a runnable, conservative CSV/XLSX/XLSM cleaning workflow with an audit report and tests.
-- `spreadsheet-formula-diagnostics/` diagnoses explicit Excel formula errors and only repairs a one-cell formula gap when adjacent formulas independently imply the same result.
+- `spreadsheet-problem-solver/` is the single user-facing entry for real spreadsheet tasks. Its bundled scripts and tests handle conservative data cleaning and safe formula diagnostics without exposing separate helper-skill cards.
 
 These skills are task-oriented: preserve the source file, make destructive changes only when explicitly requested, and report what was validated versus what still needs review.
