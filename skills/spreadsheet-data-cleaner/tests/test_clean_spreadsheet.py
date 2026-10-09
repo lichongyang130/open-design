@@ -81,7 +81,8 @@ class CsvCleaningTests(unittest.TestCase):
         cleaner.clean_csv(self.input_path, self.output_path, report=report, dry_run=True)
 
         self.assertFalse(self.output_path.exists())
-        self.assertEqual(report["summary"]["text_cells_trimmed"], 1)
+        self.assertEqual(report["summary"]["text_cells_planned_to_trim"], 1)
+        self.assertEqual(report["summary"]["text_cells_trimmed"], 0)
         self.assertTrue(self.input_path.exists())
 
 
