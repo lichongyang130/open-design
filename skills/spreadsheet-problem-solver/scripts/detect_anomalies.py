@@ -285,7 +285,10 @@ def detect(
         values = record["values"]
         formula_values = record.get("formula_values", {})
         for column in columns_to_check:
-            if is_blank(values.get(column)):
+            has_formula = isinstance(formula_values.get(column), str) and formula_values[column].startswith("=")
+            # Excel formula cells may have an empty cached result before the
+            # workbook has been recalculated; do not mislabel those as blanks.
+            if is_blank(values.get(column)) and not has_formula:
                 report["summary"]["missing_values"] += 1
                 add_detail(report, "missing_values", {
                     "row": record["row_number"], "column": column,
