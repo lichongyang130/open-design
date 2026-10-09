@@ -3667,11 +3667,18 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
     const requestBody = toJsonRecord(req.body);
     const html = typeof requestBody.html === 'string' ? requestBody.html : '';
     if (!html.trim()) return sendApiError(res, 400, 'BAD_REQUEST', 'html is required');
+    const artifactPathValue = requestBody.artifactPath;
+    const artifactPath = typeof artifactPathValue === 'string' ? artifactPathValue.trim() : '';
+    if (artifactPath.length > 512 || /[\r\n\u0000]/.test(artifactPath)) {
+      return sendApiError(res, 400, 'BAD_REQUEST', 'artifactPath must be a short single-line project path');
+    }
     const findings = lintArtifact(html);
     const agentMessage = renderFindingsForAgent(findings);
     if (findings.length === 0 || !agentMessage) {
       artifactLintSteeringAttempts.delete(run);
-      return res.json({ ok: true, repaired: true, findings, attempts: 0 });
+      // A clean lint means no repair is needed; it does not mean this endpoint
+      // changed the artifact or that a prior repair was independently verified.
+      return res.json({ ok: true, clean: true, repaired: false, findings, attempts: 0 });
     }
 
     const attempts = artifactLintSteeringAttempts.get(run) ?? 0;
@@ -3688,7 +3695,10 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
 
     const steeringText = [
       'The generated HTML artifact failed the host quality checks. Repair the existing artifact in place, preserve its intended design and content, and do not merely describe the fix.',
-      'After editing, re-check the artifact against every finding below. Do not claim the issues are fixed unless the source actually changes.',
+      artifactPath
+        ? `Target artifact path: ${JSON.stringify(artifactPath)}. Repair this file, not a different artifact.`
+        : 'Target artifact: the HTML file most recently produced or edited by this run. If several files are involved, identify the one matching the supplied HTML snapshot.',
+      'After editing, re-check the artifact against every finding below. Do not claim the issues are fixed unless the source actually changes and the updated artifact passes the checks.',
       agentMessage,
     ].join('\n\n');
     const runtimeAccepts = runtimeAcceptsMidTurnInput(
