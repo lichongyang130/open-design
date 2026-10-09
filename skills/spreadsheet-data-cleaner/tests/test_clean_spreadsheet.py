@@ -115,6 +115,18 @@ class CsvCleaningTests(unittest.TestCase):
 
         self.assertEqual(self.read_output(), [["Name", "Notes"], ["Alice", "first line\nsecond line"]])
 
+    def test_formula_like_text_is_not_exposed_by_trimming(self) -> None:
+        self.input_path.write_text('Name,Value\n" =1+1 ",ordinary\n', encoding="utf-8")
+        report = cleaner._build_report(self.input_path, self.output_path, "csv", False)
+
+        cleaner.clean_csv(self.input_path, self.output_path, report=report)
+
+        self.assertEqual(self.read_output(), [["Name", "Value"], [" =1+1 ", "ordinary"]])
+        self.assertEqual(report["summary"]["text_cells_trimmed"], 0)
+        self.assertTrue(
+            any(finding.get("kind") == "formula_like_text_preserved" for finding in report["findings"])
+        )
+
     def test_source_file_cannot_be_selected_as_output(self) -> None:
         self.input_path.write_text("Name\nAlice\n", encoding="utf-8")
         report_path = self.root / "report.json"
