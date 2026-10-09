@@ -147,37 +147,45 @@ async function renderApiAttachmentBlock(
 
   let body = '';
   let language = 'text';
-  if (maxContentChars > 0 && canReadRawText(kind, path)) {
-    const text = await fetchProjectFileText(projectId, path, {
-      cache: 'no-store',
-      cacheBustKey: file?.mtime,
-      ...(workspaceContext
-        ? { workspaceContext }
-        : {}),
-    });
-    if (text) {
-      body = clipAttachmentText(text, maxContentChars);
-      language = codeFenceLanguage(path);
+  let readFailed = false;
+  try {
+    if (maxContentChars > 0 && canReadRawText(kind, path)) {
+      const text = await fetchProjectFileText(projectId, path, {
+        cache: 'no-store',
+        cacheBustKey: file?.mtime,
+        ...(workspaceContext ? { workspaceContext } : {}),
+      });
+      if (text) {
+        body = clipAttachmentText(text, maxContentChars);
+        language = codeFenceLanguage(path);
+      }
+    } else if (maxContentChars > 0 && API_ATTACHMENT_PREVIEW_KINDS.has(kind)) {
+      const preview = workspaceContext
+        ? await fetchProjectFilePreview(projectId, path, workspaceContext)
+        : await fetchProjectFilePreview(projectId, path);
+      const previewText = preview
+        ? preview.sections.map((section) => ['## ' + section.title, ...section.lines].join('\n')).join('\n\n')
+        : '';
+      if (previewText) body = clipAttachmentText(previewText, maxContentChars);
     }
-  } else if (maxContentChars > 0 && API_ATTACHMENT_PREVIEW_KINDS.has(kind)) {
-    const preview = workspaceContext
-      ? await fetchProjectFilePreview(projectId, path, workspaceContext)
-      : await fetchProjectFilePreview(projectId, path);
-    const previewText = preview
-      ? preview.sections
-          .map((section) => [`## ${section.title}`, ...section.lines].join('\n'))
-          .join('\n\n')
-      : '';
-    if (previewText) body = clipAttachmentText(previewText, maxContentChars);
+  } catch {
+    // A preview extractor failure must not prevent the user message from being sent.
+    readFailed = true;
   }
 
-  const lines = ['', `### Attachment ${order}: ${name}`, meta];
+  const lines = ['', '### Attachment ' + order + ': ' + name, meta];
   if (body) {
     lines.push('```' + language);
     lines.push(escapeMarkdownFence(body));
     lines.push('```');
+  } else if (isSpreadsheetAttachment(kind, path)) {
+    lines.push(readFailed
+      ? 'Spreadsheet preview extraction failed. The workbook content was not read. Do not infer cell contents from filename or metadata. Inspect the original uploaded workbook directly with available file tools; if direct workbook access is unavailable, report it as unreadable and ask for a supported .xlsx or .csv copy. Do not claim to have audited or repaired it.'
+      : 'Spreadsheet preview is unavailable; this does not mean the workbook is empty. Inspect the original uploaded workbook directly with available file tools. If direct workbook access is unavailable, report the file as unreadable and ask for a supported .xlsx or .csv copy. Do not infer cell contents or claim to have audited or repaired it.');
   } else {
-    lines.push('Content preview unavailable for this attachment. Use only the metadata above.');
+    lines.push(readFailed
+      ? 'Content preview extraction failed. The attachment content was not read; do not infer its contents from metadata.'
+      : 'Content preview unavailable. Do not infer the attachment contents from metadata alone.');
   }
 
   const text = lines.join('\n');
@@ -198,6 +206,10 @@ function canReadRawText(kind: ProjectFileKind, path: string): boolean {
 function isTextSketchPath(path: string): boolean {
   const lower = path.toLowerCase();
   return lower.endsWith('.sketch.json') || lower.endsWith('.svg');
+}
+
+function isSpreadsheetAttachment(kind: ProjectFileKind, path: string): boolean {
+  return kind === 'spreadsheet' || /\.(xlsx|xlsm|xlsb|xls|csv)$/i.test(path);
 }
 
 function inferProjectFileKind(name: string): ProjectFileKind {
