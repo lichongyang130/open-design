@@ -10,7 +10,7 @@ import type { ProjectMetadata } from '@open-design/contracts';
 import { resolveFrozenSkillBundleBodies } from '../../../src/strategies/od-next/frozen-skill-package.js';
 import { captureOdNextSessionSkillPackage } from '../../../src/strategies/od-next/session-skill-package.js';
 import { digestExampleSkillManifest } from '../../../src/plugins/example-binding.js';
-import type { SkillInfo } from '../../../src/skills.js';
+import { listSkills, type SkillInfo } from '../../../src/skills.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, '../../../../..');
@@ -74,6 +74,29 @@ function metadataWithExample(input: {
     },
   } as ProjectMetadata;
 }
+
+describe('the built-in spreadsheet repair workflow reaches the frozen AI context', () => {
+  it('freezes the real spreadsheet-repair instructions when the run selects that skill', async () => {
+    const skills = await listSkills(path.join(REPO_ROOT, 'skills'));
+    const spreadsheetSkill = skills.find((skill) => skill.id === 'spreadsheet-repair');
+    expect(spreadsheetSkill, 'built-in spreadsheet-repair skill must be discoverable').toBeDefined();
+
+    const frozen = await captureOdNextSessionSkillPackage({
+      metadata: { kind: 'prototype' } as ProjectMetadata,
+      getLocalPluginBySource: async () => null,
+      selection: { skillId: 'spreadsheet-repair' },
+      listSkillCatalog: async () => skills,
+    });
+
+    const bodies = resolveFrozenSkillBundleBodies(frozen);
+    expect(bodies?.skillNames).toContain('spreadsheet-repair');
+    expect(bodies?.body).toContain('输入可读性门禁');
+    expect(bodies?.body).toContain('先交付问题清单和修复方案');
+    expect(bodies?.body).toContain('修复后重新打开并验证');
+    expect(bodies?.body).toContain('异常和失败处理');
+    expect(bodies?.body).toContain('永远区分“检查发现”“建议修复”“实际已修改”“复检已通过”四种状态');
+  });
+});
 
 describe('a mentioned Skill enters OD Next alongside whatever else the session picked', () => {
   it('freezes the named Skill even with no example card in play', async () => {
