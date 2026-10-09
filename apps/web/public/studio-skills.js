@@ -261,12 +261,13 @@
     var featured = Number(item.featured);
     return (Number.isFinite(featured) ? featured * 100000 : 0) + (item.source === "built-in" ? 10000 : 0) + (10000 - hashCode(item.id) % 10000);
   }
+  // Only surface explicitly vetted, task-oriented office skills. The full
+  // creative catalogue remains available to the agent, but does not clutter
+  // this work-focused entry point.
   function isPracticalOfficeSkill(item) {
     if (!item || typeof item !== "object") return false;
     var id = String(item.id || item.name || "").toLowerCase();
-    var mode = String(item.mode || item.od && item.od.mode || "").toLowerCase();
-    var officeCategory = /office|办公|表格|文档/.test(String(item.category || item.scenario || ""));
-    return id === "spreadsheet-repair" || (mode === "utility" && (officeCategory || categoryOf(item) === "office"));
+    return id === "spreadsheet-repair";
   }
   function availableItems() {
     return Array.isArray(state.items) ? state.items.filter(isPracticalOfficeSkill) : [];
