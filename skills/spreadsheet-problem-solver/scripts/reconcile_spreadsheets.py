@@ -132,6 +132,10 @@ def read_csv_table(path: Path) -> tuple[list[str], list[dict[str, Any]], list[st
         raise ReconciliationError(
             f"{path.name} has more than {MAX_DATA_ROWS:,} data rows, above the current safety limit."
         )
+    if len(rows) * len(headers) > MAX_CELLS_PER_SHEET:
+        raise ReconciliationError(
+            f"{path.name} spans more than {MAX_CELLS_PER_SHEET:,} cells, above the current safety limit."
+        )
     records: list[dict[str, Any]] = []
     for index, row in enumerate(rows[1:], start=2):
         if len(row) > len(headers) and any(not is_blank(v) for v in row[len(headers):]):
