@@ -2643,6 +2643,10 @@ export function HomeView({
           setError(t('homeHero.noResults', { query: chip.action.skillId }));
           return;
         }
+        // This is a task shortcut, not a modifier for the currently selected
+        // output type. Clear a stale deck/prototype route before activating the
+        // office skill, while leaving staged files and other context untouched.
+        clearActiveChipSelection();
         useSkill(skill, null);
         return;
       }
