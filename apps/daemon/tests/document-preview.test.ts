@@ -22,6 +22,10 @@ describe('spreadsheet document preview', () => {
       '<Relationships><Relationship Id="rId1" Target="worksheets/sheet1.xml" Type="worksheet"/></Relationships>',
     );
     zip.file(
+      'xl/styles.xml',
+      '<styleSheet><numFmts count="1"><numFmt numFmtId="164" formatCode="yyyy-mm-dd"/></numFmts><cellXfs count="2"><xf numFmtId="0"/><xf numFmtId="164"/></cellXfs></styleSheet>',
+    );
+    zip.file(
       'xl/sharedStrings.xml',
       '<sst><si><t>Amount</t></si><si><t>Total</t></si></sst>',
     );
@@ -29,7 +33,7 @@ describe('spreadsheet document preview', () => {
       'xl/worksheets/sheet1.xml',
       '<worksheet><sheetData>' +
         '<row r="1"><c r="A1" t="s"><v>0</v></c><c r="B1" t="s"><v>1</v></c></row>' +
-        '<row r="2"><c r="A2"><v>12</v></c><c r="B2"><f>SUM(A2:A2)</f><v>12</v></c><c r="C2" t="e"><v>#REF!</v></c><c r="D2"/></row>' +
+        '<row r="2"><c r="A2"><v>12</v></c><c r="B2"><f>SUM(A2:A2)</f><v>12</v></c><c r="C2" t="e"><v>#REF!</v></c><c r="D2"/><c r="E2" s="1"><v>45292</v></c></row>' +
         '</sheetData></worksheet>',
     );
 
@@ -42,5 +46,6 @@ describe('spreadsheet document preview', () => {
     expect(lines).toContain('B2 formula=SUM(A2:A2) cached=12');
     expect(lines).toContain('C2 error=#REF!');
     expect(lines).toContain('D2=(blank)');
+    expect(lines).toContain('E2=45292 format="yyyy-mm-dd"');
   });
 });
