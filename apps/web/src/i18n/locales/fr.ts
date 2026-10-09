@@ -1015,6 +1015,7 @@ export const fr: Dict = {
   'homeHero.chip.audio': 'Audio',
   'homeHero.chip.createBrandKit': 'Créer un kit de marque',
   'homeHero.chip.createPlugin': 'Créer un plugin',
+  'homeHero.chip.spreadsheetProblem': 'Résoudre les problèmes de tableur',
   'homeHero.chip.figma': 'Depuis Figma',
   'homeHero.chip.folder': 'Depuis un dossier',
   'homeHero.chip.template': 'Depuis un modèle',

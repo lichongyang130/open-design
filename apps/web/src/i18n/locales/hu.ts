@@ -1015,6 +1015,7 @@ export const hu: Dict = {
   'homeHero.chip.audio': 'Hang',
   'homeHero.chip.createBrandKit': 'Márkacsomag létrehozása',
   'homeHero.chip.createPlugin': 'Plugin létrehozása',
+  'homeHero.chip.spreadsheetProblem': 'Táblázatproblémák',
   'homeHero.chip.figma': 'Figmából',
   'homeHero.chip.folder': 'Mappából',
   'homeHero.chip.template': 'Sablonból',

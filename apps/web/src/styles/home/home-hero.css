@@ -4059,6 +4059,46 @@
      line of equal-height controls. */
   height: 36px;
 }
+
+/* One-click office workflow entry. Keep it at the same height as the adjacent
+   type picker, but let the label contract on narrow composer widths. */
+.home-hero__spreadsheet-shortcut {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 1 auto;
+  gap: 6px;
+  min-width: 0;
+  max-width: 190px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--bg-panel);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: var(--shadow-xs);
+  white-space: nowrap;
+}
+.home-hero__spreadsheet-shortcut:hover:not(:disabled) {
+  background: var(--bg-panel);
+  color: var(--text-muted);
+}
+.home-hero__spreadsheet-shortcut:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.home-hero__spreadsheet-shortcut:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.home-hero__spreadsheet-shortcut-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .home-hero__template-trigger {
   flex: 1 1 auto;
   max-width: 188px;

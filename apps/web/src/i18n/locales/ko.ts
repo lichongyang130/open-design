@@ -1015,6 +1015,7 @@ export const ko: Dict = {
   'homeHero.chip.audio': '오디오',
   'homeHero.chip.createBrandKit': '브랜드 키트 만들기',
   'homeHero.chip.createPlugin': '플러그인 만들기',
+  'homeHero.chip.spreadsheetProblem': '스프레드시트 문제 해결',
   'homeHero.chip.figma': 'Figma에서 가져오기',
   'homeHero.chip.folder': '폴더에서 가져오기',
   'homeHero.chip.template': '템플릿에서 가져오기',

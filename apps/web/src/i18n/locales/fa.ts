@@ -1015,6 +1015,7 @@ export const fa: Dict = {
   'homeHero.chip.audio': 'صدا',
   'homeHero.chip.createBrandKit': 'ساخت کیت برند',
   'homeHero.chip.createPlugin': 'ساخت افزونه',
+  'homeHero.chip.spreadsheetProblem': 'رفع مشکلات صفحه‌گسترده',
   'homeHero.chip.figma': 'از Figma',
   'homeHero.chip.folder': 'از پوشه',
   'homeHero.chip.template': 'از قالب',

@@ -2637,6 +2637,19 @@ export function HomeView({
         }
         return;
       }
+      case 'use-skill': {
+        const skill = selectableSkills.find((candidate) => candidate.id === chip.action.skillId);
+        if (!skill) {
+          setError(t('homeHero.noResults', { query: chip.action.skillId }));
+          return;
+        }
+        // This is a task shortcut, not a modifier for the currently selected
+        // output type. Clear a stale deck/prototype route before activating the
+        // office skill, while leaving staged files and other context untouched.
+        clearActiveChipSelection();
+        useSkill(skill, null);
+        return;
+      }
       case 'create-plugin': {
         queuePluginAuthoring(chip.id);
         return;

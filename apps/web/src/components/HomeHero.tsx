@@ -51,6 +51,7 @@ import {
 } from '../analytics/events';
 import {
   chipsForGroup,
+  findChip,
   HOME_APPLY_TEMPLATE_EVENT,
   orderedCreateChips,
   type ChipGroup,
@@ -2356,6 +2357,23 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
               activeChipId={activeChipId}
               labelFor={(id) => homeHeroChipLabel(id, t)}
             />
+            <button
+              type="button"
+              className="home-hero__spreadsheet-shortcut"
+              data-testid="home-hero-spreadsheet-problem"
+              aria-label={homeHeroChipLabel('spreadsheet-problem', t)}
+              title={homeHeroChipTitle(findChip('spreadsheet-problem')!, t)}
+              disabled={pluginsLoading || skillsLoading || typeSelectionPending || pendingChipId !== null || pendingPluginId !== null}
+              onClick={() => {
+                const chip = findChip('spreadsheet-problem');
+                if (chip) onPickChip(chip);
+              }}
+            >
+              <Icon name="file-text" size={15} />
+              <span className="home-hero__spreadsheet-shortcut-label">
+                {homeHeroChipLabel('spreadsheet-problem', t)}
+              </span>
+            </button>
             {libraryPickerOpen ? (
               <LibraryPicker
                 onClose={() => setLibraryPickerOpen(false)}

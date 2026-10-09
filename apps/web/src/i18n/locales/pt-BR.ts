@@ -1015,6 +1015,7 @@ export const ptBR: Dict = {
   'homeHero.chip.audio': 'Áudio',
   'homeHero.chip.createBrandKit': 'Criar kit de marca',
   'homeHero.chip.createPlugin': 'Criar plugin',
+  'homeHero.chip.spreadsheetProblem': 'Problemas com planilhas',
   'homeHero.chip.figma': 'Do Figma',
   'homeHero.chip.folder': 'De uma pasta',
   'homeHero.chip.template': 'De um modelo',

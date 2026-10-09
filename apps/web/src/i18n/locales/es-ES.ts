@@ -1015,6 +1015,7 @@ export const esES: Dict = {
   'homeHero.chip.audio': 'Audio',
   'homeHero.chip.createBrandKit': 'Crear kit de marca',
   'homeHero.chip.createPlugin': 'Crear plugin',
+  'homeHero.chip.spreadsheetProblem': 'Problemas de hojas de cálculo',
   'homeHero.chip.figma': 'Desde Figma',
   'homeHero.chip.folder': 'Desde carpeta',
   'homeHero.chip.template': 'Desde plantilla',

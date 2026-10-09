@@ -1378,6 +1378,7 @@ export interface Dict {
   'homeHero.chip.audio': string;
   'homeHero.chip.createBrandKit': string;
   'homeHero.chip.createPlugin': string;
+  'homeHero.chip.spreadsheetProblem': string;
   'homeHero.chip.figma': string;
   'homeHero.chip.folder': string;
   'homeHero.chip.template': string;
