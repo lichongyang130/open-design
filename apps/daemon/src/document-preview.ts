@@ -156,8 +156,8 @@ async function readCellDateFormats(zip: JSZip): Promise<Map<number, string>> {
     const attrs = parseAttrs(match[1] ?? '');
     const id = Number(attrs.numFmtId);
     const code = attrs.formatCode ?? '';
-    const normalized = code.replace(/"[^"]*"/g, '').replace(/\\./g, '');
-    if (Number.isInteger(id) && /[ydhs]/i.test(normalized)) customFormats.set(id, code);
+    const normalized = code.replace(/"[^"]*"/g, '').replace(/\\./g, '').replace(/\[[^\]]*\]/g, '');
+    const isDateTime = /[yd]/i.test(normalized) || /m{3,4}/i.test(normalized) || /h{1,2}\\s*:/i.test(normalized) || /:\\s*s{1,2}/i.test(normalized) || /\\[(?:h+|m+|s+)\\]/i.test(code);
   }
   const builtInDateFormats = new Set([14, 15, 16, 17, 18, 19, 20, 21, 22, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 45, 46, 47, 50, 51, 52, 53, 54, 55, 56, 57, 58]);
   const xfs = extractFirst(xml, /<cellXfs\b[^>]*>([\s\S]*?)<\/cellXfs>/);
