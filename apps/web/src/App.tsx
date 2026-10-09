@@ -343,20 +343,18 @@ const AGENT_FOCUS_REFRESH_THROTTLE_MS = 10_000;
 /**
  * Whether this launch should hand the user to the first-run onboarding flow.
  *
- * Two conditions, both about the *user*, neither about where they happen to be
- * in the app: they have never completed onboarding (on either the local or the
- * daemon copy — `mergeDaemonConfig` ratchets the two before this runs), and
- * they did not arrive through an explicit deep link that onboarding must not
- * hijack (the collab demo and the community gallery are shareable URLs).
- *
- * Deliberately a pure predicate over a resolved config: the redirect belongs to
- * the one-shot boot pass, and expressing it as a function of "who the user is"
- * rather than "what just happened" keeps it from being re-decided mid-session.
+ * The root route is the public auth landing entry, regardless of whether
+ * first-run setup was completed. Explicit setup and project/share deep links
+ * remain navigable; other first-run paths are routed to /onboarding until setup
+ * has been completed. The redirect belongs to the one-shot boot pass, so it is
+ * decided only after local + daemon config have been reconciled.
  */
 export function shouldRouteToFirstRunOnboarding(
   config: AppConfig,
   pathname: string,
 ): boolean {
+  if (pathname === '/') return true;
+  if (pathname === '/setup') return false;
   if (config.onboardingCompleted === true) return false;
   if (
     pathname.startsWith('/projects/')
@@ -2059,7 +2057,7 @@ function AppInner() {
         )
       );
     if (!cloudIdentityRejected) return;
-    if (route.kind === 'home' && route.view === 'onboarding') return;
+    if (route.kind === 'home' && (route.view === 'onboarding' || route.view === 'setup')) return;
     navigate({ kind: 'home', view: 'onboarding' }, { replace: true });
   }, [
     amrLoginStatus,
