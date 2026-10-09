@@ -280,7 +280,7 @@ describe('historyWithApiAttachmentContext', () => {
     expect(content).not.toContain('Use only the metadata above');
   });
 
-  it('keeps the user request alive when spreadsheet preview extraction throws', async () => {
+  it('marks a clipped workbook preview as partial rather than a complete audit', async () => {\n    mockedFetchProjectFilePreview.mockResolvedValue({\n      kind: 'spreadsheet',\n      title: 'large.xlsx',\n      sections: [{ title: 'Data', lines: ['x'.repeat(25_000)] }],\n    });\n\n    const history = await historyWithApiAttachmentContext(\n      [userMessage('msg-large', 'Audit every row', [{ path: 'large.xlsx', name: 'large.xlsx', kind: 'file' }])],\n      'msg-large',\n      'project-1',\n      [projectFile('large.xlsx', 'spreadsheet')],\n    );\n\n    expect(history[0]?.content).toContain('partial preview, not a complete file audit');\n  });\n\n  it('keeps the user request alive when spreadsheet preview extraction throws', async () => {
     mockedFetchProjectFilePreview.mockRejectedValueOnce(new Error('preview parser failed'));
 
     const history = await historyWithApiAttachmentContext(
