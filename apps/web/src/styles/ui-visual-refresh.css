@@ -1,0 +1,345 @@
+/* ============================================================
+   OpenDesign UI refresh — shared app surfaces
+   Extends the home-page rhythm to catalog, plugin management and
+   workspace chrome. Intentionally CSS-only; no interaction changes.
+   ============================================================ */
+
+/* Shared typography and focus treatment */
+.marketplace-view,
+.plugins-view {
+  color: var(--text);
+  font-family: var(--sans, Inter, ui-sans-serif, system-ui, sans-serif);
+}
+
+.marketplace-view__header h1,
+.plugins-view__section-head h2,
+.plugins-view__team h2,
+.plugins-view__marketplace h3,
+.plugins-view__future-card h3 {
+  font-family: var(--sans, Inter, ui-sans-serif, system-ui, sans-serif);
+  font-weight: 650;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+
+.marketplace-view__header h1 {
+  font-size: clamp(22px, 2.4vw, 28px);
+}
+
+.marketplace-view__filters {
+  gap: 3px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--bg-subtle);
+  border-color: var(--border-soft);
+}
+
+.marketplace-view__filters button {
+  min-height: 30px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.marketplace-view__filters button[data-active='true'] {
+  background: var(--bg-panel);
+  box-shadow: var(--shadow-sm);
+}
+
+.marketplace-view__grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 252px), 1fr));
+  gap: 12px;
+}
+
+.marketplace-view__card {
+  position: relative;
+  min-height: 142px;
+  gap: 10px;
+  padding: 17px;
+  border-color: var(--border-soft);
+  border-radius: 14px;
+  background: var(--bg-panel);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--text) 3%, transparent);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.marketplace-view__card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+  background: var(--bg);
+  box-shadow: var(--shadow-md);
+}
+
+.marketplace-view__card:focus-visible,
+.marketplace-view__filters button:focus-visible,
+.marketplace-view__catalogs a:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 62%, transparent);
+  outline-offset: 3px;
+}
+
+.marketplace-view__card-title {
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.marketplace-view__card-desc {
+  line-height: 1.6;
+}
+
+.marketplace-view__card-meta {
+  gap: 0;
+  padding-top: 7px;
+  border-top: 1px solid var(--border-soft);
+  font-size: 11px;
+}
+
+.marketplace-view__catalogs {
+  margin-top: 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.marketplace-view__catalogs h2 {
+  margin: 0 0 10px;
+  font-family: var(--sans, Inter, ui-sans-serif, system-ui, sans-serif);
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+
+.marketplace-view__catalogs ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.marketplace-view__catalogs li {
+  min-width: 0;
+  padding: 12px 14px;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: var(--bg-panel);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.marketplace-view__catalogs li a {
+  color: var(--text-muted);
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 3px;
+}
+
+.marketplace-view__catalogs li a:hover {
+  color: var(--text-strong);
+}
+
+/* Plugin management: soften the admin feel and clarify active controls */
+.plugins-view {
+  gap: 22px;
+}
+
+.plugins-view__hero {
+  align-items: center;
+  gap: 20px;
+}
+
+.plugins-view__kicker {
+  letter-spacing: 0.09em;
+}
+
+.plugins-view__lede {
+  line-height: 1.65;
+}
+
+.plugins-view__stat {
+  padding: 16px;
+  border-color: var(--border-soft);
+  border-radius: 14px;
+  background: var(--bg-panel);
+  transition: border-color 140ms ease, background-color 140ms ease;
+}
+
+.plugins-view__stat-value {
+  font-family: var(--sans, Inter, ui-sans-serif, system-ui, sans-serif);
+  font-size: 25px;
+  letter-spacing: -0.045em;
+}
+
+.plugins-view__tabs {
+  gap: 6px;
+  padding: 4px;
+  border-color: var(--border-soft);
+  border-radius: 14px;
+  background: var(--bg-subtle);
+}
+
+.plugins-view__tab {
+  padding: 11px 12px;
+  border-radius: 10px;
+}
+
+.plugins-view__tab.is-active {
+  border-color: var(--border-soft);
+  box-shadow: var(--shadow-sm);
+}
+
+.plugins-view__tab-label {
+  letter-spacing: -0.015em;
+}
+
+.plugins-view__section-head h2 {
+  font-size: 17px;
+}
+
+.plugins-view__search {
+  border-color: var(--border-soft);
+  background: var(--bg-panel);
+  border-radius: 11px;
+}
+
+.plugins-view__search:focus-within {
+  border-color: var(--border-strong);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 7%, transparent);
+}
+
+/* Workspace chrome: quieter dividers and consistent rounded interaction */
+.workspace-tabs-chrome.app-chrome-header {
+  border-bottom: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--bg) 94%, transparent);
+}
+
+.workspace-tabs-new-btn,
+.workspace-tabs-chrome button {
+  transition:
+    background-color 130ms ease,
+    color 130ms ease,
+    border-color 130ms ease;
+}
+
+.viewer-toolbar {
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--bg-panel);
+}
+
+.viewer-toolbar .icon-only,
+.viewer-toolbar-actions .icon-only {
+  border-radius: 8px;
+  transition: background-color 130ms ease, color 130ms ease;
+}
+
+.viewer-toolbar .icon-only:focus-visible,
+.viewer-toolbar-actions .icon-only:focus-visible,
+.df-actions button:focus-visible,
+.df-breadcrumb-btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 58%, transparent);
+  outline-offset: 2px;
+}
+
+.df-topbar {
+  padding-block: 6px;
+}
+
+.df-breadcrumb-current {
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+
+/* Small screens: keep headers and catalog controls from feeling cramped */
+@media (max-width: 720px) {
+  .marketplace-view {
+    gap: 18px;
+    padding: 12px 0 64px;
+  }
+
+  .marketplace-view__header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .marketplace-view__filters {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .marketplace-view__filters button {
+    padding-inline: 11px;
+    white-space: nowrap;
+  }
+
+  .marketplace-view__grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+    gap: 10px;
+  }
+
+  .marketplace-view__card {
+    min-height: 126px;
+    padding: 14px;
+  }
+
+  .plugins-view__hero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .plugins-view__hero-actions {
+    flex-wrap: wrap;
+  }
+
+  .plugins-view__tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .plugins-view__stats {
+    gap: 8px;
+  }
+
+  .plugins-view__stat {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 420px) {
+  .marketplace-view__grid,
+  .plugins-view__stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .plugins-view__tabs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .plugins-view__tab {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marketplace-view__card,
+  .plugins-view__stat,
+  .plugins-view__search,
+  .workspace-tabs-new-btn,
+  .workspace-tabs-chrome button,
+  .viewer-toolbar .icon-only,
+  .viewer-toolbar-actions .icon-only {
+    transition: none;
+  }
+
+  .marketplace-view__card:hover {
+    transform: none;
+  }
+}
+
+[data-theme='dark'] .workspace-tabs-chrome.app-chrome-header {
+  background: color-mix(in srgb, var(--bg-panel) 94%, transparent);
+}

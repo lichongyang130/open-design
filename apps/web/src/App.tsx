@@ -38,6 +38,7 @@ import type {
 } from '@open-design/contracts';
 import { DEFAULT_UNSELECTED_SCENARIO_PLUGIN_ID } from '@open-design/contracts';
 import { EntryView } from './components/EntryView';
+import { DesignBudyyAuthView } from './components/DesignBudyyAuthView';
 import type {
   OptimisticProjectCreationHandoff,
   ProjectTitleHint,
@@ -5605,6 +5606,8 @@ function AppInner() {
         </div>
       );
     }
+  } else if (route.kind === 'home' && route.view === 'onboarding') {
+    appMain = <DesignBudyyAuthView />;
   } else {
     appMain = (
       <EntryView
