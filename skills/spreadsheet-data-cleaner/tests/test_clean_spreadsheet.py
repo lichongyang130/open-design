@@ -85,6 +85,46 @@ class CsvCleaningTests(unittest.TestCase):
         self.assertEqual(report["summary"]["text_cells_trimmed"], 0)
         self.assertTrue(self.input_path.exists())
 
+    def test_dry_run_reports_planned_deletions_without_claiming_applied_changes(self) -> None:
+        self.input_path.write_text("Name,Amount\nAlice,100\n\nAlice,100\n", encoding="utf-8")
+        report = cleaner._build_report(self.input_path, self.output_path, "csv", True)
+
+        cleaner.clean_csv(
+            self.input_path,
+            self.output_path,
+            report=report,
+            drop_empty_rows=True,
+            dedupe=True,
+            dry_run=True,
+        )
+
+        self.assertFalse(self.output_path.exists())
+        self.assertEqual(report["summary"]["blank_rows_removed"], 0)
+        self.assertEqual(report["summary"]["blank_rows_planned_for_removal"], 1)
+        self.assertEqual(report["summary"]["duplicate_rows_removed"], 0)
+        self.assertEqual(report["summary"]["duplicate_rows_planned_for_removal"], 1)
+        self.assertEqual(report["summary"]["rows_after_planned_changes"], 2)
+        self.assertNotIn("rows_written", report["summary"])
+        self.assertTrue(self.input_path.exists())
+
+    def test_multiline_csv_fields_survive_round_trip(self) -> None:
+        self.input_path.write_text('Name,Notes\\nAlice,"first line\\nsecond line"\\n', encoding="utf-8")
+        report = cleaner._build_report(self.input_path, self.output_path, "csv", False)
+
+        cleaner.clean_csv(self.input_path, self.output_path, report=report)
+
+        self.assertEqual(self.read_output(), [["Name", "Notes"], ["Alice", "first line\\nsecond line"]])
+
+    def test_source_file_cannot_be_selected_as_output(self) -> None:
+        self.input_path.write_text("Name\\nAlice\\n", encoding="utf-8")
+        report_path = self.root / "report.json"
+
+        with self.assertRaises(cleaner.CleanerError):
+            cleaner.run([str(self.input_path), "--output", str(self.input_path), "--report", str(report_path)])
+
+        self.assertTrue(self.input_path.exists())
+        self.assertFalse(report_path.exists())
+
 
 try:
     import openpyxl  # noqa: F401
