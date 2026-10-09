@@ -3655,7 +3655,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
   // Artifact quality feedback: lint a generated HTML snapshot and feed
   // actionable findings into the same live run, when that runtime accepts
   // mid-turn messages. The caller must provide the current run id explicitly.
-  const artifactLintSteeringAttempts = new Map<string, number>();
+  const artifactLintSteeringAttempts = new WeakMap<ChatRun, number>();
   const MAX_ARTIFACT_LINT_STEERING_ATTEMPTS = 2;
   app.post('/api/runs/:id/artifact-lint-feedback', async (req: ApiRequest, res: ApiResponse) => {
     const runId = routeParamId(req);
@@ -3670,11 +3670,11 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
     const findings = lintArtifact(html);
     const agentMessage = renderFindingsForAgent(findings);
     if (findings.length === 0 || !agentMessage) {
-      artifactLintSteeringAttempts.delete(runId);
+      artifactLintSteeringAttempts.delete(run);
       return res.json({ ok: true, repaired: true, findings, attempts: 0 });
     }
 
-    const attempts = artifactLintSteeringAttempts.get(runId) ?? 0;
+    const attempts = artifactLintSteeringAttempts.get(run) ?? 0;
     if (attempts >= MAX_ARTIFACT_LINT_STEERING_ATTEMPTS) {
       return res.json({
         ok: false,
@@ -3708,7 +3708,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
     }
 
     const nextAttempts = attempts + 1;
-    artifactLintSteeringAttempts.set(runId, nextAttempts);
+    artifactLintSteeringAttempts.set(run, nextAttempts);
     const messageId = randomUUID();
     if (run.conversationId) {
       const now = Date.now();
