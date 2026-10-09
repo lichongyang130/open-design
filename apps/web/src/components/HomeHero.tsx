@@ -140,6 +140,8 @@ interface Props {
   // existing user, undefined = projects still loading — the guide neither
   // arms nor completes until the answer is known.
   firstRunGuide?: boolean;
+  /** Office-first entry layout; keeps the shared composer but replaces design-oriented copy. */
+  officeWorkbench?: boolean;
   prompt: string;
   onPromptChange: (value: string) => void;
   onSubmit: HomeHeroSubmitHandler;
@@ -426,6 +428,7 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
     recommendationSlot,
     variant = 'page',
     collapseSignal,
+    officeWorkbench = false,
   },
   ref,
 ) {
@@ -522,9 +525,16 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
     return stagedFiles.find((file, index) => homeFileKey(file, index) === previewHomeFileKey) ?? null;
   }, [previewHomeFileKey, stagedFiles]);
   const previewHomeFileUrl = previewHomeFileKey ? stagedFilePreviewUrls.get(previewHomeFileKey) ?? null : null;
+  const officeTitle = locale.startsWith('zh') ? '今天要处理什么工作？' : 'What work can I help with today?';
+  const officeSubtitle = locale.startsWith('zh')
+    ? '上传文件或描述问题，先检查，再处理，并保留原始文件。'
+    : 'Upload a file or describe the issue. Inspect first, then fix it while preserving the original.';
+  const officePlaceholder = locale.startsWith('zh')
+    ? '例如：检查这份 Excel 的公式错误和重复数据，并保留原始格式…'
+    : 'For example: check this spreadsheet for formula errors and duplicates while preserving its formatting…';
   const placeholder = activePluginTitle || activeSkillTitle
     ? t('homeHero.placeholderActive')
-    : t('homeHero.placeholder');
+    : officeWorkbench ? officePlaceholder : t('homeHero.placeholder');
   const mentionActive = Boolean(mentionTrigger);
   const mentionQuery = mentionTrigger?.query ?? '';
   // Scenarios the carousel cycles, with copy resolved through `t()` so the
@@ -1511,7 +1521,7 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
   const titleTemplate = t('homeHero.title');
   const titleSlotIndex = titleTemplate.indexOf(TITLE_WORD_SLOT);
   const titleParts =
-    titleSlotIndex === -1
+    officeWorkbench || titleSlotIndex === -1
       ? null
       : {
           lead: titleTemplate.slice(0, titleSlotIndex),
@@ -1535,7 +1545,7 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
   return (
     <section
       ref={homeHeroRef}
-      className={`home-hero${isDock ? ' home-hero--dock' : ''}`}
+      className={`home-hero${isDock ? ' home-hero--dock' : ''}${officeWorkbench ? ' home-hero--office-workbench' : ''}`}
       data-testid="home-hero"
       data-variant={variant}
       /* Docked only: an untouched, unfocused composer shows its input line and
@@ -1576,7 +1586,7 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
                 ? ' home-hero__title--optical-trim'
                 : '')
             }
-            aria-label={titleAriaLabel}
+            aria-label={titleAriaLabel ?? (officeWorkbench ? officeTitle : undefined)}
           >
             {/* A locale opts into the rotating noun by putting `{word}` in its
                 own headline string — en / zh-CN / zh-TW do; the other 16 keep a
@@ -1590,11 +1600,11 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
                 {titleParts.tail}
               </>
             ) : (
-              t('homeHero.title')
+              officeWorkbench ? officeTitle : t('homeHero.title')
             )}
           </h1>
           {/* One quiet line under the headline (per product). */}
-          <p className="home-hero__subtitle">{t('homeHero.subtitle')}</p>
+          <p className="home-hero__subtitle">{officeWorkbench ? officeSubtitle : t('homeHero.subtitle')}</p>
         </>
       )}
 
