@@ -95,6 +95,10 @@ describe('the built-in spreadsheet repair workflow reaches the frozen AI context
     expect(bodies?.body).toContain('修复后重新打开并验证');
     expect(bodies?.body).toContain('异常和失败处理');
     expect(bodies?.body).toContain('永远区分“检查发现”“建议修复”“实际已修改”“复检已通过”四种状态');
+    expect(bodies?.body).toContain('若用户要求检查上传文件但当前没有附件，先明确请用户上传');
+    expect(bodies?.body).toContain('.xls、.xlsb、加密文件、受保护工作表');
+    expect(bodies?.body).toContain('没有可靠的公式计算引擎');
+    expect(bodies?.body).toContain('验证未通过，需要人工复核');
   });
 });
 
