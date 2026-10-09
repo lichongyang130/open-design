@@ -48,6 +48,13 @@ class SalesOfficeFileAcceptanceTests(unittest.TestCase):
             "A-004,Delta Co,9999,review,19998\n"
             "A-004,Delta Co,9999,review,19998\n"
             "A-006,,12,review,24\n"
+            "A-007,North Shop,10,paid,20\n"
+            "A-008,Ocean Shop,11,paid,22\n"
+            "A-009,Maple Shop,12,paid,24\n"
+            "A-010,City Shop,13,paid,26\n"
+            "A-011,Valley Shop,14,paid,28\n"
+            "A-012,Forest Shop,15,paid,30\n"
+            "A-013,River Shop,16,paid,32\n"
             "\n",
             encoding="utf-8",
         )
@@ -57,7 +64,14 @@ class SalesOfficeFileAcceptanceTests(unittest.TestCase):
             "A-002,275,pending\n"
             "A-003,50,paid\n"
             "A-004,9999,review\n"
-            "A-005,49,new\n",
+            "A-005,49,new\n"
+            "A-007,10,paid\n"
+            "A-008,11,paid\n"
+            "A-009,12,paid\n"
+            "A-010,13,paid\n"
+            "A-011,14,paid\n"
+            "A-012,15,paid\n"
+            "A-013,16,paid\n",
             encoding="utf-8",
         )
 
@@ -97,7 +111,7 @@ class SalesOfficeFileAcceptanceTests(unittest.TestCase):
         self.assertEqual(clean_report["summary"]["duplicate_rows_removed"], 1)
         with self.cleaned.open("r", encoding="utf-8", newline="") as handle:
             cleaned_rows = list(csv.DictReader(handle))
-        self.assertEqual(len(cleaned_rows), 5)
+        self.assertEqual(len(cleaned_rows), 12)
         self.assertEqual(cleaned_rows[1]["Customer"], "Beta LLC")
 
         # 2. Run the read-only anomaly audit on the original source and ensure
