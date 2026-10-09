@@ -2637,6 +2637,15 @@ export function HomeView({
         }
         return;
       }
+      case 'use-skill': {
+        const skill = selectableSkills.find((candidate) => candidate.id === chip.action.skillId);
+        if (!skill) {
+          setError(t('homeHero.noResults', { query: chip.action.skillId }));
+          return;
+        }
+        useSkill(skill, null);
+        return;
+      }
       case 'create-plugin': {
         queuePluginAuthoring(chip.id);
         return;
