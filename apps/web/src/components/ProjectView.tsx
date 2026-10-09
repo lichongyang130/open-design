@@ -4541,24 +4541,22 @@ export function ProjectView({
 
   const artifactLintFileSnapshotRef = useRef<Map<string, string> | null>(null);
   const artifactLintSubmittedRef = useRef<Map<string, string>>(new Map());
-  const artifactLintTimersRef = useRef(new Map<string, {
-    timer: number;
-    artifactPath: string;
-    fingerprint: string;
-  }>());
+  const artifactLintTimersRef = useRef<Map<string, number>>(new Map());
+  const artifactLintStoppedRunsRef = useRef<Set<string>>(new Set());
 
   // Clear timers and file witnesses when this view changes project/workspace,
   // and on unmount so a delayed audit cannot steer a run from a closed view.
   useEffect(() => {
     const clearPendingAudits = () => {
-      for (const pending of artifactLintTimersRef.current.values()) {
-        window.clearTimeout(pending.timer);
+      for (const timer of artifactLintTimersRef.current.values()) {
+        window.clearTimeout(timer);
       }
       artifactLintTimersRef.current.clear();
     };
     clearPendingAudits();
     artifactLintFileSnapshotRef.current = null;
     artifactLintSubmittedRef.current.clear();
+    artifactLintStoppedRunsRef.current.clear();
     htmlContentCacheRef.current.clear();
     return clearPendingAudits;
   }, [project.id, projectRunAuthorityKey]);
@@ -4578,7 +4576,11 @@ export function ProjectView({
       .filter((file) => previousSnapshot.get(file.name) !== nextSnapshot.get(file.name))
       .sort((a, b) => b.mtime - a.mtime);
     const runId = activeArtifactLintRunRef.current;
-    if (!runId || changedFiles.length === 0) return;
+    if (
+      !runId
+      || changedFiles.length === 0
+      || artifactLintStoppedRunsRef.current.has(runId)
+    ) return;
 
     // Several HTML files can be written during one generation. Debounce at
     // run scope and lint the most recently changed file, avoiding a burst of
@@ -4589,7 +4591,7 @@ export function ProjectView({
     if (artifactLintSubmittedRef.current.get(submittedKey) === fingerprint) return;
 
     const pending = artifactLintTimersRef.current.get(runId);
-    if (pending) window.clearTimeout(pending.timer);
+    if (pending) window.clearTimeout(pending);
     const timer = window.setTimeout(() => {
       artifactLintTimersRef.current.delete(runId);
       void (async () => {
@@ -4610,7 +4612,20 @@ export function ProjectView({
           artifactPath: candidate.name,
           html,
         }, projectRunWorkspaceContext);
-        if (!result.ok && result.error !== 'RUN_STEERING_CLOSED' && !result.capped) {
+        if (
+          result.capped
+          || result.error === 'RUN_STEERING_UNSUPPORTED'
+          || result.error === 'RUN_STEERING_CLOSED'
+        ) {
+          artifactLintStoppedRunsRef.current.add(runId);
+        }
+        if (result.capped) {
+          console.warn('[artifact-lint] automatic repair limit reached', {
+            runId,
+            artifactPath: candidate.name,
+            attempts: result.attempts,
+          });
+        } else if (!result.ok && result.error !== 'RUN_STEERING_CLOSED') {
           console.warn('[artifact-lint] automatic feedback was not accepted', {
             runId,
             artifactPath: candidate.name,
@@ -4621,11 +4636,7 @@ export function ProjectView({
         console.warn('[artifact-lint] automatic feedback failed', err);
       });
     }, 500);
-    artifactLintTimersRef.current.set(runId, {
-      timer,
-      artifactPath: candidate.name,
-      fingerprint,
-    });
+    artifactLintTimersRef.current.set(runId, timer);
   }, [projectFiles, projectRunWorkspaceContext, readProjectHtml]);
 
   const refreshLiveArtifacts = useCallback(async (): Promise<LiveArtifactSummary[]> => {
