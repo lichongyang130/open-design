@@ -275,6 +275,11 @@ async function writeSteerableClaude(
   name: string,
   readyPath: string,
   sinkPath: string,
+  options?: {
+    artifactPath?: string;
+    initialHtml?: string;
+    repairedHtml?: string;
+  },
 ): Promise<string> {
   const bin = path.join(dir, name);
   await writeFile(bin, `#!/usr/bin/env node
@@ -313,12 +318,18 @@ process.stdin.on('data', (chunk) => {
       : undefined;
     framesSeen += 1;
     if (framesSeen === 1) {
-      // The opening prompt. Announce readiness and keep waiting.
-      fs.writeFileSync(${JSON.stringify(readyPath)}, 'ready');
+      // The opening prompt. Optionally materialize a generated artifact before
+      // announcing readiness, so the test can exercise generation -> repair.
+      ${options?.artifactPath && options.initialHtml
+        ? `fs.mkdirSync(${JSON.stringify(path.dirname(options.artifactPath))}, { recursive: true });
+      fs.writeFileSync(${JSON.stringify(options.artifactPath)}, ${JSON.stringify(options.initialHtml)});\n      `
+        : ''}fs.writeFileSync(${JSON.stringify(readyPath)}, 'ready');
       continue;
     }
     // A steering frame arrived mid-turn.
-    fs.writeFileSync(${JSON.stringify(sinkPath)}, String(text == null ? '' : text) + '\\n');
+    ${options?.artifactPath && options.repairedHtml
+      ? `fs.writeFileSync(${JSON.stringify(options.artifactPath)}, ${JSON.stringify(options.repairedHtml)});\n    `
+      : ''}fs.writeFileSync(${JSON.stringify(sinkPath)}, String(text == null ? '' : text) + '\\n');
     w(JSON.stringify({
       type: 'assistant',
       parent_tool_use_id: null,
