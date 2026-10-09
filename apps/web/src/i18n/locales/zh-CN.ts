@@ -1020,6 +1020,7 @@ export const zhCN: Dict = {
   "homeHero.chip.audio": "音频",
   "homeHero.chip.createBrandKit": "创建设计系统",
   "homeHero.chip.createPlugin": "创建插件",
+  "homeHero.chip.spreadsheetProblem": "表格问题处理",
   "homeHero.chip.figma": "来自 Figma",
   "homeHero.chip.folder": "来自文件夹",
   "homeHero.chip.template": "来自模板",
