@@ -297,7 +297,7 @@ def detect(
                 })
         for column in headers:
             value = values.get(column)
-            formula_value = formula_values.get(column)
+            formula_value = formula_values.get(column, value)
             if error_text(value) or (isinstance(value, str) and value.strip().upper() in ERROR_VALUES):
                 report["summary"]["error_values"] += 1
                 add_detail(report, "error_values", {
