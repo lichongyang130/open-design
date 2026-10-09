@@ -1,0 +1,61 @@
+name: Office workbench validation
+
+on:
+  push:
+    branches:
+      - arena/2ae67daa-open-design
+    paths:
+      - "apps/web/src/components/HomeView.tsx"
+      - "apps/web/src/components/HomeHero.tsx"
+      - "apps/web/src/styles/home/home-hero.css"
+      - "apps/web/public/studio.html"
+      - "apps/web/public/studio-skills.css"
+      - "apps/web/public/studio-skills.js"
+      - "apps/web/tests/components/HomeView.local-no-grid.test.tsx"
+      - "apps/web/tests/designbuddy-skills-marketplace.test.ts"
+      - ".github/workflows/office-workbench-validation.yml"
+      - "pnpm-lock.yaml"
+      - "package.json"
+      - "apps/web/package.json"
+  pull_request:
+    paths:
+      - "apps/web/src/components/HomeView.tsx"
+      - "apps/web/src/components/HomeHero.tsx"
+      - "apps/web/src/styles/home/home-hero.css"
+      - "apps/web/public/studio.html"
+      - "apps/web/public/studio-skills.css"
+      - "apps/web/public/studio-skills.js"
+      - "apps/web/tests/components/HomeView.local-no-grid.test.tsx"
+      - "apps/web/tests/designbuddy-skills-marketplace.test.ts"
+      - ".github/workflows/office-workbench-validation.yml"
+      - "pnpm-lock.yaml"
+      - "package.json"
+      - "apps/web/package.json"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: office-workbench-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  targeted-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Enable pnpm
+        run: corepack enable
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run office workbench regression tests
+        working-directory: apps/web
+        run: pnpm exec vitest run -c vitest.config.ts --maxWorkers=2 tests/components/HomeView.local-no-grid.test.tsx tests/designbuddy-skills-marketplace.test.ts
+      - name: Type-check web app
+        run: pnpm --filter @open-design/web typecheck
