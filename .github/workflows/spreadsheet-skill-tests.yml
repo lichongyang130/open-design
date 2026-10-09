@@ -3,12 +3,12 @@ name: spreadsheet-skill-tests
 on:
   pull_request:
     paths:
-      - "skills/spreadsheet-data-cleaner/**"
+      - "skills/spreadsheet-problem-solver/**"
       - "skills/spreadsheet-problem-solver/**"
       - ".github/workflows/spreadsheet-skill-tests.yml"
   push:
     paths:
-      - "skills/spreadsheet-data-cleaner/**"
+      - "skills/spreadsheet-problem-solver/**"
       - "skills/spreadsheet-problem-solver/**"
       - ".github/workflows/spreadsheet-skill-tests.yml"
   workflow_dispatch:
@@ -37,5 +37,4 @@ jobs:
 
       - name: Run spreadsheet cleaner tests
         run: |
-          .venv/bin/python -m unittest discover -s skills/spreadsheet-data-cleaner/tests -v
-          .venv/bin/python -m unittest discover -s skills/spreadsheet-formula-diagnostics/tests -v
+          .venv/bin/python -m unittest discover -s skills/spreadsheet-problem-solver/tests -v
