@@ -261,7 +261,7 @@ describe('listSkills', () => {
           '# Spreadsheet repair',
           'Inspect first, preserve the source, and verify every change.',
           '',
-        ].join('\\n'),
+        ].join('\n'),
       );
 
       const skills = await listSkills(root);
