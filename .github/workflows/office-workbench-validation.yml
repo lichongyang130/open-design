@@ -1,6 +1,7 @@
 name: Office workbench validation
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - arena/2ae67daa-open-design
