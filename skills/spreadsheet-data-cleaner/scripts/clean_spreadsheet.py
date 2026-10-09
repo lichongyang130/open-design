@@ -131,7 +131,7 @@ def _read_csv(input_path: Path) -> tuple[list[list[str]], str, str]:
     if decoded is None:
         raise CleanerError(
             "Could not decode this CSV as UTF-8, GB18030, or a common single-byte encoding. "
-            "Convert it to UTF-8 or specify an explicitly supported encoding."
+            "Convert it to UTF-8 or GB18030 and try again."
         )
     delimiter = _choose_delimiter(decoded)
     try:
@@ -281,9 +281,9 @@ def clean_csv(
     return report
 
 
-def _formula_count(workbook: Any) -> int:
+def _formula_count(workbook: Any, worksheets: Iterable[Any] | None = None) -> int:
     count = 0
-    for worksheet in workbook.worksheets:
+    for worksheet in worksheets if worksheets is not None else workbook.worksheets:
         for row in worksheet.iter_rows():
             for cell in row:
                 if isinstance(cell.value, str) and cell.value.startswith("="):
@@ -351,8 +351,6 @@ def clean_workbook(
         if sheet not in targets:
             report["warnings"].append(f"Skipped worksheet {sheet.title!r} (not selected or hidden).")
 
-    initial_formula_count = _formula_count(workbook)
-    summary = report["summary"]
     for worksheet in targets:
         cell_rectangle = worksheet.max_row * worksheet.max_column
         if cell_rectangle > MAX_CELLS_PER_SHEET:
@@ -361,6 +359,10 @@ def clean_workbook(
                 f"Worksheet {worksheet.title!r} spans {cell_rectangle:,} cells, above the safety limit "
                 f"of {MAX_CELLS_PER_SHEET:,}. Export only the relevant range to CSV or split the task."
             )
+    target_sheet_names = [worksheet.title for worksheet in targets]
+    initial_formula_count = _formula_count(workbook, targets)
+    summary = report["summary"]
+    for worksheet in targets:
         summary["sheets_processed"] += 1
         summary["rows_read"] += worksheet.max_row
         if worksheet.max_row == 0 or worksheet.max_column == 0:
@@ -495,7 +497,8 @@ def clean_workbook(
                 try:
                     if verification.sheetnames != workbook.sheetnames:
                         raise CleanerError("Workbook validation failed: worksheet names changed.")
-                    if _formula_count(verification) != initial_formula_count:
+                    verification_targets = [verification[name] for name in target_sheet_names]
+                    if _formula_count(verification, verification_targets) != initial_formula_count:
                         raise CleanerError("Workbook validation failed: formula count changed.")
                 finally:
                     verification.close()
