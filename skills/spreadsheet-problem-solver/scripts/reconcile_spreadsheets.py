@@ -217,8 +217,10 @@ def read_excel_table(path: Path, sheet_name: str | None) -> tuple[list[str], lis
         records: list[dict[str, Any]] = []
         formula_count = 0
         blank_formula_cache_count = 0
+        formula_rows = formula_sheet.iter_rows(values_only=False)
+        next(formula_rows, None)  # Skip the header row to align with cached value rows.
         for row_number, (raw_row, formula_row) in enumerate(
-            zip(raw_rows[1:], formula_sheet.iter_rows(values_only=False)[1:]),
+            zip(raw_rows[1:], formula_rows),
             start=2,
         ):
             if any(cell.data_type == "f" for cell in formula_row):
@@ -329,6 +331,12 @@ def reconcile(
             f"Key column mismatch. Missing from A: {missing_a or 'none'}; missing from B: {missing_b or 'none'}."
         )
     shared = [column for column in headers_a if column in headers_b]
+    only_headers_a = [column for column in headers_a if column not in headers_b]
+    only_headers_b = [column for column in headers_b if column not in headers_a]
+    if only_headers_a:
+        report["warnings"].append(f"Columns present only in A are not compared for matched keys: {only_headers_a}.")
+    if only_headers_b:
+        report["warnings"].append(f"Columns present only in B are not compared for matched keys: {only_headers_b}.")
     if compare_columns is None:
         columns = [column for column in shared if column not in key_columns]
     else:
@@ -343,6 +351,8 @@ def reconcile(
         columns = compare_columns
     report["summary"]["rows_in_a"] = len(records_a)
     report["summary"]["rows_in_b"] = len(records_b)
+    report["headers_a"] = headers_a
+    report["headers_b"] = headers_b
     report["summary"]["key_columns"] = key_columns
     report["summary"]["comparison_columns"] = columns
     if not columns:
@@ -449,7 +459,10 @@ def reconcile(
     report["summary"]["field_differences"] = field_diff_count
     report["summary"]["only_in_a"] = len(keys_a - keys_b)
     report["summary"]["only_in_b"] = len(keys_b - keys_a)
-    report["summary"]["details_truncated"] = report.get("details_truncated", False)
+    if report.get("details_truncated"):
+        report["warnings"].append(
+            f"Detailed rows in JSON and workbook are capped at {MAX_JSON_DETAILS:,} per category; summary counts include all records."
+        )
     if report["summary"]["rows_with_blank_keys_a"] or report["summary"]["rows_with_blank_keys_b"]:
         report["warnings"].append("Rows with blank key fields were excluded from matching and placed in Needs Review.")
     if ambiguous_keys:
@@ -507,7 +520,7 @@ def write_xlsx_report(path: Path, report: dict[str, Any], overwrite: bool) -> No
 
     differences_sheet = workbook.create_sheet("Field Differences")
     key_columns = summary["key_columns"]
-    differences_sheet.append([*key_columns, "A Row", "B Row", "Column", "Value in A", "Value in B"])
+    differences_sheet.append([*[safe_cell(column) for column in key_columns], "A Row", "B Row", "Column", "Value in A", "Value in B"])
     for item in report["differences"]:
         differences_sheet.append([
             *[safe_cell(item["key"].get(column, "")) for column in key_columns],
@@ -516,21 +529,21 @@ def write_xlsx_report(path: Path, report: dict[str, Any], overwrite: bool) -> No
         ])
 
     only_a = workbook.create_sheet("Only in A")
-    only_a.append(["Source Row", *headers_from_report(report, "A")])
+    only_a.append(["Source Row", *[safe_cell(header) for header in headers_from_report(report, "A")]])
     for item in report["only_in_a"]:
         only_a.append([item["row_number"], *[
             safe_cell(display_value(item["row_data"].get(column))) for column in headers_from_report(report, "A")
         ]])
 
     only_b = workbook.create_sheet("Only in B")
-    only_b.append(["Source Row", *headers_from_report(report, "B")])
+    only_b.append(["Source Row", *[safe_cell(header) for header in headers_from_report(report, "B")]])
     for item in report["only_in_b"]:
         only_b.append([item["row_number"], *[
             safe_cell(display_value(item["row_data"].get(column))) for column in headers_from_report(report, "B")
         ]])
 
     duplicates = workbook.create_sheet("Duplicate Keys")
-    duplicates.append([*key_columns, "Rows in A", "Rows in B", "Count A", "Count B", "Issue"])
+    duplicates.append([*[safe_cell(column) for column in key_columns], "Rows in A", "Rows in B", "Count A", "Count B", "Issue"])
     for item in report["duplicate_keys"]:
         duplicates.append([
             *[safe_cell(display_value(item["key"].get(column))) for column in key_columns],
@@ -668,17 +681,6 @@ def run(argv: list[str] | None = None) -> int:
         sheet_a=args.sheet_a,
         sheet_b=args.sheet_b,
     )
-    _, records_a, _, _ = read_table(input_a, args.sheet_a)
-    _, records_b, _, _ = read_table(input_b, args.sheet_b)
-    headers_a = list(records_a[0]["values"].keys()) if records_a else []
-    headers_b = list(records_b[0]["values"].keys()) if records_b else []
-    # Preserve the schema even when a source has headers but zero data records.
-    if not headers_a:
-        headers_a, _, _, _ = read_table(input_a, args.sheet_a)
-    if not headers_b:
-        headers_b, _, _, _ = read_table(input_b, args.sheet_b)
-    report["headers_a"] = headers_a
-    report["headers_b"] = headers_b
     report["completed_at"] = utc_now()
     write_xlsx_report(output_path, report, overwrite=args.overwrite_output)
     write_json_report(report_path, report, overwrite=args.overwrite_output)
