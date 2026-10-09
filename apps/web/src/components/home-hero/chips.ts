@@ -75,6 +75,7 @@ export type ChipAction =
     }
   | { kind: 'create-plugin' }
   | { kind: 'open-template-picker' }
+  | { kind: 'use-skill'; skillId: string }
   // Routes the user into the Brand Kit tab and opens its New Brand Kit modal,
   // reusing the same extraction flow as the tab's own "New Brand Kit" button.
   | { kind: 'create-brand-kit' };
@@ -366,6 +367,14 @@ export const HOME_HERO_CHIPS: ReadonlyArray<HomeHeroChip> = [
         targetStack: 'React 18 + Tailwind',
       },
     },
+  },
+  {
+    id: 'spreadsheet-problem',
+    label: 'Spreadsheet problems',
+    icon: 'file-text',
+    group: 'migrate',
+    hint: 'Inspect, clean, reconcile, and diagnose real office spreadsheets with an audit trail.',
+    action: { kind: 'use-skill', skillId: 'spreadsheet-problem-solver' },
   },
   {
     id: 'template',
