@@ -46,8 +46,11 @@ od:
 2. 查找脚本并查看参数说明：
 
        CLEANER=$(find .od-skills -type f -path '*/scripts/clean_spreadsheet.py' -print -quit)
-       test -n "$CLEANER" || echo "脚本未暂存：请检查当前技能的实际安装路径"
-       python3 "$CLEANER" --help
+       if [ -n "$CLEANER" ]; then
+         python3 "$CLEANER" --help
+       else
+         echo "脚本未暂存：请检查当前技能的实际安装路径" >&2
+       fi
 
 3. 先进行只读预检，选择一个不会覆盖已有文件的报告路径：
 
