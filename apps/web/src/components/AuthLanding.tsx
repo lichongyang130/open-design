@@ -20,13 +20,14 @@ import {
   Sun,
   WandSparkles,
 } from 'lucide-react';
+import type { VelaLoginStatus } from '../providers/daemon';
 import { CloudSignInTip } from './CloudSignInTip';
 
 type AuthMode = 'login' | 'register';
 type Feedback = { kind: 'info' | 'error'; message: string } | null;
 
 interface AuthLandingProps {
-  onAuthSuccess: () => void;
+  onAuthSuccess: (status: VelaLoginStatus | null) => void;
   onContinueLocal: () => void;
 }
 
