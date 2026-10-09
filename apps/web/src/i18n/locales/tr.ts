@@ -1015,6 +1015,7 @@ export const tr: Dict = {
   'homeHero.chip.audio': 'Ses',
   'homeHero.chip.createBrandKit': 'Marka Kiti oluştur',
   'homeHero.chip.createPlugin': 'Plugin oluştur',
+  'homeHero.chip.spreadsheetProblem': 'Hesap tablosu sorunları',
   'homeHero.chip.figma': 'Figma\'dan',
   'homeHero.chip.folder': 'Klasörden',
   'homeHero.chip.template': 'Şablondan',
