@@ -256,7 +256,7 @@ def diagnose_workbook(
                     record(report, repair)
                     repairs.append(repair)
 
-        if apply_safe_repairs:
+        if apply_safe_repairs and repairs:
             for repair in repairs:
                 formulas[repair["sheet"]][repair["cell"]] = repair["candidate_formula"]
             report["summary"]["safe_formula_gaps_repaired"] = len(repairs)
@@ -269,7 +269,7 @@ def diagnose_workbook(
                 calc.forceFullCalc = True
                 calc.calcMode = "auto"
 
-            expected_formula_count = formula_count(formulas)
+            expected_formula_count = formula_count(formulas, targets)
             output_path.parent.mkdir(parents=True, exist_ok=True)
             fd, temp_name = tempfile.mkstemp(prefix=f".{output_path.stem}.", suffix=output_path.suffix, dir=str(output_path.parent))
             os.close(fd)
@@ -279,8 +279,9 @@ def diagnose_workbook(
                 try:
                     if verification.sheetnames != formulas.sheetnames:
                         raise FormulaDiagnosticError("Output validation failed: worksheet names changed.")
-                    if formula_count(verification) != expected_formula_count:
-                        raise FormulaDiagnosticError("Output validation failed: formula count changed.")
+                    verification_targets = [verification[name] for name in target_names]
+                    if formula_count(verification, verification_targets) != expected_formula_count:
+                        raise FormulaDiagnosticError("Output validation failed: formula count changed in the selected worksheets.")
                     for repair in repairs:
                         actual = verification[repair["sheet"]][repair["cell"]].value
                         if actual != repair["candidate_formula"]:
@@ -295,6 +296,11 @@ def diagnose_workbook(
                 if os.path.exists(temp_name):
                     os.unlink(temp_name)
             report["output_written"] = True
+        elif apply_safe_repairs:
+            report["summary"]["safe_formula_gaps_repaired"] = 0
+            report["warnings"].append(
+                "No safely repairable single-cell formula gaps were found; no workbook copy was written."
+            )
         else:
             report["warnings"].append(
                 "Read-only diagnosis: no workbook copy was written. Use --apply-safe-repairs to create a copy containing only proven formula-gap repairs."
