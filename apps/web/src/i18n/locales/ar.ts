@@ -1015,6 +1015,7 @@ export const ar: Dict = {
   'homeHero.chip.audio': 'صوت',
   'homeHero.chip.createBrandKit': 'إنشاء حزمة العلامة التجارية',
   'homeHero.chip.createPlugin': 'إنشاء إضافة',
+  'homeHero.chip.spreadsheetProblem': 'مشكلات جداول البيانات',
   'homeHero.chip.figma': 'من Figma',
   'homeHero.chip.folder': 'من مجلد',
   'homeHero.chip.template': 'من قالب',
