@@ -1329,7 +1329,7 @@ describe('App project creation routing', () => {
     });
     mockedUploadProjectFiles.mockResolvedValue({
       uploaded: [],
-      failed: [{ name: 'brief.txt', code: 'UPLOAD_FAILED', error: 'upload failed' }],
+      failed: [{ name: 'office-audit.xlsx', code: 'UPLOAD_FAILED', error: 'upload failed' }],
     });
 
     render(<App />);
