@@ -188,7 +188,8 @@ def read_excel(path: Path, sheet_name: str | None) -> tuple[list[str], list[dict
                     f"{path.name}:{sheet.title} row {row_number} has values beyond the header columns."
                 )
             values = list(raw_row[:len(headers)]) + [None] * max(0, len(headers) - len(raw_row))
-            formula_values = list(formula_row[:len(headers)]) + [None] * max(0, len(headers) - len(formula_row))
+            formula_cells = list(formula_row[:len(headers)])
+            formula_values = [cell.value for cell in formula_cells] + [None] * max(0, len(headers) - len(formula_cells))
             records.append({
                 "row_number": row_number,
                 "values": dict(zip(headers, values)),
