@@ -29,6 +29,12 @@ describe('parseRoute / buildPath (issue #1505)', () => {
     expect(parseRoute('')).toEqual({ kind: 'home', view: 'home' });
   });
 
+  it('keeps the public onboarding and setup pages independently addressable', () => {
+    expect(parseRoute('/onboarding')).toEqual({ kind: 'home', view: 'onboarding' });
+    expect(parseRoute('/setup')).toEqual({ kind: 'home', view: 'setup' });
+    expect(buildPath({ kind: 'home', view: 'setup' })).toBe('/setup');
+  });
+
   it('round-trips a bare project route', () => {
     const route: Route = {
       kind: 'project',

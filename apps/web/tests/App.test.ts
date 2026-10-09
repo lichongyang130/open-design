@@ -74,9 +74,15 @@ const baseConfig: AppConfig = {
 };
 
 describe('shouldRouteToFirstRunOnboarding', () => {
-  it('never hijacks an explicit project deep link while daemon config is hydrating', () => {
+  it('routes the root URL to the public auth landing even after setup is complete', () => {
+    const finished = { ...baseConfig, onboardingCompleted: true };
+    expect(shouldRouteToFirstRunOnboarding(finished, '/')).toBe(true);
+  });
+
+  it('does not hijack the explicit setup route or shareable deep links', () => {
     const unfinished = { ...baseConfig, onboardingCompleted: false };
 
+    expect(shouldRouteToFirstRunOnboarding(unfinished, '/setup')).toBe(false);
     expect(shouldRouteToFirstRunOnboarding(unfinished, '/projects/project-a')).toBe(false);
     expect(shouldRouteToFirstRunOnboarding(unfinished, '/')).toBe(true);
   });
