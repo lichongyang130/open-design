@@ -1361,4 +1361,19 @@ describe('agent correction feedback', () => {
     expect(reminder).toContain('Snippet: `Feature one`');
     expect(reminder).toContain('</artifact-lint>');
   });
+
+  it('allows live-run feedback to request an in-place file edit', () => {
+    const reminder = renderFindingsForAgent([
+      {
+        severity: 'P1',
+        id: 'image-missing-alt',
+        message: 'Image has no accessible text.',
+        fix: 'Add useful alt text or an empty alt attribute for a decorative image.',
+        snippet: '<img src="hero.png">',
+      },
+    ], { instruction: 'Edit the existing HTML file in place.' });
+
+    expect(reminder).toContain('Edit the existing HTML file in place.');
+    expect(reminder).not.toContain('Re-emit a corrected `<artifact>` in your next turn');
+  });
 });
