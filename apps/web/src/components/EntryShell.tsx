@@ -3641,9 +3641,17 @@ function OnboardingView({
         aria-label={t('settings.welcomeTitle')}
       >
         <div className="onboarding-cloud__pane">
-          <div className="onboarding-cloud__center">
-            <h1 className="onboarding-cloud__title">{t('settings.onboardingCloudTitle')}</h1>
-            <p className="onboarding-cloud__body">{t('settings.onboardingCloudBody')}</p>
+          <div className={onboardingWelcomeStyles.brand}>
+            <span className={onboardingWelcomeStyles.brandMark} aria-hidden="true">
+              <Icon name="sparkles" size={17} />
+            </span>
+            <span>DesignBuddy</span>
+          </div>
+          <div className={`onboarding-cloud__center ${onboardingWelcomeStyles.center}`}>
+            <div className={onboardingWelcomeStyles.intro}>
+              <h1 className="onboarding-cloud__title">{t('settings.onboardingCloudTitle')}</h1>
+              <p className="onboarding-cloud__body">{t('settings.onboardingCloudBody')}</p>
+            </div>
             <div className={onboardingWelcomeStyles.signInAction}>
               {!amrSignedIn && !amrStatusResolving && !cloudBusy ? (
                 <span className={onboardingWelcomeStyles.creditCorner}>
@@ -3761,8 +3769,20 @@ function OnboardingView({
                       setStep(2);
                     }}
                   >
-                    <Icon name="robot" size={16} />
-                    {t('settings.onboardingLocalAi')}
+                    <span className={onboardingWelcomeStyles.optionIcon}>
+                      <Icon name="robot" size={17} />
+                    </span>
+                    <span className={onboardingWelcomeStyles.optionCopy}>
+                      <span className={onboardingWelcomeStyles.optionTitle}>
+                        {t('settings.onboardingLocalTitle')}
+                      </span>
+                      <span className={onboardingWelcomeStyles.optionBody}>
+                        {t('settings.onboardingLocalBody')}
+                      </span>
+                    </span>
+                    <span className={onboardingWelcomeStyles.optionArrow} aria-hidden="true">
+                      <Icon name="chevron-right" size={16} />
+                    </span>
                   </Button>
                   <Button
                     variant="subtle"
@@ -3774,8 +3794,20 @@ function OnboardingView({
                       setStep(2);
                     }}
                   >
-                    <Icon name="key" size={16} />
-                    {t('settings.onboardingApiKey')}
+                    <span className={onboardingWelcomeStyles.optionIcon}>
+                      <Icon name="key" size={17} />
+                    </span>
+                    <span className={onboardingWelcomeStyles.optionCopy}>
+                      <span className={onboardingWelcomeStyles.optionTitle}>
+                        {t('settings.onboardingByokTitle')}
+                      </span>
+                      <span className={onboardingWelcomeStyles.optionBody}>
+                        {t('settings.onboardingByokBody')}
+                      </span>
+                    </span>
+                    <span className={onboardingWelcomeStyles.optionArrow} aria-hidden="true">
+                      <Icon name="chevron-right" size={16} />
+                    </span>
                   </Button>
                 </div>
               </div>
@@ -3784,12 +3816,21 @@ function OnboardingView({
           <footer className="onboarding-cloud__footer">
             <LanguageMenu placement="up" align="start" />
             <span>
-              © {new Date().getFullYear()} OpenDesign · {t('settings.onboardingCloudRights')}
+              © {new Date().getFullYear()} DesignBuddy · {t('settings.onboardingCloudRights')}
             </span>
           </footer>
         </div>
-        <div className="onboarding-cloud__art" aria-hidden="true">
+        <div
+          className={`onboarding-cloud__art ${onboardingWelcomeStyles.art}`}
+          aria-hidden="true"
+        >
           <img src="/onboarding/onboarding-cloud-art.webp" alt="" />
+          <div className={onboardingWelcomeStyles.artBadge}>
+            <span className={onboardingWelcomeStyles.artBadgeIcon}>
+              <Icon name="sparkles" size={16} />
+            </span>
+            <span>DesignBuddy</span>
+          </div>
         </div>
       </section>
     );
@@ -3912,7 +3953,7 @@ function OnboardingView({
           <footer className="onboarding-cloud__footer">
             <LanguageMenu placement="up" align="start" />
             <span>
-              © {new Date().getFullYear()} OpenDesign ·{' '}
+              © {new Date().getFullYear()} DesignBuddy ·{' '}
               {t('settings.onboardingCloudRights')}
             </span>
           </footer>
