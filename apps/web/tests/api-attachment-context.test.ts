@@ -266,6 +266,7 @@ describe('historyWithApiAttachmentContext', () => {
   });
 
   it('tells the model to inspect the original workbook when spreadsheet preview is unavailable', async () => {
+    mockedFetchProjectFilePreview.mockResolvedValueOnce(null);
     const history = await historyWithApiAttachmentContext(
       [userMessage('msg-xlsx', 'Check this workbook', [{ path: 'monthly.xlsx', name: 'monthly.xlsx', kind: 'file' }])],
       'msg-xlsx',
