@@ -48,6 +48,8 @@ describe('HomeView in the local shell', () => {
       </I18nProvider>,
     );
     expect(await screen.findByTestId('home-hero')).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'What work can I help with today?' })).toBeTruthy();
+    expect(screen.getByTestId('office-quick-actions').querySelectorAll('button')).toHaveLength(4);
     expect(screen.queryByTestId('recent-projects-strip')).toBeNull();
     expect(document.querySelector('.recent-projects')).toBeNull();
     expect(screen.queryByText('Local landing page')).toBeNull();
