@@ -1015,6 +1015,7 @@ export const ja: Dict = {
   'homeHero.chip.audio': '音声',
   'homeHero.chip.createBrandKit': 'ブランドキットを作成',
   'homeHero.chip.createPlugin': 'プラグインを作成',
+  'homeHero.chip.spreadsheetProblem': '表計算の問題解決',
   'homeHero.chip.figma': 'Figma から',
   'homeHero.chip.folder': 'フォルダーから',
   'homeHero.chip.template': 'テンプレートから',
