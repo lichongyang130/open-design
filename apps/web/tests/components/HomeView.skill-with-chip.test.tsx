@@ -246,6 +246,13 @@ describe('HomeView — spreadsheet problem shortcut', () => {
     const onSubmit = submitSpy();
     renderHome(onSubmit, [PROTOTYPE_SKILL, DECK_SKILL, SPREADSHEET_SKILL]);
 
+    // The office shortcut must replace a previously selected creative route;
+    // otherwise the spreadsheet request could accidentally be sent as a PPT run.
+    await pickHomeTemplate('deck');
+    await waitFor(() => {
+      expect(screen.getByTestId('home-hero-template-trigger').textContent).toContain('Slide deck');
+    });
+
     fireEvent.click(screen.getByTestId('home-hero-spreadsheet-problem'));
 
     await waitFor(() => {
@@ -255,6 +262,8 @@ describe('HomeView — spreadsheet problem shortcut', () => {
 
     const payload = await submitAndRead(onSubmit);
     expect(payload.skillId).toBe('spreadsheet-problem-solver');
+    expect(payload.automaticStrategyTaskProfile ?? null).not.toBe('ppt');
+    expect(payload.projectKind).not.toBe('deck');
   });
 });
 
