@@ -82,6 +82,50 @@ describe('HomeView in the local shell', () => {
     }
   });
 
+  it('hands the selected spreadsheet skill and uploaded workbook to the same run request', async () => {
+    stubFetch();
+    const workbook = new File(['id,date,total\\n1,2026-10-01,42'], 'office-audit.xlsx', {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    const onSubmit = vi.fn(async () => true);
+    render(
+      <I18nProvider initial="en">
+        <HomeView
+          projects={PROJECTS as never}
+          skills={[{
+            id: 'spreadsheet-repair',
+            name: 'Spreadsheet Troubleshooting & Repair',
+            description: 'Inspect and safely repair real spreadsheet files.',
+            mode: 'utility',
+            surface: 'web',
+            source: 'built-in',
+            category: 'office',
+            aggregatesExamples: false,
+          }] as never}
+          onSubmit={onSubmit}
+          onOpenProject={() => undefined}
+        />
+      </I18nProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Check and repair Excel/i }));
+    fireEvent.change(screen.getByTestId('home-hero-file-input'), {
+      target: { files: [workbook] },
+    });
+    await waitFor(() => expect(screen.getByText('office-audit.xlsx')).toBeTruthy());
+
+    const submitButton = screen.getByTestId('home-hero-submit');
+    await waitFor(() => expect(submitButton).not.toBeDisabled());
+    fireEvent.click(submitButton);
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
+      skillId: 'spreadsheet-repair',
+      prompt: expect.stringContaining('Inspect the uploaded workbook read-only first'),
+      attachments: expect.arrayContaining([workbook]),
+    }));
+  });
+
   it('renders the hero without a recent-projects grid or its controls', async () => {
     stubFetch();
     render(
