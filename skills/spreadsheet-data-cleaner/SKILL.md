@@ -18,6 +18,8 @@ od:
   category: office-productivity
   scenario: spreadsheet
   surface: web
+  preview:
+    type: markdown
   design_system:
     requires: false
   capabilities_required:
