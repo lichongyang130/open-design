@@ -161,6 +161,7 @@ class WorkbookCleaningTests(unittest.TestCase):
         worksheet.title = "Sales"
         worksheet.append(["Name", "Total"])
         worksheet.append([" Alice ", "=1+2"])
+        worksheet.append([" ", None])  # A whitespace-only row must be detected after trimming.
         workbook.save(self.input_path)
 
         report = cleaner._build_report(self.input_path, self.output_path, "xlsx", False)
@@ -173,8 +174,9 @@ class WorkbookCleaningTests(unittest.TestCase):
             self.assertEqual(output["Sales"]["B2"].value, "=1+2")
         finally:
             output.close()
-        self.assertEqual(report["summary"]["text_cells_trimmed"], 1)
+        self.assertEqual(report["summary"]["text_cells_trimmed"], 2)
         self.assertEqual(report["summary"]["formula_cells_preserved"], 1)
+        self.assertEqual(report["summary"]["blank_rows_detected"], 1)
 
     def test_opt_in_dedupe_clears_values_without_shifting_rows_or_formulas(self) -> None:
         workbook = openpyxl.Workbook()
