@@ -283,7 +283,7 @@ def clean_csv(
 
 def _formula_count(workbook: Any, worksheets: Iterable[Any] | None = None) -> int:
     count = 0
-    for worksheet in worksheets if worksheets is not None else workbook.worksheets:
+    for worksheet in (worksheets if worksheets is not None else workbook.worksheets):
         for row in worksheet.iter_rows():
             for cell in row:
                 if isinstance(cell.value, str) and cell.value.startswith("="):
@@ -409,7 +409,7 @@ def clean_workbook(
                     summary["formula_cells_preserved"] += 1
 
             values = tuple((type(cell.value).__name__, _json_value(cell.value)) for cell in cells)
-            if all(is_blank(value) for value in values):
+            if all(is_blank(cell.value) for cell in cells):
                 summary["blank_rows_detected"] += 1
                 _record(
                     report["findings"],
