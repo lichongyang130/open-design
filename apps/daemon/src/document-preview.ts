@@ -182,22 +182,22 @@ async function readWorkbook(zip: JSZip): Promise<WorkbookSheet[]> {
 
 function extractWorksheetRows(xml: string, sharedStrings: string[]): string[] {
   const rows: string[] = [];
-  for (const row of xml.matchAll(/<row\\b([^>]*)>([\\s\\S]*?)<\\/row>/g)) {
+  for (const row of xml.matchAll(/<row\b([^>]*)>([\s\S]*?)<\/row>/g)) {
     const rowAttrs = parseAttrs(row[1] ?? '');
     const rowNumber = rowAttrs.r || String(rows.length + 1);
     const rowBody = row[2] ?? '';
     const cells: string[] = [];
-    for (const cell of rowBody.matchAll(/<c\\b([^>]*)>([\\s\\S]*?)<\\/c>|<c\\b([^>]*)\\/>/g)) {
+    for (const cell of rowBody.matchAll(/<c\b([^>]*)>([\s\S]*?)<\/c>|<c\b([^>]*)\/>/g)) {
       const attrs = parseAttrs(cell[1] ?? cell[3] ?? '');
       const body = cell[2] ?? '';
       const ref = attrs.r || ('row ' + rowNumber + ' cell ' + (cells.length + 1));
-      const formulaMatch = body.match(/<f\\b([^>]*)>([\\s\\S]*?)<\\/f>|<f\\b([^>]*)\\/>/);
+      const formulaMatch = body.match(/<f\b([^>]*)>([\s\S]*?)<\/f>|<f\b([^>]*)\/>/);
       const formulaAttrs = parseAttrs(formulaMatch?.[1] ?? formulaMatch?.[3] ?? '');
       const formulaText = decodeXml(formulaMatch?.[2] ?? '').trim();
       const formula = formulaMatch
         ? (formulaText || ('shared formula' + (formulaAttrs.si ? ' si=' + formulaAttrs.si : '') + (formulaAttrs.ref ? ' ref=' + formulaAttrs.ref : '')))
         : '';
-      const rawValue = extractFirst(body, /<v>([\\s\\S]*?)<\\/v>/);
+      const rawValue = extractFirst(body, /<v>([\s\S]*?)<\/v>/);
       let value = '';
       let textValue = false;
       if (attrs.t === 's') {
