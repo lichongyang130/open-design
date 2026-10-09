@@ -1,0 +1,39 @@
+name: spreadsheet-skill-tests
+
+on:
+  pull_request:
+    paths:
+      - "skills/spreadsheet-data-cleaner/**"
+      - "skills/spreadsheet-problem-solver/**"
+      - ".github/workflows/spreadsheet-skill-tests.yml"
+  push:
+    paths:
+      - "skills/spreadsheet-data-cleaner/**"
+      - "skills/spreadsheet-problem-solver/**"
+      - ".github/workflows/spreadsheet-skill-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: spreadsheet-skill-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python-tests:
+    name: Spreadsheet cleaner regression tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+
+      - name: Create isolated Python environment
+        run: |
+          python3 -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install openpyxl
+
+      - name: Run spreadsheet cleaner tests
+        run: .venv/bin/python -m unittest discover -s skills/spreadsheet-data-cleaner/tests -v
