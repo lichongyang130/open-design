@@ -49,7 +49,7 @@ od:
 
 先检查当前技能目录是否包含脚本：
 
-    find .od-skills -type f -path '*/scripts/clean_spreadsheet.py' -print -quit
+    CLEANER=$(find .od-skills -type f -path '*/scripts/clean_spreadsheet.py' -print -quit)
 
 如果找到脚本，先运行 python3 "$CLEANER" --help，其中 CLEANER 应设置为实际找到的路径。若脚本未被暂存，使用当前技能环境中实际可访问的 spreadsheet-data-cleaner 安装路径；找不到时不要声称脚本已执行，改用当前可用工具并说明能力限制。
 
