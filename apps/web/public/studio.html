@@ -2334,9 +2334,9 @@
           { id: "design-system", label: "设计系统", kind: "design-system" }
         ],
         bubbles: [
-          "今天想做点什么？把想法丢给我就好 ✦",
-          "试试「为新产品制作一个<b>路演演示</b>」",
-          "我可以把你的笔记直接变成<b>幻灯片</b>哦"
+          "上传 Excel，我会先列出问题再处理。",
+          "试试「检查公式错误并核对总计」",
+          "也可以清理重复数据，并保留原始文件。"
         ],
         tiles: [
           { icon: "doc", t: "检查并修复 Excel", s: "表格修复", p: "检查我上传的 Excel 表格中的公式错误、缺失值和异常数据，并保留原文件" },
@@ -2361,9 +2361,9 @@
           { id: "design-system", label: "Design system", kind: "design-system" }
         ],
         bubbles: [
-          "What are we making today? Just tell me ✦",
-          "Try “a <b>pitch deck</b> for a new product”",
-          "I can turn your notes into a <b>deck</b>"
+          "Upload a spreadsheet and I will inspect it first.",
+          "Try “check formula errors and verify totals”.",
+          "I can also identify duplicates while preserving the original."
         ],
         tiles: [
           { icon: "doc", t: "Check and repair Excel", s: "Spreadsheet repair", p: "Inspect my uploaded Excel workbook for formula errors, missing values, and anomalies, and preserve the original file" },
@@ -2676,6 +2676,9 @@
     var base = String(tile && tile.p || "").trim();
     if (!/[.!?。！？]$/.test(base)) base += lang === "zh" ? "。" : ".";
     var roleGuidance = SUGGESTION_PROMPT_GUIDANCE[role] || SUGGESTION_PROMPT_GUIDANCE.designer;
+    if (role === "designer") {
+      return base + "\n\n" + (roleGuidance[lang] || roleGuidance.en);
+    }
     var formatGuidance = SUGGESTION_FORMAT_GUIDANCE[tile && tile.icon] || SUGGESTION_FORMAT_GUIDANCE.web;
     return base + "\n\n" + (formatGuidance[lang] || formatGuidance.en) + "\n\n" + (roleGuidance[lang] || roleGuidance.en);
   }
