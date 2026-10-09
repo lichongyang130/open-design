@@ -6,13 +6,13 @@
 
   var COPY = {
     zh: {
-      featured: "精选技能",
-      refresh: "换一换",
+      featured: "常用办公技能",
+      refresh: "重新加载",
       refreshing: "正在更新",
-      recommended: "推荐",
-      hub: "SkillHub",
-      suites: "套件",
-      search: "搜索技能",
+      recommended: "办公问题处理",
+      hub: "已保存技能",
+      suites: "更多技能",
+      search: "搜索办公问题，例如公式、重复数据、格式",
       all: "全部",
       solo: "OPC·一人公司",
       office: "办公协同",
@@ -67,13 +67,13 @@
       suiteKnowledgeDesc: "高效收集信息、深度研究并沉淀可复用知识。"
     },
     en: {
-      featured: "Featured skills",
-      refresh: "Refresh",
+      featured: "Practical office skills",
+      refresh: "Reload",
       refreshing: "Refreshing",
-      recommended: "Recommended",
-      hub: "SkillHub",
-      suites: "Suites",
-      search: "Search skills",
+      recommended: "Office problem solving",
+      hub: "Saved skills",
+      suites: "More skills",
+      search: "Search office tasks, e.g. formulas, duplicates, formatting",
       all: "All",
       solo: "Solo business",
       office: "Collaboration",
@@ -261,9 +261,21 @@
     var featured = Number(item.featured);
     return (Number.isFinite(featured) ? featured * 100000 : 0) + (item.source === "built-in" ? 10000 : 0) + (10000 - hashCode(item.id) % 10000);
   }
-  function availableItems() { return Array.isArray(state.items) ? state.items : []; }
+  function isPracticalOfficeSkill(item) {
+    if (!item || typeof item !== "object") return false;
+    var id = String(item.id || item.name || "").toLowerCase();
+    var mode = String(item.mode || item.od && item.od.mode || "").toLowerCase();
+    var officeCategory = /office|办公|表格|文档/.test(String(item.category || item.scenario || ""));
+    return id === "spreadsheet-repair" || (mode === "utility" && (officeCategory || categoryOf(item) === "office"));
+  }
+  function availableItems() {
+    return Array.isArray(state.items) ? state.items.filter(isPracticalOfficeSkill) : [];
+  }
   function filteredItems() {
     var list = availableItems().slice();
+    if (state.tab === "hub") {
+      list = list.filter(function (item) { return state.installed.has(item.id) || selectedSkillId() === item.id; });
+    }
     var query = state.query.trim().toLowerCase();
     if (state.category !== "all") list = list.filter(function (item) { return categoryOf(item) === state.category; });
     if (query) list = list.filter(function (item) { return searchText(item).indexOf(query) >= 0; });
@@ -337,6 +349,8 @@
       grid.innerHTML = new Array(5).fill('<div class="skills-feature-card skeleton"><i></i><b></b><span></span></div>').join("");
       return;
     }
+    var section = grid.closest(".skills-featured");
+    if (section) section.hidden = true;
     var ranked = availableItems().slice().sort(function (a, b) { return featuredScore(b) - featuredScore(a); });
     if (!ranked.length) { grid.innerHTML = ""; return; }
     var take = Math.min(5, ranked.length), cards = [];
@@ -351,6 +365,7 @@
     var labels = { recommended: "recommended", hub: "hub", suites: "suites" };
     Array.prototype.forEach.call(root.querySelectorAll("[data-skills-tab]"), function (button) {
       var id = button.getAttribute("data-skills-tab");
+      button.hidden = id === "suites";
       button.textContent = copy(labels[id]);
       button.classList.toggle("active", state.tab === id);
       button.setAttribute("aria-selected", state.tab === id ? "true" : "false");
@@ -368,7 +383,7 @@
       counts[category] = (counts[category] || 0) + 1;
     });
     var box = document.getElementById("skillsCategories");
-    box.hidden = state.tab === "suites";
+    box.hidden = true;
     box.innerHTML = CATEGORIES.map(function (category) {
       var count = category.id === "all" ? availableItems().length : (counts[category.id] || 0);
       return '<button type="button" class="skills-category' + (state.category === category.id ? ' active' : '') + '" data-skills-category="' + category.id + '" aria-pressed="' + (state.category === category.id ? 'true' : 'false') + '">' + esc(copy(category.label)) + (count ? '<span>' + count + '</span>' : '') + '</button>';
