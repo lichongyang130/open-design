@@ -3091,6 +3091,31 @@ export function HomeView({
     }
   }
 
+  const officeQuickTasks = locale.startsWith('zh')
+    ? [
+        { label: '检查并修复 Excel', detail: '公式错误、缺失值与异常数据', prompt: '请检查我上传的 Excel 表格，找出公式错误、缺失值和异常数据。先列出问题，再修复可明确判断的问题，保留原文件并复检关键汇总。', skillId: 'spreadsheet-repair' },
+        { label: '清理重复数据', detail: '识别重复行并保留有效记录', prompt: '请检查我上传的表格中的重复记录，先说明重复判定规则和影响行数，再清理确定重复的数据，保留原文件并核对清理前后的行数。', skillId: 'spreadsheet-repair' },
+        { label: '统一格式与日期', detail: '日期、数字、空格和单元格格式', prompt: '请检查我上传的 Excel 表格中不一致的日期、数字、空格和单元格格式。先报告发现的问题，只统一明确等价的格式，不猜测业务含义，并在修复后复检。', skillId: 'spreadsheet-repair' },
+        { label: '检查公式与汇总', detail: '定位错误公式并验证总计结果', prompt: '请检查我上传的 Excel 表格中公式引用、错误值和汇总结果。说明每项问题所在的工作表与单元格，修复有充分依据的错误，保留原文件并重新核对汇总。', skillId: 'spreadsheet-repair' },
+      ]
+    : [
+        { label: 'Check and repair Excel', detail: 'Formula errors, missing values, and anomalies', prompt: 'Inspect my uploaded Excel workbook for formula errors, missing values, and anomalous data. Report issues first, repair only clear problems, preserve the original file, and recheck key totals.', skillId: 'spreadsheet-repair' },
+        { label: 'Remove duplicate records', detail: 'Identify duplicate rows and preserve valid records', prompt: 'Check my uploaded spreadsheet for duplicate records. Explain the matching rule and affected row count first, then remove only confirmed duplicates, preserve the original file, and verify row counts before and after.', skillId: 'spreadsheet-repair' },
+        { label: 'Normalize formats and dates', detail: 'Dates, numbers, whitespace, and cell formats', prompt: 'Inspect my Excel workbook for inconsistent dates, numbers, whitespace, and cell formats. Report the issues first, normalize only clearly equivalent formats, avoid guessing business meaning, and verify the result.', skillId: 'spreadsheet-repair' },
+        { label: 'Verify formulas and totals', detail: 'Find formula errors and validate summaries', prompt: 'Inspect my Excel workbook for broken formula references, error values, and incorrect summaries. Report each issue by sheet and cell, repair only well-supported errors, preserve the original file, and recalculate key totals.', skillId: 'spreadsheet-repair' },
+      ];
+  const startOfficeQuickTask = (task: typeof officeQuickTasks[number]) => {
+    const skill = selectableSkills.find((candidate) => candidate.id === task.skillId);
+    if (skill) {
+      useSkill(skill, task.prompt);
+      return;
+    }
+    setPrompt(task.prompt);
+    setPromptEditedByUser(false);
+    setError(null);
+    inputRef.current?.focusEnd();
+  };
+
   // #5517: with no projects yet the home (logo + heading + composer) centers
   // vertically instead of hugging the top.
   const recentProjectsEmpty = !projectsLoading && projects.length === 0;
@@ -3099,7 +3124,7 @@ export function HomeView({
     <div
       className={`home-view${recentProjectsEmpty ? ' home-view--centered' : ''}${
         variant === 'dock' ? ' home-view--dock' : ''
-      }`}
+      }${variant === 'page' ? ' home-view--office-workbench' : ''}`}
       data-testid="home-view"
       data-variant={variant}
       ref={homeViewRef}
@@ -3120,6 +3145,7 @@ export function HomeView({
       )}
       <HomeHero
         variant={variant}
+        officeWorkbench={variant === 'page'}
         collapseSignal={collapseSignal}
         workspaceContext={workspaceContext}
         ref={inputRef}
@@ -3244,6 +3270,32 @@ export function HomeView({
         // only this mount point is gone.
         recommendationSlot={artifactUpgradeSlot}
       />
+
+      {variant === 'page' && prompt.trim().length === 0 && stagedFiles.length === 0 ? (
+        <section className="office-quick-actions" aria-labelledby="office-quick-actions-title" data-testid="office-quick-actions">
+          <div className="office-quick-actions__heading">
+            <h2 id="office-quick-actions-title">{locale.startsWith('zh') ? '常用办公任务' : 'Common office tasks'}</h2>
+            <p>{locale.startsWith('zh') ? '选择一个任务，上传文件后即可开始。' : 'Choose a task, then attach a file to get started.'}</p>
+          </div>
+          <div className="office-quick-actions__grid">
+            {officeQuickTasks.map((task) => (
+              <button
+                className="office-quick-actions__item"
+                type="button"
+                key={task.label}
+                onClick={() => startOfficeQuickTask(task)}
+              >
+                <span className="office-quick-actions__icon" aria-hidden="true">XLS</span>
+                <span className="office-quick-actions__copy">
+                  <strong>{task.label}</strong>
+                  <span>{task.detail}</span>
+                </span>
+                <span className="office-quick-actions__arrow" aria-hidden="true">↗</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {/* No 最近项目 grid under the hero on EITHER branch (OPEND-2683, per
           product: 最近项目统一在左侧栏展示; OPEND-3140 closed the local half):
