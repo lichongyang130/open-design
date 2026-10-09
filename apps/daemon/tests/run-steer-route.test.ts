@@ -161,7 +161,7 @@ describe('POST /api/runs/:id/steer', () => {
     const first = await fetch(feedbackUrl, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ html }),
+      body: JSON.stringify({ html, artifactPath: 'index.html' }),
     });
     expect(first.status).toBe(200);
     const firstBody = await first.json() as { ok: boolean; steered: boolean; attempts: number };
@@ -172,6 +172,7 @@ describe('POST /api/runs/:id/steer', () => {
     await waitForFile(sinkPath, 10_000);
     const steeringText = await readFile(sinkPath, 'utf8');
     expect(steeringText).toContain('image-missing-alt');
+    expect(steeringText).toContain('Target artifact path: "index.html"');
     expect(steeringText).toContain('Fix:');
 
     // The fake runtime completes after consuming one steer, so this next
