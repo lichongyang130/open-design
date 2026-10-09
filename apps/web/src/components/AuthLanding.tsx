@@ -121,7 +121,7 @@ export function AuthLanding({
   return (
     <div className={'auth-landing' + (dark ? ' auth-landing--dark' : '')}>
       <header className="auth-landing__topbar">
-        <a className="auth-landing__brand" href="/" aria-label="OpenDesign 首页">
+        <a className="auth-landing__brand" href="/onboarding" aria-label="OpenDesign 首页">
           <span className="auth-landing__brand-mark" aria-hidden>
             <Layers size={25} strokeWidth={2.6} />
           </span>
