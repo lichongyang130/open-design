@@ -1717,7 +1717,10 @@ export function EntryShell({
           }, { replace: true });
         }}
         onContinueLocal={() => {
-          navigate({ kind: 'home', view: 'setup' }, { replace: true });
+          navigate({
+            kind: 'home',
+            view: config.onboardingCompleted ? 'home' : 'setup',
+          }, { replace: true });
         }}
       />
     );
