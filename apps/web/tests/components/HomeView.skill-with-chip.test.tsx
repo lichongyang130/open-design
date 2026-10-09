@@ -101,6 +101,19 @@ const DECK_SKILL: SkillSummary = {
   examplePrompt: 'Design a focused investor deck.',
 };
 
+const SPREADSHEET_SKILL: SkillSummary = {
+  ...BASE_SKILL,
+  id: 'spreadsheet-problem-solver',
+  name: 'Spreadsheet Problem Solver',
+  description: 'Safely inspect, clean, reconcile, and diagnose office spreadsheets.',
+  triggers: ['spreadsheet problems', 'clean spreadsheet', 'formula error'],
+  mode: 'prototype',
+  examplePrompt: 'Inspect my spreadsheet, identify data and formula issues, preserve the source, and produce an audit report.',
+  examplePromptI18n: {
+    'zh-CN': '检查这份表格的数据和公式问题，保留原文件，并生成审计报告。',
+  },
+};
+
 const APPLY_RESULT = {
   query: 'applied',
   contextItems: [],
@@ -197,11 +210,11 @@ async function mentionSkill(query: string, label: RegExp) {
   await waitFor(() => expect(screen.getByTestId('home-hero-active-skill')).toBeTruthy());
 }
 
-function renderHome(onSubmit: SubmitSpy) {
+function renderHome(onSubmit: SubmitSpy, skills: SkillSummary[] = [PROTOTYPE_SKILL, DECK_SKILL]) {
   return render(
     <HomeView
       projects={[]}
-      skills={[PROTOTYPE_SKILL, DECK_SKILL]}
+      skills={skills}
       onSubmit={onSubmit}
       onOpenProject={() => undefined}
     />,
@@ -218,6 +231,33 @@ async function submitAndRead(onSubmit: SubmitSpy) {
   await waitFor(() => expect(onSubmit).toHaveBeenCalled());
   return onSubmit.mock.calls[0]![0] as unknown as Record<string, unknown>;
 }
+
+describe('HomeView — spreadsheet problem shortcut', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    cleanup();
+    window.localStorage.clear();
+    window.sessionStorage.clear();
+  });
+
+  it('activates the unified spreadsheet skill and submits its localized task prompt', async () => {
+    stubFetch();
+    stubAnimationFrame();
+    const onSubmit = submitSpy();
+    renderHome(onSubmit, [PROTOTYPE_SKILL, DECK_SKILL, SPREADSHEET_SKILL]);
+
+    fireEvent.click(screen.getByTestId('home-hero-shortcuts-trigger'));
+    fireEvent.click(await screen.findByTestId('home-hero-rail-spreadsheet-problem'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('home-hero-active-skill')).toBeTruthy();
+      expect(homeHeroPromptText()).toContain('Inspect my spreadsheet');
+    });
+
+    const payload = await submitAndRead(onSubmit);
+    expect(payload.skillId).toBe('spreadsheet-problem-solver');
+  });
+});
 
 describe('HomeView — @-mentioning a Skill on top of a picked task type', () => {
   afterEach(() => {
