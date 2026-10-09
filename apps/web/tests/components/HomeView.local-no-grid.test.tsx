@@ -72,7 +72,7 @@ describe('HomeView in the local shell', () => {
       expect(screen.getByTestId('home-hero-active-skill').textContent).toContain('Spreadsheet Troubleshooting & Repair');
       expect(screen.queryByTestId('office-quick-actions')).toBeNull();
       const submitButton = screen.getByTestId('home-hero-submit');
-      expect(submitButton).not.toBeDisabled();
+      await waitFor(() => expect(submitButton).not.toBeDisabled());
       fireEvent.click(submitButton);
       await waitFor(() => expect(onSubmit).toHaveBeenCalled());
       expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
