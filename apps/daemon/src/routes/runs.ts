@@ -3673,7 +3673,9 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
       return sendApiError(res, 400, 'BAD_REQUEST', 'artifactPath must be a short single-line project path');
     }
     const findings = lintArtifact(html);
-    const agentMessage = renderFindingsForAgent(findings);
+    const agentMessage = renderFindingsForAgent(findings, {
+      instruction: 'Edit the specified existing HTML file in place. Do not emit a separate <artifact> block or a standalone explanation.',
+    });
     if (findings.length === 0 || !agentMessage) {
       artifactLintSteeringAttempts.delete(run);
       // A clean lint means no repair is needed; it does not mean this endpoint
