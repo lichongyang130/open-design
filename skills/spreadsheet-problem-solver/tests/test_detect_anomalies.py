@@ -44,7 +44,8 @@ class CsvAnomalyDetectionTests(unittest.TestCase):
             "008,17,H,paid\n"
             "009,1000,,review\n"
             "009,1000,,review\n"
-            "010,#DIV/0!,I,review\n",
+            "010,#DIV/0!,I,review\n"
+            "011,=SUM(#REF!),J,review\n",
             encoding="utf-8",
         )
 
@@ -58,7 +59,8 @@ class CsvAnomalyDetectionTests(unittest.TestCase):
         )
 
         self.assertEqual(report["summary"]["missing_values"], 2)
-        self.assertEqual(report["summary"]["rows_scanned"], 11)
+        self.assertEqual(report["summary"]["rows_scanned"], 12)
+        self.assertEqual(report["summary"]["broken_reference_formulas"], 1)
         self.assertEqual(report["summary"]["exact_duplicate_rows"], 1)
         self.assertEqual(report["summary"]["error_values"], 1)
         self.assertEqual(report["summary"]["numeric_outlier_candidates"], 2)
