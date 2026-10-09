@@ -1173,6 +1173,45 @@
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   }
+
+  /* Default office-first workbench: light, restrained, and task-oriented. */
+  body.office-workbench {
+    --paper: #f8fafc;
+    --paper-deep: #f1f5f9;
+    --ink: #172033;
+    --muted: rgba(23, 32, 51, .66);
+    --faint: rgba(23, 32, 51, .42);
+    --lime: #dbeafe;
+    --lime-deep: #2563eb;
+  }
+  body.office-workbench .greet { margin-bottom: 18px; }
+  body.office-workbench .greet h1 {
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: clamp(28px, 3vw, 36px);
+    font-weight: 700;
+    letter-spacing: -.04em;
+    color: #172033;
+  }
+  body.office-workbench .greet p { color: #64748b; }
+  body.office-workbench .cp-modes { display: none !important; }
+  body.office-workbench .cp-shell,
+  body.office-workbench .tile {
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, .045);
+  }
+  body.office-workbench .nav-item { border-radius: 10px; }
+  body.office-workbench .nav-item.on { background: #172033; color: #fff; box-shadow: none; }
+  body.office-workbench #secTiles { max-width: 860px; margin: 28px auto 0; }
+  body.office-workbench .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  body.office-workbench .tile { min-height: 78px; }
+  body.office-workbench .tile .tile-skill { color: #2563eb; }
+  body.office-workbench .cp-shell:focus-within {
+    border-color: #93c5fd;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .09), 0 8px 24px rgba(15, 23, 42, .045);
+  }
+  @media (max-width: 640px) { body.office-workbench .tiles { grid-template-columns: 1fr; } }
 </style>
 <link rel="stylesheet" href="/studio-templates.css" />
 <link rel="stylesheet" href="/studio-experts.css" />
@@ -1930,369 +1969,12 @@
         "我可以把你的笔记直接变成<b>幻灯片</b>哦"
       ],
       tiles: [
-        { icon: "doc", t: "一页项目简介", s: "文档" },
-        { icon: "deck", t: "把笔记变成演示文稿", s: "幻灯片" },
-        { icon: "flow", t: "设计一个注册流程", s: "原型" },
-        { icon: "anim", t: "制作一个加载动画", s: "图像" },
-        { icon: "pitch", t: "新路演演示", s: "幻灯片" },
-        { icon: "land", t: "勾勒落地页布局", s: "原型" },
-        { icon: "shop", t: "商品详情页排版", s: "文档" },
-        { icon: "dash", t: "订单跟踪仪表盘", s: "原型" }
-      ],
-      pjTitle: "项目", pjSub: "所有创作，尽在一处。", pjSearchPh: "搜索项目…", pjNew: "新建项目", pjBlank: "新建空白项目",
-      pjRealLoading: "正在初始化真实设计项目…", pjRealLoadingSub: "正在创建项目、生成首版产物并写入版本记录。",
-      pjRealError: "真实设计项目初始化失败", pjRealErrorSub: "没有展示静态假数据，请检查服务后重试。", pjRetry: "重新初始化",
-      pjRename: "重命名", pjDelete: "删除", pjDeleteConfirm: "确定删除「{name}」吗？删除后不会自动恢复。", pjRenamePrompt: "输入新的项目名称", pjDeleted: "已删除「{name}」", pjRenamed: "已重命名为「{name}」", pjActionFailed: "项目操作失败，请重试", pjVersion: "版本 {v}",
-      tpTitle: "模板", tpSub: "从模板开始，事半功倍。", tpFeaturedK: "本周主推", tpUse: "使用模板", tpUses: "次使用",
-      syTitle: "设计系统", sySub: "为你的作品选择一种视觉语言。", syApply: "套用",
-      cmTitle: "示例画廊", cmSub: "静态策展示例，仅用于浏览风格；当前不提供社区互动。", cmPick: "策展示例",
-      bnTitle: "第二大脑", bnSub: "灵感、决策与素材在这里自动沉淀，随时取用。",
-      bnAll: "全部", bnIns: "灵感", bnDec: "决策", bnMat: "素材", bnPref: "偏好",
-      bnEmpty: "还没有记忆，创作过程会自动沉淀到这里。",
-      brainData: [
-        { ty: "ins", x: "玻璃拟态仪表盘配色：青绿 #7ccbb8 + 暖橙 #ff9d76，浅灰底", w: "2 小时前" },
-        { ty: "dec", x: "注册流程默认采用「三步式」，首屏只留邮箱+密码", w: "昨天" },
-        { ty: "mat", x: "一套 24px 线性图标，描边 1.9px，圆角端点", w: "昨天" },
-        { ty: "pref", x: "中文界面优先使用思源黑体，标题字重 800", w: "2 天前" },
-        { ty: "ins", x: "海报大字排版参考：主次字号对比 1:6，负空间留白 40%", w: "3 天前" },
-        { ty: "dec", x: "移动端断点从 640px 起算，栅格 4 的倍数", w: "3 天前" },
-        { ty: "mat", x: "品牌色板：#10161b · #f5f5ef · #7ccbb8 · #ff9d76", w: "5 天前" },
-        { ty: "pref", x: "生成的页面页脚统一标注版本号与所用设计系统", w: "上周" },
-        { ty: "ins", x: "加载动画用呼吸式圆点，节奏 0.9s 循环", w: "上周" }
-      ],
-      toastTpl: "✦ 已套用模板，为你预填了创作器",
-      toastApplied: "✦ 已套用「{name}」视觉语言（演示）",
-      tplPrefill: "使用「{name}」模板帮我创建…",
-      pjFilters: ["全部", "原型", "幻灯片", "文档", "图像"],
-      tplTabs: ["全部", "原型", "幻灯片", "文档", "图片", "网站复刻", "HyperFrames", "WebGL", "实时产物", "视频", "音频"],
-      projects: [
-        { t: "品牌官网改版", k: "原型", ic: "web", time: "2 小时前", st: "done", stT: "已完成" },
-        { t: "Q3 汇报幻灯片", k: "幻灯片", ic: "deck", time: "3 天前", st: "run", stT: "生成中", prog: 64 },
-        { t: "移动端注册流", k: "原型", ic: "mobile", time: "昨天", st: "done", stT: "已完成" },
-        { t: "新品发布落地页", k: "原型", ic: "web", time: "3 天前", st: "done", stT: "已完成" },
-        { t: "设计规范文档", k: "文档", ic: "doc", time: "上周", st: "done", stT: "已完成" },
-        { t: "社区活动海报", k: "图像", ic: "poster", time: "上周", st: "done", stT: "已完成" },
-        { t: "年度数据看板", k: "原型", ic: "dash", time: "2 周前", st: "draft", stT: "草稿" },
-        { t: "用户研究简报", k: "文档", ic: "doc", time: "2 周前", st: "done", stT: "已完成" },
-        { t: "团队周会演示", k: "幻灯片", ic: "deck", time: "1 个月前", st: "done", stT: "已完成" }
-      ],
-      featured: { t: "新品路演模板", d: "从电梯陈述到财务预测，一套讲清新产品。", uses: "12.4k" },
-      templates: [
-        { t: "品牌官网", k: "原型", ic: "web", n: "8.2k" },
-        { t: "移动 App 引导页", k: "原型", ic: "mobile", n: "6.7k" },
-        { t: "数据仪表盘", k: "原型", ic: "dash", n: "5.1k" },
-        { t: "团队周报", k: "文档", ic: "doc", n: "4.3k" },
-        { t: "活动海报", k: "图片", ic: "poster", n: "3.9k" },
-        { t: "产品需求文档", k: "文档", ic: "doc", n: "3.2k" },
-        { t: "片头动画", k: "视频", ic: "anim", n: "2.8k" },
-        { t: "商品详情页", k: "文档", ic: "web", n: "2.1k" },
-        { t: "融资路演 PPT", k: "幻灯片", ic: "deck", n: "7.4k" },
-        { t: "季度汇报幻灯片", k: "幻灯片", ic: "deck", n: "5.6k" }
-      ],
-      systems: [
-        { t: "极简", d: "充裕留白、清晰字体与有限配色，减少视觉杂乱。", c: ["#f5f4f0", "#d9d7d0", "#a8a59c", "#5c5a52", "#20261e"] },
-        { t: "玻璃拟态", d: "磨砂玻璃层叠、微妙模糊与发光边框，现代优雅。", c: ["#cfe9ff", "#9fd0f5", "#6fb5ea", "#87ea5c", "#f0f7ff"] },
-        { t: "编辑风", d: "杂志式排版，精致衬线字体与结构化网格。", c: ["#f7f3ec", "#e2d9c8", "#b8a888", "#7a6a4f", "#2b2620"] },
-        { t: "便当盒", d: "模块化网格与卡片式区块，井然有序、易于扫读。", c: ["#ffe8d6", "#ffd6a8", "#a8cd6f", "#7ccbb8", "#f2f0eb"] },
-        { t: "宇宙感", d: "未来科幻美学，深色主题与鲜艳霓虹点缀。", c: ["#1a1f3a", "#2d3561", "#5b64b8", "#9aa5f0", "#d9dcff"] },
-        { t: "咖啡馆", d: "暖色调、柔和字体与简洁布局，轻松惬意。", c: ["#f5e8d8", "#e2c8a8", "#c8a078", "#8a6242", "#4a3526"] },
-        { t: "手绘涂鸦", d: "涂鸦、手写字体与不规整线条，俏皮随性。", c: ["#fff8e0", "#ffd95e", "#ff9d76", "#7cd0ff", "#20261e"] },
-        { t: "粗犷主义", d: "反设计美学，未加修饰、功能至上的极简。", c: ["#e8e8e8", "#b8b8b8", "#7a7a7a", "#ff4a3d", "#161616"] },
-        { t: "平视显示", d: "近黑底上的荧光绿数据叠层，硬核科技感。", c: ["#051408", "#0a2812", "#1d5c28", "#4ade68", "#a4f584"] }
-      ],
-      banner: { t: "「让城市数据会说话」", d: "用交互可视化讲一座城市的故事。", av: "小鹿", avc: "#ff9d76" },
-      community: [
-        { t: "城市数据可视化", e: "🌆", author: "小鹿", avc: "#ff9d76", likes: "1.2k", remix: "236", g: "#d3f4ec,#7ccbb8" },
-        { t: "独立咖啡馆品牌", e: "🍰", author: "阿明", avc: "#5cb8ea", likes: "986", remix: "187", g: "#f5e8d8,#e2c8a8" },
-        { t: "儿童绘本插画集", e: "📚", author: "Momo", avc: "#b39aec", likes: "875", remix: "142", g: "#ffe1e6,#f19cab" },
-        { t: "极简简历模板", e: "📄", author: "阿杰", avc: "#a8cd6f", likes: "764", remix: "310", g: "#dde7ff,#93aef0" },
-        { t: "音乐节视觉设计", e: "🎵", author: "Lin", avc: "#f19cab", likes: "723", remix: "95", g: "#eadcff,#b39aec" },
-        { t: "智能家居 App", e: "🏠", author: "Kevin", avc: "#7ccbb8", likes: "688", remix: "120", g: "#e8f3d4,#a8cd6f" }
-      ],
-      tagA: "小鹿", tagC: "Buddy ✦"
-    },
-    en: {
-      title: "DesignBuddy · Studio",
-      navHome: "Home", navProjects: "Projects", navExperts: "Experts", navTemplates: "Templates", navSkills: "Skills", navSystems: "Design systems", navCommunity: "Example gallery", navBrain: "Second brain",
-      accountTrial: "Trial", accountUpgrade: "Upgrade", accountPoints: "Points", accountFuel: "Buddy Fuel Station",
-      accountInvite: "Invite friends", accountInviteMeta: "Earn up to 650 points each", accountGrowth: "Growth plan", accountGrowthMeta: "Sign in to win Buddy gifts",
-      accountSettings: "Settings", accountMemory: "Memory & evolution", accountAppearance: "Appearance", accountAppearanceMeta: "New looks",
-      accountHelp: "Help & feedback", accountUpdates: "Check for updates", accountSignOut: "Sign out", accountCopy: "Copy username",
-      accountCopied: "Username copied",
-      modelSelected: "Switched to {name}", modelPickerAria: "Choose a large model",
-      modelChecking: "Checking daemon configuration…", modelConfigured: "Daemon credential configured", modelMissing: "Daemon credential is not configured",
-      modelReal: "Live API", modelCustom: "Custom", modelConnected: "Connected", modelNeedsSetup: "Connect", modelText: "Text", modelImage: "Image", modelVideo: "Video", modelCheck: "Verify Agnes connection", modelManage: "Manage and connect custom models",
-      modelCheckOk: "Agnes connection verified ({ms}ms)", modelCheckFailed: "Agnes connection failed: {message}",
-      modelRequired: "Agnes is not configured, so generation cannot start. Set OD_AGNES_API_KEY in the daemon and restart it.",
-      modelCustomRequired: "The custom model ‘{name}’ is not connected. Run its connection test in Settings, then save it.", modelCustomProtocolUnsupported: "Custom-protocol generation is not supported yet. Edit ‘{name}’ and select the OpenAI-compatible protocol.", modelCustomInvalid: "The endpoint or credential for ‘{name}’ is incomplete. Fix it in Settings.",
-      projectCreateFailed: "Could not create the project: {message}", actionFailed: "Action failed: {message}",
-      greetPre: "Let's create a ", greetSub: "Great work starts here — ", greetSig: "with your AI design buddy.",
-      phPrompt: "Describe what you want to make…",
-      chipTemplate: "Start from template", chipSkill: "Skills", chipPlugin: "Add plugin", chipDs: "Design system",
-      chipPlus: "Add",
-      chipDir: "Working folder", pkMode: "Output type", pmSkill: "Skills", pmUseSkill: "Use this skill", pmSkillDesc: "Attach a skill for this run: video templates, branding, 8-bit styles — fires on trigger words.",
-      moAuto: "Auto", moLanding: "Web page", moSignup: "Signup flow", moPoster: "Poster", moDeck: "Slides", moStoryboard: "Storyboard",
-      pmAttach: "Attach files", pmRef: "Reference project", pmLink: "Link local code", pmPlugin: "Plugins", pmFigma: "Import from Figma", pmConn: "Connectors", pmMcp: "MCP",
-      pmSearch: "Search plugins…", pmUse: "Use this plugin", pmOfficial: "Official", pmSelHint: "Pick a plugin to see details",
-      pmRefTitle: "Reference project", pmRefHint: "Buddy will follow that project's style",
-      pmRefFill: "Following the style of \"{name}\", continue designing: ",
-      pmAttachItems: "Images,Documents,Spreadsheets,Decks",
-      pmFigmaItems: "Figma file,Figma frame",
-      pmConnItems: "GitHub,Notion,Slack,Linear",
-      pmMcpItems: "Filesystem,Browser,Database",
-      pmLinkItems: "Pick a local folder,Paste a repo URL",
-      pmAttachDesc: "Attach images and docs as context for generation.",
-      pmRefDesc: "Reference an existing project to continue its style.",
-      pmRefSearch: "Search projects…", pmRefSel: "Selected", pmRefConfirm: "Reference", pmCancel: "Cancel",
-      pmLinkDesc: "Link a local code folder so Buddy can read design assets.",
-      pmPluginDesc: "Install capability plugins for this run: video, 3D, infographics…",
-      pmFigmaDesc: "Import Figma files or frames as editable designs.",
-      pmConnDesc: "Connect third-party services into your flow.",
-      pmMcpDesc: "Attach MCP servers to extend Buddy's tools.",
-      hint: "⌘/Ctrl + Enter to send", send: "Send",
-      examplesTitle: "Try these", examplesRefresh: "Refresh", recentTitle: "Recent projects",
-      examplesReady: "Detailed prompt added with skill: {skill}", examplesBatch: "Suggestions refreshed",
-      examplesSkillLoading: "Loading the matching skill…", examplesSkillUnavailable: "The matching skill is unavailable. Please try again",
-      p1: "Brand site redesign", t1: "2h ago", p2: "Mobile signup flow", t2: "Yesterday", p3: "Q3 report deck", t3: "3d ago",
-      stDone: "Done", stRun: "Running",
-      words: ["prototype", "deck", "doc"],
-      toastSent: "✦ Got your idea — Agnes is generating now",
-      toastDemo: "Design demo · not wired to the real feature yet",
-      toastLang: "Switched to English",
-      toastRole: "✦ Switched to the {name} view",
-      toastCreated: "✦ Project “{name}” created — saved to the database",
-      toastRvReject: "✦ Sent “{name}” back for changes",
-      pjLive: "● LIVE",
-      rsGen: "Generations this month", rsGenSub: "+{n} today",
-      rsQuota: "Quota left", rsQuotaSub: "{total} total · {used} used",
-      rsPending: "Pending reviews", rsPendingSub: "From the team review queue",
-      pkSkill: "Pick a skill", pkPlugin: "Add a plugin", pkDs: "Pick a design system",
-      pkSearch: "Search…", pkClear: "Clear selection", pkEmpty: "No matches", resourceEmpty: "No resources are currently available from the local service.",
-      toastPicked: "✦ Selected: {name}",
-      sysMore: "Show more ({n})",
-      /* Generation view */
-      gsRun: "Generating…", gsDone: "Done", gsStop: "Stopped manually", gsError: "Generation failed",
-      genEngine: "Agnes AI", genVia: "live model API",
-      genStopBtn: "Stop",
-      genAskPh: "Keep enriching this design…",
-      genWelcomeTitle: "Describe what you need",
-      genWelcomeBody: "I'll generate the first version, then you can keep refining and enriching it.",
-      genSugPolish: "Polish to ship quality: hierarchy, type, spacing, responsive, button states, empty/loading/error states",
-      genSugDark: "Add a dark mode version",
-      genSugPalette: "Try a bolder palette",
-      genSugMobile: "Add a mobile adaptation",
-      gfTitle: "Design files", gfTab: "Project",
-      gfEmpty: "Generated designs will appear here",
-      gfEmptySub: "Send your first brief on the left",
-      gfNewSketch: "New sketch", gfNewDoc: "New doc", gfUpload: "Upload", gfNewBrowser: "New browser", gfNewDs: "New design system", gfDelivery: "Delivery Center",
-      gNewTab: "New tab", gCopyHtml: "Copy HTML", gCopied: "HTML copied", gDownload: "Download file", gClose: "Close",
-      genStepAnalyze: "Analyzing: {kind}",
-      genStepPlan: "Plan: {plan}",
-      genStepDs: "Applying design system: {ds}",
-      genStepGen: "Generating v{v}: \"{name}\"",
-      genStepCheck: "Self-check: contrast · spacing · breakpoints",
-      genStepMod: "Understanding change: {mods}",
-      genStepApply: "Applying changes → v{v}",
-      genStepInvoke: "Calling live model: {model}", genStepMediaWait: "Waiting for asynchronous media task: {model}",
-      genAiIntro1: "Got it! I’ll create the first version from \"{prompt}\".",
-      genAiIntro2: "Got it! I’ll refine the existing design using \"{prompt}\".",
-      genAiOutro: "v{v} is ready — preview it in Design files. Keep refining anytime.",
-      genAiOutroMedia: "v{v} is generated and saved to the project. Preview it on the right.",
-      genToastDone: "✦ Generated v{v}",
-      genToastStop: "Generation stopped", genToastError: "Generation failed: {message}",
-      gkSignup: "signup flow", gkLanding: "landing page", gkApp: "mobile app", gkPoster: "poster", gkDeck: "slides", gkDashboard: "dashboard", gkDesignSystem: "design system", gkStoryboard: "storyboard", gkPage: "general page",
-      gpSignup: "3 screens: welcome → form → done",
-      gpLanding: "hero + features + CTA",
-      gpApp: "member overview + benefits + tasks + tab bar",
-      gpPoster: "big type + key color blocks",
-      gpDeck: "cover / points / closing",
-      gpDashboard: "key metrics + trends + details",
-      gpDesignSystem: "design tokens + foundations + components",
-      gpStoryboard: "opening / middle / ending",
-      gpPage: "hero + content + CTA",
-      gmPolish: "ship-quality polish", gmDark: "dark mode", gmPalette: "new palette", gmMobile: "mobile adaptation",
-      genDefaultDs: "default visual system",
-      sfWeb: "Web", sfImage: "Image", sfVideo: "Video", sfAudio: "Audio",
-      navReview: "Review", navArtifacts: "Artifacts", navMembers: "Members", navApprovals: "Approvals",
-      rvHome: "Awaiting your review", rvTitle: "Review center", rvSub: "Review everything your team submits — approve or send back in one click.", rvEmpty: "There are no review items from the local service right now.",
-      rvWait: "Pending", rvPass: "Approved", rvApprove: "Approve", rvReject: "Send back", toastRvPass: "✦ Approved “{name}” — requester notified",
-      atHome: "Latest artifacts", atTitle: "Artifacts", atSub: "Frontend assets generated from designs — code ready to use.", atPreview: "Preview", atCopy: "Copy code", toastCopied: "✦ Code copied (demo)",
-      mbTitle: "Team members", mbSub: "Invite teammates and see who's most active.", mbInvite: "Invite members", toastInvite: "✦ Invite link copied (demo)",
-      apTitle: "Approvals", apSub: "Join requests, quota raises and archives.", apWait: "Pending", apDone: "Done", apApprove: "Approve", apReject: "Reject", toastApOk: "✦ Request approved",
-      adChart: "Generation trend this month",
-      review: [
-        { t: "Brand site redesign", who: "Lu", avc: "#ff9d76", ic: "web", st: "wait" },
-        { t: "Signup flow v2", who: "Ming", avc: "#5cb8ea", ic: "mobile", st: "wait" },
-        { t: "Q3 pitch deck", who: "Momo", avc: "#b39aec", ic: "deck", st: "wait" },
-        { t: "Mobile redesign", who: "Kevin", avc: "#7ccbb8", ic: "mobile", st: "pass" },
-        { t: "Brand book", who: "Lin", avc: "#f19cab", ic: "doc", st: "pass" },
-        { t: "Dashboard prototype", who: "Jie", avc: "#a8cd6f", ic: "dash", st: "pass" }
-      ],
-      artifacts: [
-        { t: "Brand homepage", ic: "web", time: "2h ago", files: ["index.html", "styles.css"] },
-        { t: "Mobile signup flow", ic: "mobile", time: "Yesterday", files: ["signup.html", "form.js"] },
-        { t: "Annual dashboard", ic: "dash", time: "3d ago", files: ["dash.html", "charts.js"] },
-        { t: "Q3 report deck", ic: "deck", time: "3d ago", files: ["deck.html"] },
-        { t: "Design spec", ic: "doc", time: "Last week", files: ["spec.html"] },
-        { t: "Community poster", ic: "poster", time: "Last week", files: ["poster.html"] }
-      ],
-      members: [
-        { n: "Lu", r: "Designer", pct: 86, gens: "326 gens" },
-        { n: "Ming", r: "Product manager", pct: 64, gens: "158 gens" },
-        { n: "Momo", r: "Designer", pct: 52, gens: "142 gens" },
-        { n: "Kevin", r: "Developer", pct: 38, gens: "96 gens" },
-        { n: "Lin", r: "Marketing", pct: 24, gens: "61 gens" }
-      ],
-      approvals: [
-        { t: "Ming requests to join the team", meta: "product@designbuddy.app · 2h ago", st: "wait" },
-        { t: "“Annual dashboard” quota +500", meta: "Kevin · Yesterday", st: "wait" },
-        { t: "Momo's “Brand book” archived", meta: "3d ago", st: "done" }
-      ],
-      adminStats: [
-        { k: "Generations this month", v: "1,284", d: "+12%", sub: "Steady growth vs last month" },
-        { k: "Quota left", v: "68%", sub: "Team Pro · resets Oct 31" },
-        { k: "Pending approvals", v: "2", sub: "Join request & quota raise" }
-      ],
-      bubbles: [
-        "What are we making today? Just tell me ✦",
-        "Try “a <b>pitch deck</b> for a new product”",
-        "I can turn your notes into a <b>deck</b>"
-      ],
-      tiles: [
-        { icon: "doc", t: "One-page brief", s: "Document" },
-        { icon: "deck", t: "Notes → deck", s: "Slides" },
-        { icon: "flow", t: "A signup flow", s: "Prototype" },
-        { icon: "anim", t: "A loading animation", s: "Image" },
-        { icon: "pitch", t: "New pitch deck", s: "Slides" },
-        { icon: "land", t: "Landing page layout", s: "Prototype" },
-        { icon: "shop", t: "Product page layout", s: "Document" },
-        { icon: "dash", t: "Orders dashboard", s: "Prototype" }
-      ],
-      pjTitle: "Projects", pjSub: "Everything you've made, in one place.", pjSearchPh: "Search projects…", pjNew: "New project", pjBlank: "New blank project",
-      pjRealLoading: "Initializing real design projects…", pjRealLoadingSub: "Creating projects, generating v1 artifacts, and saving version history.",
-      pjRealError: "Real project initialization failed", pjRealErrorSub: "No static demo data is being shown. Check the service and retry.", pjRetry: "Retry initialization",
-      pjRename: "Rename", pjDelete: "Delete", pjDeleteConfirm: "Delete “{name}”? It will not be restored automatically.", pjRenamePrompt: "Enter a new project name", pjDeleted: "Deleted “{name}”", pjRenamed: "Renamed to “{name}”", pjActionFailed: "Project action failed. Please retry.", pjVersion: "Version {v}",
-      tpTitle: "Templates", tpSub: "Start from a template, move faster.", tpFeaturedK: "FEATURED", tpUse: "Use template", tpUses: "uses",
-      syTitle: "Design systems", sySub: "Pick a visual language for your work.", syApply: "Apply",
-      cmTitle: "Example gallery", cmSub: "A read-only style showcase; community interactions are not currently available.", cmPick: "CURATED EXAMPLE",
-      bnTitle: "Second brain", bnSub: "Ideas, decisions and assets settle here automatically.",
-      bnAll: "All", bnIns: "Ideas", bnDec: "Decisions", bnMat: "Assets", bnPref: "Preferences",
-      bnEmpty: "No memories yet — they settle here as you create.",
-      brainData: [
-        { ty: "ins", x: "Glass dashboard palette: teal #7ccbb8 + warm orange #ff9d76 on light gray", w: "2h ago" },
-        { ty: "dec", x: "Signup defaults to a 3-step flow; first screen keeps email + password only", w: "Yesterday" },
-        { ty: "mat", x: "A 24px line-icon set, 1.9px stroke, round caps", w: "Yesterday" },
-        { ty: "pref", x: "Chinese UI prefers Noto Sans SC, headings weight 800", w: "2d ago" },
-        { ty: "ins", x: "Poster type reference: 1:6 size contrast, 40% negative space", w: "3d ago" },
-        { ty: "dec", x: "Mobile breakpoint starts at 640px, spacing on a 4px grid", w: "3d ago" },
-        { ty: "mat", x: "Brand palette: #10161b · #f5f5ef · #7ccbb8 · #ff9d76", w: "5d ago" },
-        { ty: "pref", x: "Generated pages footnote the version and design system used", w: "Last week" },
-        { ty: "ins", x: "Loading animation: breathing dots on a 0.9s loop", w: "Last week" }
-      ],
-      toastTpl: "✦ Template applied — composer prefilled for you",
-      toastApplied: "✦ Applied the “{name}” visual language (demo)",
-      tplPrefill: 'Create a project with the "{name}" template…',
-      pjFilters: ["All", "Prototypes", "Slides", "Documents", "Images"],
-      tplTabs: ["All", "Prototypes", "Slides", "Documents", "Images", "Website replica", "HyperFrames", "WebGL", "Live artifacts", "Video", "Audio"],
-      projects: [
-        { t: "Brand site redesign", k: "Prototypes", ic: "web", time: "2h ago", st: "done", stT: "Done" },
-        { t: "Q3 report deck", k: "Slides", ic: "deck", time: "3d ago", st: "run", stT: "Running", prog: 64 },
-        { t: "Mobile signup flow", k: "Prototypes", ic: "mobile", time: "Yesterday", st: "done", stT: "Done" },
-        { t: "Product launch page", k: "Prototypes", ic: "web", time: "3d ago", st: "done", stT: "Done" },
-        { t: "Design spec", k: "Documents", ic: "doc", time: "Last week", st: "done", stT: "Done" },
-        { t: "Community poster", k: "Images", ic: "poster", time: "Last week", st: "done", stT: "Done" },
-        { t: "Annual dashboard", k: "Prototypes", ic: "dash", time: "2w ago", st: "draft", stT: "Draft" },
-        { t: "User research brief", k: "Documents", ic: "doc", time: "2w ago", st: "done", stT: "Done" },
-        { t: "Team weekly deck", k: "Slides", ic: "deck", time: "1mo ago", st: "done", stT: "Done" }
-      ],
-      featured: { t: "New-product pitch deck", d: "From elevator pitch to financials — tell the whole story in one deck.", uses: "12.4k" },
-      templates: [
-        { t: "Brand website", k: "Prototypes", ic: "web", n: "8.2k" },
-        { t: "App onboarding", k: "Prototypes", ic: "mobile", n: "6.7k" },
-        { t: "Data dashboard", k: "Prototypes", ic: "dash", n: "5.1k" },
-        { t: "Team weekly doc", k: "Documents", ic: "doc", n: "4.3k" },
-        { t: "Event poster", k: "Images", ic: "poster", n: "3.9k" },
-        { t: "Product PRD", k: "Documents", ic: "doc", n: "3.2k" },
-        { t: "Intro motion", k: "Video", ic: "anim", n: "2.8k" },
-        { t: "Product page", k: "Documents", ic: "web", n: "2.1k" },
-        { t: "Pitch deck", k: "Slides", ic: "deck", n: "7.4k" },
-        { t: "Quarterly review deck", k: "Slides", ic: "deck", n: "5.6k" }
-      ],
-      systems: [
-        { t: "Minimal", d: "Generous whitespace, clear type, a limited palette.", c: ["#f5f4f0", "#d9d7d0", "#a8a59c", "#5c5a52", "#20261e"] },
-        { t: "Glassmorphism", d: "Frosted layers, subtle blur, glowing borders.", c: ["#cfe9ff", "#9fd0f5", "#6fb5ea", "#87ea5c", "#f0f7ff"] },
-        { t: "Editorial", d: "Magazine layouts, refined serifs, structured grids.", c: ["#f7f3ec", "#e2d9c8", "#b8a888", "#7a6a4f", "#2b2620"] },
-        { t: "Bento", d: "Modular grids and card blocks, easy to scan.", c: ["#ffe8d6", "#ffd6a8", "#a8cd6f", "#7ccbb8", "#f2f0eb"] },
-        { t: "Cosmic", d: "Future-sci-fi aesthetics, dark themes, neon accents.", c: ["#1a1f3a", "#2d3561", "#5b64b8", "#9aa5f0", "#d9dcff"] },
-        { t: "Café", d: "Warm tones, soft type, laid-back layouts.", c: ["#f5e8d8", "#e2c8a8", "#c8a078", "#8a6242", "#4a3526"] },
-        { t: "Doodle", d: "Sketches, handwriting, playful imperfection.", c: ["#fff8e0", "#ffd95e", "#ff9d76", "#7cd0ff", "#20261e"] },
-        { t: "Brutalism", d: "Anti-design aesthetics, unapologetically raw.", c: ["#e8e8e8", "#b8b8b8", "#7a7a7a", "#ff4a3d", "#161616"] },
-        { t: "HUD", d: "Fluorescent data overlays on near-black, hardcore tech.", c: ["#051408", "#0a2812", "#1d5c28", "#4ade68", "#a4f584"] }
-      ],
-      banner: { t: "“Make city data speak”", d: "Telling a city's story through interactive visuals.", av: "Lu", avc: "#ff9d76" },
-      community: [
-        { t: "Urban data viz", e: "🌆", author: "Lu", avc: "#ff9d76", likes: "1.2k", remix: "236", g: "#d3f4ec,#7ccbb8" },
-        { t: "Indie café brand", e: "🍰", author: "Ming", avc: "#5cb8ea", likes: "986", remix: "187", g: "#f5e8d8,#e2c8a8" },
-        { t: "Kids picture book", e: "📚", author: "Momo", avc: "#b39aec", likes: "875", remix: "142", g: "#ffe1e6,#f19cab" },
-        { t: "Minimal résumé", e: "📄", author: "Jie", avc: "#a8cd6f", likes: "764", remix: "310", g: "#dde7ff,#93aef0" },
-        { t: "Festival visuals", e: "🎵", author: "Lin", avc: "#f19cab", likes: "723", remix: "95", g: "#eadcff,#b39aec" },
-        { t: "Smart home app", e: "🏠", author: "Kevin", avc: "#7ccbb8", likes: "688", remix: "120", g: "#e8f3d4,#a8cd6f" }
-      ],
-      tagA: "Lu", tagC: "Buddy ✦"
-    }
-  };
-  var TILE_SVG = {
-    doc: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h8l4.5 4.5v12A1.5 1.5 0 0 1 17 21.5H6A1.5 1.5 0 0 1 4.5 20V5A1.5 1.5 0 0 1 6 3.5z"/><path d="M13.5 3.5V8h4.5M8.5 13h7M8.5 17h5"/></svg>',
-    deck: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="12" rx="2"/><path d="M12 16.5V20M8.5 20h7"/></svg>',
-    flow: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3.5" width="7" height="5.5" rx="2"/><rect x="14" y="15" width="7" height="5.5" rx="2"/><path d="M6.5 9v4.5a2 2 0 0 0 2 2H14"/></svg>',
-    anim: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="8.5" stroke-dasharray="4 3.5"/><path d="M12 8.5v4l2.5 1.8"/></svg>',
-    pitch: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16.5 9 9l3.5 4L19 5.5M14 5.5h5v5"/></svg>',
-    land: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 9.5v10"/></svg>',
-    shop: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1.2 12H6.2z"/><path d="M8.8 8V6.5a3.2 3.2 0 0 1 6.4 0V8"/></svg>',
-    dash: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M8 15.5v-4M12 15.5v-7M16 15.5v-2.5"/></svg>',
-    web: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M7 7h.01M9.5 7h.01"/></svg>',
-    code: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m9 7.5-4.5 4.5L9 16.5M15 7.5l4.5 4.5L15 16.5"/></svg>'
-  };
-  var TILE_HUE = ["#d9f2c9,#8fd483", "#d6ecff,#7cb8ee", "#ffe6cf,#f5b183", "#eadcff,#b39aec", "#d3f4ec,#7ccbb8", "#ffe1e6,#f19cab", "#e8f3d4,#a8cd6f", "#dde7ff,#93aef0"];
-
-  /* ── 角色系统 ── */
-  var ROLE_ICONS = {
-    designer: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5a8.5 8.5 0 0 0 0 17c1.4 0 2-.9 2-1.8 0-1.6-1.8-1.9-1.8-3.2 0-1 .8-1.7 2-1.7h1.3a5 5 0 0 0 5-5C20.5 6 16.7 3.5 12 3.5z"/><circle cx="7.5" cy="10.5" r="1" fill="currentColor" stroke="none"/><circle cx="10.5" cy="7" r="1" fill="currentColor" stroke="none"/><circle cx="14.5" cy="7" r="1" fill="currentColor" stroke="none"/></svg>',
-    pm: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4.5" width="14" height="16.5" rx="2"/><path d="M9 4.5V3.2c0-.9.7-1.7 1.6-1.7h2.8c.9 0 1.6.8 1.6 1.7v1.3"/><path d="m9 13 2 2 4-4.5"/></svg>',
-    dev: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m9 7.5-4.5 4.5L9 16.5M15 7.5l4.5 4.5L15 16.5"/></svg>',
-    admin: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 20h16"/><path d="M7 16v-4M12 16V7M17 16v-6"/></svg>'
-  };
-  var CHECK_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 12.5 5 5 10-11"/></svg>';
-  var NAV_ICONS = {
-    home: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 10.5 12 3.5l8.5 7v9a1.5 1.5 0 0 1-1.5 1.5h-4v-6h-6v6H5a1.5 1.5 0 0 1-1.5-1.5z"/></svg>',
-    projects: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="6.5" width="12.5" height="12.5" rx="3"/><path d="M8 6.5V5a1.5 1.5 0 0 1 1.5-1.5H19A1.5 1.5 0 0 1 20.5 5v9.5A1.5 1.5 0 0 1 19 16h-1.5"/></svg>',
-    brain: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6.5" r="2.5"/><circle cx="17.5" cy="6" r="2.2"/><circle cx="12" cy="13" r="2.8"/><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="18.5" r="2.5"/><path d="M8.2 7.6 9.8 11M15.4 7.3 14 10.6M10.4 15.2l-2.6 2.4M13.8 15.4l2.6 1.9"/></svg>',
-    experts: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="9" r="3"/><path d="M3 19c.8-3.2 2.6-4.8 5.5-4.8 2.2 0 3.9.9 4.9 2.7M17.2 4.2l.9 2 2.2.3-1.6 1.5.4 2.2-1.9-1-2 1 .4-2.2L14 6.5l2.2-.3 1-2Z"/></svg>',
-    templates: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><path d="M17 13.8v6.4M13.8 17h6.4"/></svg>',
-    skills: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 19.5 18 6l-3-3L1.5 16.5v3h3ZM12 6l3 3"/><path d="m17.5 12 .7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7.7-1.8ZM7 3l.5 1.3L9 5l-1.5.6L7 7l-.6-1.4L5 5l1.4-.7L7 3Z"/></svg>',
-    systems: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="7" cy="7" r="3.2"/><circle cx="17" cy="7" r="3.2" fill="currentColor" stroke="none" opacity="0.35"/><circle cx="7" cy="17" r="3.2" fill="currentColor" stroke="none" opacity="0.35"/><circle cx="17" cy="17" r="3.2" fill="currentColor" stroke="none" opacity="0.7"/></svg>',
-    community: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="9" cy="8.5" r="3.4"/><path d="M2.8 20c1.4-3 3.6-4.4 6.2-4.4s4.8 1.4 6.2 4.4"/><circle cx="17" cy="9.5" r="2.6"/><path d="M15.5 15.7c2.5.2 4.5 1.5 5.7 4.3"/></svg>',
-    review: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4.5" width="14" height="16.5" rx="2"/><path d="M9 4.5V3.2c0-.9.7-1.7 1.6-1.7h2.8c.9 0 1.6.8 1.6 1.7v1.3"/><path d="m9 13 2 2 4-4.5"/></svg>',
-    artifacts: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m9 7.5-4.5 4.5L9 16.5M15 7.5l4.5 4.5L15 16.5"/></svg>',
-    members: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="9" cy="8.5" r="3.4"/><path d="M2.8 20c1.4-3 3.6-4.4 6.2-4.4s4.8 1.4 6.2 4.4"/><path d="M16 4.9a3.4 3.4 0 0 1 0 7.2M17.8 15.9c1.7.6 2.9 1.9 3.5 4.1"/></svg>',
-    approvals: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 5.5v5c0 4.4 3 8.4 7 9.5 4-1.1 7-5.1 7-9.5v-5L12 3z"/><path d="m9 11.5 2 2 4-4"/></svg>'
-  };
-  var NAV_KEYS = { home: "navHome", projects: "navProjects", experts: "navExperts", templates: "navTemplates", skills: "navSkills", systems: "navSystems", community: "navCommunity", brain: "navBrain", review: "navReview", artifacts: "navArtifacts", members: "navMembers", approvals: "navApprovals" };
-  var ROLES = {
-    designer: {
-      grad: "#d9f2c9,#8fd483", icon: ROLE_ICONS.designer,
-      zh: {
-        name: "设计师", desc: "视觉与原型创作",
-        nav: ["home", "projects", "experts", "templates", "skills", "systems", "community", "brain"],
-        greetPre: "让我们创建", subPre: "好的作品，从这里开始 —— ", subSig: "和你的 AI 设计搭子一起。",
-        ph: "描述你想生成的内容…",
-        modes: [
-          { id: "landing", label: "网页原型", kind: "landing" },
-          { id: "app", label: "App", kind: "app" },
-          { id: "deck", label: "幻灯片", kind: "deck" },
-          { id: "poster", label: "海报", kind: "poster" },
-          { id: "dashboard", label: "Dashboard", kind: "dashboard" },
-          { id: "design-system", label: "设计系统", kind: "design-system" }
+          { icon: "doc", t: "Check and repair Excel", s: "Spreadsheet repair", p: "Inspect my uploaded Excel workbook for formula errors, missing values, and anomalies, and preserve the original file" },
+          { icon: "dash", t: "Remove duplicate records", s: "Data cleanup", p: "Check my spreadsheet for duplicate records, explain the matching rule, remove only confirmed duplicates, and verify row counts" },
+          { icon: "doc", t: "Normalize dates and formats", s: "Format check", p: "Inspect inconsistent dates, numbers, and cell formats in Excel, normalize only clearly equivalent formats, and verify the result" },
+          { icon: "dash", t: "Verify formulas and totals", s: "Formula check", p: "Inspect Excel formula references, error values, and totals, repair supported issues, and recheck key summaries" },
+          { icon: "doc", t: "Combine worksheets", s: "Workbook cleanup", p: "Review worksheets in my workbook, confirm matching fields, combine the data, and report columns that cannot be matched" },
+          { icon: "dash", t: "Create a data check report", s: "Audit report", p: "Check key fields, totals, and anomalies in my uploaded workbook and create an issue list with sheet and cell references" }
         ],
         bubbles: [
           "今天想做点什么？把想法丢给我就好 ✦",
@@ -2315,10 +1997,10 @@
         ]
       },
       en: {
-        name: "Designer", desc: "Visuals & prototypes",
-        nav: ["home", "projects", "experts", "templates", "skills", "systems", "community", "brain"],
-        greetPre: "Let's create a ", subPre: "Great work starts here — ", subSig: "with your AI design buddy.",
-        ph: "Describe what you want to make…",
+        name: "Office assistant", desc: "Spreadsheets, documents, and everyday office work"
+        nav: ["home", "projects", "skills"],
+        greetPre: "What work can I help with today?", subPre: "Upload a file or describe the issue — ", subSig: "inspect first, then fix while preserving the original.",
+        ph: "Describe your office task, or upload an Excel, Word, or PDF file…",
         modes: [
           { id: "landing", label: "Web prototype", kind: "landing" },
           { id: "app", label: "App", kind: "app" },
@@ -2663,28 +2345,14 @@
   var ROLE_PROJECTS = {
     designer: {
       zh: {
-        title: "设计项目", sub: "原型、视觉与设计系统，一处管理。", search: "搜索设计项目…",
-        newLabel: "新建设计", blankLabel: "开始一个设计", all: "全部",
-        items: [
-          { t: "品牌官网改版", mode: "landing", ic: "web", g: "#cdeec2,#8fd4f2", time: "2 小时前", st: "done", stT: "已完成", p: "为新品牌设计一个响应式官网原型" },
-          { t: "会员中心 App", mode: "app", ic: "mobile", g: "#ffe3c4,#ffb3a0", time: "昨天", st: "run", stT: "生成中", prog: 72, p: "设计一套移动端会员中心 App 界面" },
-          { t: "秋季发布会提案", mode: "deck", ic: "deck", g: "#d9d2f5,#b1a5ec", time: "3 天前", st: "draft", stT: "待评审", p: "制作一份秋季新品发布会幻灯片" },
-          { t: "社区招募海报", mode: "poster", ic: "poster", g: "#ffe1e6,#f19cab", time: "上周", st: "done", stT: "已交付", p: "设计一张社区设计师招募海报" },
-          { t: "增长指标 Dashboard", mode: "dashboard", ic: "dash", g: "#d3f4ec,#7ccbb8", time: "上周", st: "run", stT: "优化中", prog: 48, p: "设计一个展示增长指标的 Dashboard" },
-          { t: "Aurora 设计系统", mode: "design-system", ic: "doc", g: "#dde7ff,#93aef0", time: "2 周前", st: "done", stT: "已发布", p: "创建 Aurora 产品的设计系统与组件规范" }
-        ]
+        title: "办公任务", sub: "查看实际创建的文件与处理任务。", search: "搜索办公任务…",
+        newLabel: "新建任务", blankLabel: "开始处理", all: "全部",
+        items: []
       },
       en: {
-        title: "Design projects", sub: "Prototypes, visuals, and design systems in one place.", search: "Search design projects…",
-        newLabel: "New design", blankLabel: "Start a design", all: "All",
-        items: [
-          { t: "Brand website refresh", mode: "landing", ic: "web", g: "#cdeec2,#8fd4f2", time: "2h ago", st: "done", stT: "Completed", p: "Design a responsive website prototype for a new brand" },
-          { t: "Member hub app", mode: "app", ic: "mobile", g: "#ffe3c4,#ffb3a0", time: "Yesterday", st: "run", stT: "Generating", prog: 72, p: "Design a mobile member hub app" },
-          { t: "Autumn launch deck", mode: "deck", ic: "deck", g: "#d9d2f5,#b1a5ec", time: "3d ago", st: "draft", stT: "In review", p: "Create slides for an autumn product launch" },
-          { t: "Community hiring poster", mode: "poster", ic: "poster", g: "#ffe1e6,#f19cab", time: "Last week", st: "done", stT: "Delivered", p: "Design a community designer hiring poster" },
-          { t: "Growth metrics dashboard", mode: "dashboard", ic: "dash", g: "#d3f4ec,#7ccbb8", time: "Last week", st: "run", stT: "Optimizing", prog: 48, p: "Design a dashboard for growth metrics" },
-          { t: "Aurora design system", mode: "design-system", ic: "doc", g: "#dde7ff,#93aef0", time: "2w ago", st: "done", stT: "Published", p: "Create the Aurora product design system and component guidelines" }
-        ]
+        title: "Office tasks", sub: "Review files and tasks created in this workspace.", search: "Search office tasks…",
+        newLabel: "New task", blankLabel: "Start working", all: "All",
+        items: []
       }
     },
     pm: {
@@ -6752,7 +6420,14 @@
       b.type = "button";
       b.className = "nav-item";
       b.setAttribute("data-nav", v);
-      b.innerHTML = NAV_ICONS[v] + "<span>" + t(NAV_KEYS[v]) + "</span>" + (v === "home" ? '<i class="dot"></i>' : "");
+      var navLabel = t(NAV_KEYS[v]);
+      if (state.role === "designer") {
+        var officeNavLabels = state.lang === "zh"
+          ? { home: "工作台", projects: "任务记录", skills: "办公技能" }
+          : { home: "Workbench", projects: "Task history", skills: "Office skills" };
+        navLabel = officeNavLabels[v] || navLabel;
+      }
+      b.innerHTML = NAV_ICONS[v] + "<span>" + navLabel + "</span>" + (v === "home" ? '<i class="dot"></i>' : "");
       b.addEventListener("click", function () { go(v); });
       nav.appendChild(b);
     });
@@ -6761,8 +6436,7 @@
   function buildGreet() {
     var L = ROLES[state.role][state.lang];
     if (state.role === "designer") {
-      var d = I18N[state.lang];
-      $("greetTitle").innerHTML = L.greetPre + '<span class="word" id="rotator">' + d.words[state.wordIdx % d.words.length] + "</span>";
+      $("greetTitle").textContent = L.greetPre;
     } else {
       $("greetTitle").innerHTML = L.greetPre + '<span class="hl">' + L.greetWord + "</span>";
     }
@@ -6780,6 +6454,8 @@
     $("copyUserName").setAttribute("aria-label", t("accountCopy"));
     $("roleDesc").textContent = L.desc;
     $("prompt").placeholder = L.ph;
+    document.body.classList.toggle("office-workbench", state.role === "designer");
+    $("cpModes").hidden = state.role === "designer";
     document.querySelector(".composer").classList.toggle("delegate", state.role === "admin");
     $("homeReview").hidden = state.role !== "pm" || !state.realReviews || !state.realReviews.length;
     $("homeArtifacts").hidden = true;
