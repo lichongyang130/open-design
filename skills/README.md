@@ -16,6 +16,6 @@ Skills in this directory are Apache-2.0 unless their own `LICENSE` says otherwis
 
 ## Office problem-solving skills
 
-- `spreadsheet-problem-solver/` is the single user-facing entry for real spreadsheet tasks. Its bundled scripts and tests handle conservative data cleaning, safe formula diagnostics, and key-based multi-table reconciliation without exposing separate helper-skill cards.
+- `spreadsheet-problem-solver/` is the single user-facing entry for real spreadsheet tasks. Its bundled scripts and regression tests handle conservative data cleaning, safe formula diagnostics, key-based multi-table reconciliation, and read-only anomaly detection without exposing separate helper-skill cards.
 
 These skills are task-oriented: preserve the source file, make destructive changes only when explicitly requested, and report what was validated versus what still needs review.
