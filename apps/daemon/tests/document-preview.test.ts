@@ -2,8 +2,15 @@ import { describe, expect, it } from 'vitest';
 import JSZip from 'jszip';
 
 import { buildDocumentPreview } from '../src/document-preview.js';
+import { kindFor } from '../src/projects.js';
 
 describe('spreadsheet document preview', () => {
+  it('classifies CSV as readable text and XLSX/XLSM as spreadsheet workbooks', () => {
+    expect(kindFor('sales.csv')).toBe('text');
+    expect(kindFor('sales.xlsx')).toBe('spreadsheet');
+    expect(kindFor('sales.xlsm')).toBe('spreadsheet');
+  });
+
   it('preserves cell addresses, formulas, cached values, and formula error evidence', async () => {
     const zip = new JSZip();
     zip.file(
