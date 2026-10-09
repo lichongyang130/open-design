@@ -143,6 +143,51 @@ describe('POST /api/runs/:id/steer', () => {
     expect(afterRefusal.some((message) => message.content === 'too late')).toBe(false);
   }, 45_000);
 
+  it('sends artifact lint findings into the live run and caps repair steering', async () => {
+    binDir = await mkdtemp(path.join(os.tmpdir(), 'od-artifact-lint-steer-'));
+    const readyPath = path.join(binDir, 'ready');
+    const sinkPath = path.join(binDir, 'steered.txt');
+    const bin = await writeSteerableClaude(binDir, 'claude-steerable', readyPath, sinkPath);
+
+    clearTelemetryEnv();
+    started = await startServer({ port: 0, returnServer: true }) as StartedServer;
+    await putConfig(started.url, { CLAUDE_BIN: bin });
+    const project = await createProject(started.url);
+    const runId = await startRun(started.url, project, 'make a landing page');
+    await waitForFile(readyPath, 10_000);
+
+    const feedbackUrl = `${started.url}/api/runs/${encodeURIComponent(runId)}/artifact-lint-feedback`;
+    const html = '<html lang="en"><head><meta name="viewport" content="width=device-width"></head><body><img src="/hero.png"></body></html>';
+    const first = await fetch(feedbackUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ html }),
+    });
+    expect(first.status).toBe(200);
+    const firstBody = await first.json() as { ok: boolean; steered: boolean; attempts: number };
+    expect(firstBody.ok).toBe(true);
+    expect(firstBody.steered).toBe(true);
+    expect(firstBody.attempts).toBe(1);
+
+    await waitForFile(sinkPath, 10_000);
+    const steeringText = await readFile(sinkPath, 'utf8');
+    expect(steeringText).toContain('image-missing-alt');
+    expect(steeringText).toContain('Fix:');
+
+    // The fake runtime completes after consuming one steer, so this next
+    // request also verifies closed-run refusals are not reported as success.
+    await waitForTerminal(started.url, runId);
+    const late = await fetch(feedbackUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ html }),
+    });
+    expect(late.status).toBe(409);
+    const lateBody = await late.json() as { ok: boolean; error: string };
+    expect(lateBody.ok).toBe(false);
+    expect(lateBody.error).toBe('RUN_STEERING_CLOSED');
+  }, 45_000);
+
   it('refuses a runtime whose stdin is closed together with the opening prompt', async () => {
     binDir = await mkdtemp(path.join(os.tmpdir(), 'od-b11-steer-codex-'));
     const readyPath = path.join(binDir, 'codex-ready');
