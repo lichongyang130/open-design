@@ -246,6 +246,25 @@ describe('historyWithApiAttachmentContext', () => {
     }
   });
 
+  it('reads a CSV attachment as text even before project-file metadata refreshes', async () => {
+    mockedFetchProjectFileText.mockResolvedValue('Date,Amount\\n2026-10-01,12.50');
+
+    const history = await historyWithApiAttachmentContext(
+      [userMessage('msg-csv', 'Check this CSV', [{ path: 'sales.csv', name: 'sales.csv', kind: 'file' }])],
+      'msg-csv',
+      'project-1',
+      [],
+    );
+
+    expect(mockedFetchProjectFileText).toHaveBeenCalledWith(
+      'project-1',
+      'sales.csv',
+      { cache: 'no-store', cacheBustKey: undefined },
+    );
+    expect(history[0]?.content).toContain('Date,Amount');
+    expect(history[0]?.content).toContain('2026-10-01,12.50');
+  });
+
   it('tells the model to inspect the original workbook when spreadsheet preview is unavailable', async () => {
     const history = await historyWithApiAttachmentContext(
       [userMessage('msg-xlsx', 'Check this workbook', [{ path: 'monthly.xlsx', name: 'monthly.xlsx', kind: 'file' }])],
