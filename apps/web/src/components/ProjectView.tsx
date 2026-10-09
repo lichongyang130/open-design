@@ -33,6 +33,7 @@ import {
   publishDaemonRunFinishedEvent,
   reattachDaemonRun,
   reportChatRunFeedback,
+  submitArtifactLintFeedback,
   streamViaDaemon,
 } from '../providers/daemon';
 import {
@@ -4502,28 +4503,125 @@ export function ProjectView({
   // not re-fetch unchanged entries on every Write. Keyed by file name with the
   // mtime stored alongside, so a rewrite REPLACES the file's single entry
   // rather than accreting a new key. Bounded by the project's HTML file count.
-  const htmlContentCacheRef = useRef<Map<string, { mtime: number; text: string | null }>>(
+  const htmlContentCacheRef = useRef<Map<string, { fingerprint: string; text: string | null }>>(
     new Map(),
   );
   const readProjectHtml = useCallback(
     async (name: string): Promise<string | null> => {
       const file = projectFilesRef.current.find((entry) => entry.name === name);
-      const mtime = file?.mtime ?? 0;
+      const fingerprint = `${file?.mtime ?? 0}:${file?.size ?? 0}`;
       const cached = htmlContentCacheRef.current.get(name);
-      if (cached && cached.mtime === mtime) return cached.text;
+      if (cached && cached.fingerprint === fingerprint) return cached.text;
       try {
         const text = await fetchProjectFileText(project.id, name, {
           workspaceContext: projectRunWorkspaceContextRef.current,
         });
-        htmlContentCacheRef.current.set(name, { mtime, text });
+        htmlContentCacheRef.current.set(name, { fingerprint, text });
         return text;
       } catch {
-        htmlContentCacheRef.current.set(name, { mtime, text: null });
+        htmlContentCacheRef.current.set(name, { fingerprint, text: null });
         return null;
       }
     },
     [project.id, projectRunAuthorityKey],
   );
+
+  // The linter must observe only real file revisions, not every React render.
+  // A current-run ref avoids restarting the debounce for every streamed token.
+  const activeArtifactLintRunRef = useRef<string | null>(null);
+  const currentArtifactLintMessage = messagesInitialized
+    && messagesConversationId === activeConversationId
+    ? [...messages].reverse().find((message) =>
+        message.role === 'assistant'
+        && isActiveRunStatus(message.runStatus)
+        && typeof message.runId === 'string'
+        && message.runId.length > 0)
+    : undefined;
+  activeArtifactLintRunRef.current = currentArtifactLintMessage?.runId ?? null;
+
+  const artifactLintFileSnapshotRef = useRef<Map<string, string> | null>(null);
+  const artifactLintSubmittedRef = useRef<Map<string, string>>(new Map());
+  const artifactLintTimersRef = useRef(new Map<string, {
+    timer: number;
+    artifactPath: string;
+    fingerprint: string;
+  }>());
+
+  // Clear timers and file witnesses when this view changes project/workspace.
+  useEffect(() => {
+    for (const pending of artifactLintTimersRef.current.values()) {
+      window.clearTimeout(pending.timer);
+    }
+    artifactLintTimersRef.current.clear();
+    artifactLintFileSnapshotRef.current = null;
+    artifactLintSubmittedRef.current.clear();
+    htmlContentCacheRef.current.clear();
+  }, [project.id, projectRunAuthorityKey]);
+
+  useEffect(() => {
+    const htmlFiles = projectFiles.filter((file) => /\\.html?$/i.test(file.name));
+    const nextSnapshot = new Map(
+      htmlFiles.map((file) => [file.name, `${file.mtime}:${file.size}`]),
+    );
+    const previousSnapshot = artifactLintFileSnapshotRef.current;
+    artifactLintFileSnapshotRef.current = nextSnapshot;
+    // Initial hydration is a baseline, not evidence that this run produced
+    // these files. Only lint HTML files that change after the baseline exists.
+    if (!previousSnapshot) return;
+
+    const changedFiles = htmlFiles
+      .filter((file) => previousSnapshot.get(file.name) !== nextSnapshot.get(file.name))
+      .sort((a, b) => b.mtime - a.mtime);
+    const runId = activeArtifactLintRunRef.current;
+    if (!runId || changedFiles.length === 0) return;
+
+    // Several HTML files can be written during one generation. Debounce at
+    // run scope and lint the most recently changed file, avoiding a burst of
+    // contradictory steering messages for intermediate writes.
+    const candidate = changedFiles[0];
+    const fingerprint = nextSnapshot.get(candidate.name)!;
+    const submittedKey = `${runId}: ${candidate.name}`;
+    if (artifactLintSubmittedRef.current.get(submittedKey) === fingerprint) return;
+
+    const pending = artifactLintTimersRef.current.get(runId);
+    if (pending) window.clearTimeout(pending.timer);
+    const timer = window.setTimeout(() => {
+      artifactLintTimersRef.current.delete(runId);
+      void (async () => {
+        if (activeArtifactLintRunRef.current !== runId) return;
+        const currentFile = projectFilesRef.current.find((file) => file.name === candidate.name);
+        if (!currentFile || `${currentFile.mtime}:${currentFile.size}` !== fingerprint) return;
+
+        const html = await readProjectHtml(candidate.name);
+        if (!html?.trim() || activeArtifactLintRunRef.current !== runId) return;
+        // Re-check the file witness after the asynchronous read to avoid
+        // sending a stale snapshot when another write raced the fetch.
+        const latestFile = projectFilesRef.current.find((file) => file.name === candidate.name);
+        if (!latestFile || `${latestFile.mtime}:${latestFile.size}` !== fingerprint) return;
+
+        artifactLintSubmittedRef.current.set(submittedKey, fingerprint);
+        const result = await submitArtifactLintFeedback({
+          runId,
+          artifactPath: candidate.name,
+          html,
+        }, projectRunWorkspaceContext);
+        if (!result.ok && result.error !== 'RUN_STEERING_CLOSED' && !result.capped) {
+          console.warn('[artifact-lint] automatic feedback was not accepted', {
+            runId,
+            artifactPath: candidate.name,
+            code: result.error ?? 'UNKNOWN',
+          });
+        }
+      })().catch((err: unknown) => {
+        console.warn('[artifact-lint] automatic feedback failed', err);
+      });
+    }, 500);
+    artifactLintTimersRef.current.set(runId, {
+      timer,
+      artifactPath: candidate.name,
+      fingerprint,
+    });
+  }, [projectFiles, projectRunWorkspaceContext, readProjectHtml]);
 
   const refreshLiveArtifacts = useCallback(async (): Promise<LiveArtifactSummary[]> => {
     const next = await fetchLiveArtifacts(project.id, {
