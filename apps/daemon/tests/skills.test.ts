@@ -238,6 +238,45 @@ describe('listSkills', () => {
     }
   });
 
+  it('preserves the utility mode for functional office skills', async () => {
+    const root = fresh();
+    try {
+      const dir = path.join(root, 'spreadsheet-repair');
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(
+        path.join(dir, 'SKILL.md'),
+        [
+          '---',
+          'name: spreadsheet-repair',
+          'description: Repair common spreadsheet problems safely.',
+          'triggers:',
+          '  - 修复 Excel',
+          'od:',
+          '  mode: utility',
+          '  category: office',
+          '  design_system:',
+          '    requires: false',
+          '---',
+          '',
+          '# Spreadsheet repair',
+          'Inspect first, preserve the source, and verify every change.',
+          '',
+        ].join('\\n'),
+      );
+
+      const skills = await listSkills(root);
+      expect(skills[0]).toMatchObject({
+        id: 'spreadsheet-repair',
+        mode: 'utility',
+        surface: 'web',
+        category: 'office',
+        designSystemRequired: false,
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('includes the built-in live-artifact skill catalog entry', async () => {
     const skills = await listSkills(designTemplatesRoot);
     const skill = skills.find((entry: { id: string }) => entry.id === 'live-artifact');
