@@ -11,7 +11,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import sys
 import tempfile
 from datetime import datetime, timezone
@@ -249,7 +248,7 @@ def diagnose_workbook(
                         "formula_below": below.value,
                         "candidate_formula": candidate,
                         "safe_to_apply": True,
-                        "action": "would_repair" if apply_safe_repairs else "suggested_only",
+                        "action": "repaired" if apply_safe_repairs else "suggested_only",
                         "message": "The formulas above and below translate to the same formula for this blank cell.",
                     }
                     report["summary"]["safe_formula_gap_candidates"] += 1
