@@ -4,10 +4,26 @@ on:
   pull_request:
     paths:
       - "skills/spreadsheet-problem-solver/**"
+      - "apps/web/src/components/HomeHero.tsx"
+      - "apps/web/src/components/HomeView.tsx"
+      - "apps/web/src/components/home-hero/chip-labels.ts"
+      - "apps/web/src/components/home-hero/chips.ts"
+      - "apps/web/src/i18n/**"
+      - "apps/web/src/styles/home/home-hero.css"
+      - "apps/web/tests/components/HomeView.skill-with-chip.test.tsx"
+      - "apps/web/tests/home-hero-creation-i18n.test.ts"
       - ".github/workflows/spreadsheet-skill-tests.yml"
   push:
     paths:
       - "skills/spreadsheet-problem-solver/**"
+      - "apps/web/src/components/HomeHero.tsx"
+      - "apps/web/src/components/HomeView.tsx"
+      - "apps/web/src/components/home-hero/chip-labels.ts"
+      - "apps/web/src/components/home-hero/chips.ts"
+      - "apps/web/src/i18n/**"
+      - "apps/web/src/styles/home/home-hero.css"
+      - "apps/web/tests/components/HomeView.skill-with-chip.test.tsx"
+      - "apps/web/tests/home-hero-creation-i18n.test.ts"
       - ".github/workflows/spreadsheet-skill-tests.yml"
   workflow_dispatch:
 
@@ -41,3 +57,29 @@ jobs:
       - name: Run spreadsheet skill tests
         run: |
           .venv/bin/python -m unittest discover -s skills/spreadsheet-problem-solver/tests -v
+
+  frontend-shortcut:
+    name: Home spreadsheet shortcut regression and Web typecheck
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup-workspace
+        with:
+          postinstall-intent: workspace
+
+      - name: Prebuild workspace type declarations
+        run: |
+          pnpm --filter @open-design/daemon build
+          pnpm --filter @open-design/desktop build
+          pnpm --filter @open-design/web build:sidecar
+
+      - name: Run spreadsheet shortcut and localization tests
+        run: |
+          pnpm --filter @open-design/web test -- tests/components/HomeView.skill-with-chip.test.tsx tests/home-hero-creation-i18n.test.ts
+
+      - name: Typecheck Web workspace
+        run: pnpm --filter @open-design/web typecheck
