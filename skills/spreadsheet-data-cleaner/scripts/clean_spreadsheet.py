@@ -25,6 +25,7 @@ from typing import Any, Iterable
 MAX_CELLS_PER_SHEET = 1_000_000
 MAX_RECORDED_ITEMS = 5_000
 SUPPORTED_CSV_ENCODINGS = ("utf-8", "gb18030", "cp1252")
+FORMULA_LIKE_PREFIXES = ("=", "+", "-", "@")
 
 
 class CleanerError(Exception):
@@ -39,12 +40,26 @@ def is_blank(value: Any) -> bool:
     return value is None or (isinstance(value, str) and value.strip() == "")
 
 
+def could_become_formula(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and not value.startswith(FORMULA_LIKE_PREFIXES)
+        and value.strip().startswith(FORMULA_LIKE_PREFIXES)
+    )
+
+
 def clean_text(value: Any, collapse_whitespace: bool) -> Any:
-    if not isinstance(value, str) or value.startswith("="):
+    if not isinstance(value, str) or value.startswith(FORMULA_LIKE_PREFIXES):
         return value
     result = value.strip()
+    # Do not trim text into a value that spreadsheet apps may interpret as a
+    # formula when opening CSV, or reinterpret a text cell as an Excel formula.
+    if result.startswith(FORMULA_LIKE_PREFIXES):
+        return value
     if collapse_whitespace:
         result = re.sub(r"\s+", " ", result)
+        if result.startswith(FORMULA_LIKE_PREFIXES):
+            return value
     return result
 
 
@@ -171,6 +186,17 @@ def clean_csv(
         new_row = list(row)
         if trim_text:
             for column_index, value in enumerate(row, start=1):
+                if could_become_formula(value):
+                    _record(
+                        report["findings"],
+                        {
+                            "kind": "formula_like_text_preserved",
+                            "row": line_number,
+                            "column": column_index,
+                            "action": "preserved_to_avoid_changing_cell_interpretation",
+                        },
+                        report,
+                    )
                 cleaned = clean_text(value, collapse_whitespace)
                 if cleaned != value:
                     new_row[column_index - 1] = cleaned
@@ -348,6 +374,17 @@ def clean_workbook(
             if trim_text:
                 for cell in writable_cells:
                     old_value = cell.value
+                    if could_become_formula(old_value):
+                        _record(
+                            report["findings"],
+                            {
+                                "kind": "formula_like_text_preserved",
+                                "sheet": worksheet.title,
+                                "cell": cell.coordinate,
+                                "action": "preserved_to_avoid_changing_cell_interpretation",
+                            },
+                            report,
+                        )
                     new_value = clean_text(old_value, collapse_whitespace)
                     if new_value != old_value:
                         cell.value = new_value
