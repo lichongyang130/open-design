@@ -124,6 +124,7 @@ class ExcelAnomalyDetectionTests(unittest.TestCase):
         self.assertEqual(report["selected_sheet"], "Orders")
         self.assertEqual(report["summary"]["rows_scanned"], 5)
         self.assertEqual(report["summary"]["broken_reference_formulas"], 1)
+        self.assertEqual(report["summary"]["missing_values"], 0)
         self.assertEqual(report["summary"]["numeric_outlier_candidates"], 1)
 
     def test_unknown_worksheet_is_rejected(self) -> None:
