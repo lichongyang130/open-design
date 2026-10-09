@@ -74,10 +74,15 @@ def _build_report(
             "rows_read": 0,
             "blank_rows_detected": 0,
             "blank_rows_removed": 0,
+            "blank_rows_planned_for_removal": 0,
             "duplicate_rows_detected": 0,
             "duplicate_rows_removed": 0,
+            "duplicate_rows_planned_for_removal": 0,
             "duplicate_rows_cleared": 0,
+            "duplicate_rows_planned_for_clearing": 0,
             "text_cells_trimmed": 0,
+            "text_cells_planned_to_trim": 0,
+            "rows_after_planned_changes": 0,
             "formula_cells_preserved": 0,
         },
         "changes": [],
@@ -169,7 +174,9 @@ def clean_csv(
                 cleaned = clean_text(value, collapse_whitespace)
                 if cleaned != value:
                     new_row[column_index - 1] = cleaned
-                    report["summary"]["text_cells_trimmed"] += 1
+                    report["summary"]["text_cells_planned_to_trim"] += 1
+                    if not dry_run:
+                        report["summary"]["text_cells_trimmed"] += 1
                     _record(
                         report["changes"],
                         {
@@ -192,11 +199,14 @@ def clean_csv(
             blank_rows += 1
             _record(
                 report["findings"],
-                {"kind": "blank_row", "row": line_number, "action": "removed" if drop_empty_rows else "reported_only"},
+                {"kind": "blank_row", "row": line_number, "action": ("would_remove" if dry_run else "removed") if drop_empty_rows else "reported_only"},
                 report,
             )
             if drop_empty_rows:
-                report["summary"]["blank_rows_removed"] += 1
+                if dry_run:
+                    report["summary"]["blank_rows_planned_for_removal"] += 1
+                else:
+                    report["summary"]["blank_rows_removed"] += 1
                 continue
         rows_after_blanks.append(row)
         line_numbers_after_blanks.append(line_number)
@@ -222,12 +232,15 @@ def clean_csv(
                 "kind": "exact_duplicate_row",
                 "row": line_number,
                 "kept_row": kept_line,
-                "action": "removed" if dedupe else "reported_only",
+                "action": ("would_remove" if dry_run else "removed") if dedupe else "reported_only",
             },
             report,
         )
         if dedupe:
-            report["summary"]["duplicate_rows_removed"] += 1
+            if dry_run:
+                report["summary"]["duplicate_rows_planned_for_removal"] += 1
+            else:
+                report["summary"]["duplicate_rows_removed"] += 1
         else:
             final_rows.append(row)
 
@@ -236,7 +249,9 @@ def clean_csv(
     else:
         _write_csv(output_path, final_rows, delimiter, source_encoding)
         report["output_written"] = True
-    report["summary"]["rows_written"] = len(final_rows)
+    report["summary"]["rows_after_planned_changes"] = len(final_rows)
+    if not dry_run:
+        report["summary"]["rows_written"] = len(final_rows)
     return report
 
 
@@ -336,7 +351,9 @@ def clean_workbook(
                     new_value = clean_text(old_value, collapse_whitespace)
                     if new_value != old_value:
                         cell.value = new_value
-                        summary["text_cells_trimmed"] += 1
+                        summary["text_cells_planned_to_trim"] += 1
+                        if not dry_run:
+                            summary["text_cells_trimmed"] += 1
                         _record(
                             report["changes"],
                             {
@@ -379,7 +396,7 @@ def clean_workbook(
             if dedupe and row_has_formula:
                 action = "not_cleared_formula_cells_present"
             elif dedupe:
-                action = "cleared_values_in_place"
+                action = "would_clear_values_in_place" if dry_run else "cleared_values_in_place"
                 for cell in writable_cells:
                     if cell.value is not None:
                         old_value = cell.value
@@ -397,7 +414,10 @@ def clean_workbook(
                             },
                             report,
                         )
-                summary["duplicate_rows_cleared"] += 1
+                if dry_run:
+                    summary["duplicate_rows_planned_for_clearing"] += 1
+                else:
+                    summary["duplicate_rows_cleared"] += 1
             _record(
                 report["findings"],
                 {
