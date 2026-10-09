@@ -446,7 +446,9 @@ def clean_workbook(
         report["warnings"].append(
             "Excel row positions were not deleted or shifted. Opted-in duplicate rows have their values cleared in place; formula-bearing duplicate rows are left for review."
         )
+        summary["rows_after_planned_changes"] = summary["rows_read"]
         if not dry_run:
+            summary["rows_written"] = summary["rows_read"]
             output_path.parent.mkdir(parents=True, exist_ok=True)
             fd, temp_name = tempfile.mkstemp(prefix=f".{output_path.stem}.", suffix=output_path.suffix, dir=str(output_path.parent))
             os.close(fd)
