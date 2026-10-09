@@ -72,7 +72,7 @@ def numeric_value(value: Any) -> float | None:
     # Text with a leading zero is often an identifier, not a quantity.
     # Keep it out of automatic numeric analysis unless it is a simple zero
     # or a fractional value such as 0.25.
-    if re.match(r"^[+-]?0[0-9]+(?:\\.[0-9]+)?$", text):
+    if re.match(r"^[+-]?0[0-9]+(?:\.[0-9]+)?$", text):
         return None
     try:
         result = float(Decimal(text))
