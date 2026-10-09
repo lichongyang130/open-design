@@ -95,6 +95,7 @@ import { DesignsTab } from './DesignsTab';
 import { DesignSystemsTab } from './DesignSystemsTab';
 import { BrandsTab } from './BrandsTab';
 import { EntryNavRail, type EntryView as EntryViewKind } from './EntryNavRail';
+import { AuthLanding } from './AuthLanding';
 import {
   buildProjectSearchCatalog,
   ProjectSearchModal,
@@ -720,7 +721,7 @@ export function EntryShell({
     // Cloud identity gate. Passive reauthentication preserves the saved model
     // source and Home's locally persisted, not-yet-sent draft.
     const selectedCloudIdentityRejected = usesOpenDesignCloud && amrLoggedIn === false;
-    if ((!selectedCloudIdentityRejected && !amrAuthRequired) || view === 'onboarding') return;
+    if ((!selectedCloudIdentityRejected && !amrAuthRequired) || view === 'onboarding' || view === 'setup') return;
     navigate({ kind: 'home', view: 'onboarding' }, { replace: true });
   }, [amrAuthRequired, amrLoggedIn, usesOpenDesignCloud, view]);
   let accountFooterNotice: ReactNode = null;
@@ -1706,7 +1707,25 @@ export function EntryShell({
 
   if (view === 'onboarding') {
     return (
-      <div className="entry-shell entry-shell--no-header entry-shell--onboarding">
+      <AuthLanding
+        onAuthSuccess={(status) => {
+          if (status) onAmrLoginStatusChange?.(status);
+          refreshWorkspaceSurfacesAfterOnboarding();
+          navigate({
+            kind: 'home',
+            view: config.onboardingCompleted ? 'home' : 'setup',
+          }, { replace: true });
+        }}
+        onContinueLocal={() => {
+          navigate({ kind: 'home', view: 'setup' }, { replace: true });
+        }}
+      />
+    );
+  }
+
+  if (view === 'setup') {
+    return (
+      <div className="entry-shell entry-shell--no-header entry-shell--onboarding entry-shell--setup">
         <main className="entry-onboarding-modal" aria-label={t('settings.welcomeTitle')}>
           <OnboardingView
             config={config}
