@@ -1299,6 +1299,32 @@ describe('App project creation routing', () => {
     );
   });
 
+  it('does not auto-send a Home task when its attachment upload fails', async () => {
+    mockedListProjects.mockResolvedValue([]);
+    mockedCreateProject.mockResolvedValue({
+      project: {
+        ...freshProject,
+        name: 'Prompted project',
+        pendingPrompt: 'Build the retained artifact prompt',
+      },
+      conversationId: 'conv-new',
+    });
+    mockedUploadProjectFiles.mockResolvedValue({
+      uploaded: [],
+      failed: [{ name: 'brief.txt', code: 'UPLOAD_FAILED', error: 'upload failed' }],
+    });
+
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Create prompted project' }));
+
+    await screen.findByTestId('project-view');
+    expect(window.sessionStorage.getItem('od:auto-send-first:project-new')).toBeNull();
+    expect(window.sessionStorage.getItem('od:auto-send-attachments:project-new')).toBeNull();
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '附件上传失败，首条任务未自动发送。',
+    );
+  });
+
   it('enters the project preparing surface before Home project creation settles', async () => {
     mockedListProjects.mockResolvedValue([]);
     const creation = deferred<{
