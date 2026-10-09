@@ -5735,8 +5735,9 @@ export function registerProjectArtifactRoutes(app: Express, ctx: RegisterProject
   // Persist a generated artifact (HTML) to disk so the user can re-open it
   // in their browser or hand it off. Returns the on-disk path + a served URL.
   // The body is also passed through the anti-slop linter; findings are
-  // returned alongside the path so the UI can render a P0/P1 badge and the
-  // chat layer can splice them into a system reminder for the agent.
+  // returned alongside the path so callers can render severity badges and
+  // reuse the host-authored repair guidance. Returning this field does not
+  // itself schedule another model turn; that belongs to the chat runtime.
   app.post('/api/artifacts/save', (req, res) => {
     try {
       const { identifier, title, html } = req.body || {};
@@ -5754,6 +5755,7 @@ export function registerProjectArtifactRoutes(app: Express, ctx: RegisterProject
         path: file,
         url: `/artifacts/${path.basename(dir)}/index.html`,
         lint: findings,
+        agentMessage: renderFindingsForAgent(findings),
       });
     } catch (err: any) {
       res.status(500).json({ error: String(err) });
@@ -5761,8 +5763,8 @@ export function registerProjectArtifactRoutes(app: Express, ctx: RegisterProject
   });
 
   // Standalone lint endpoint — POST raw HTML, get findings back.
-  // The chat layer uses this to lint streamed-in artifacts without writing
-  // them to disk first, so a P0 issue can be surfaced before save.
+  // Callers can lint streamed-in artifacts without writing them to disk first.
+  // The endpoint returns repair guidance but does not itself steer a running turn.
   // Request/response are typed against the shared contract so a producer
   // change that breaks the wire shape fails compilation here.
   app.post('/api/artifacts/lint', (req, res) => {

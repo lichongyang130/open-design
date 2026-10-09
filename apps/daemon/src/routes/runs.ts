@@ -189,6 +189,7 @@ import {
   runtimeAcceptsMidTurnInput,
   type RunSteeringRefusal,
 } from '../runtimes/run-steering.js';
+import { lintArtifact, renderFindingsForAgent } from '../lint-artifact.js';
 import { runMessageEventPersistenceAnalytics } from '../runtimes/chat-run-messages.js';
 import {
   isLegacyHydratedRunWithoutAppliedSnapshot,
@@ -3649,6 +3650,98 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
     await design.runs.cancel(cancelRun, 'user_stop');
     const body = { ok: true, run: statusWithStrategyTask(cancelRun) };
     res.json(body);
+  });
+
+  // Artifact quality feedback: lint a generated HTML snapshot and feed
+  // actionable findings into the same live run, when that runtime accepts
+  // mid-turn messages. The caller must provide the current run id explicitly.
+  const artifactLintSteeringAttempts = new WeakMap<ChatRun, number>();
+  const MAX_ARTIFACT_LINT_STEERING_ATTEMPTS = 2;
+  app.post('/api/runs/:id/artifact-lint-feedback', async (req: ApiRequest, res: ApiResponse) => {
+    const runId = routeParamId(req);
+    if (!runId) return sendApiError(res, 400, 'BAD_REQUEST', 'run id missing');
+    const run = design.runs.get(runId);
+    if (!run) return sendApiError(res, 404, 'NOT_FOUND', 'run not found');
+    if (!await authorizeRunProject(req, res, run, { mode: 'write', capability: 'writeFiles' })) return;
+
+    const requestBody = toJsonRecord(req.body);
+    const html = typeof requestBody.html === 'string' ? requestBody.html : '';
+    if (!html.trim()) return sendApiError(res, 400, 'BAD_REQUEST', 'html is required');
+    const artifactPathValue = requestBody.artifactPath;
+    const artifactPath = typeof artifactPathValue === 'string' ? artifactPathValue.trim() : '';
+    if (artifactPath.length > 512 || /[\r\n\u0000]/.test(artifactPath)) {
+      return sendApiError(res, 400, 'BAD_REQUEST', 'artifactPath must be a short single-line project path');
+    }
+    const findings = lintArtifact(html);
+    const agentMessage = renderFindingsForAgent(findings, {
+      instruction: 'Edit the specified existing HTML file in place. Do not emit a separate <artifact> block or a standalone explanation.',
+    });
+    if (findings.length === 0 || !agentMessage) {
+      artifactLintSteeringAttempts.delete(run);
+      // A clean lint means no repair is needed; it does not mean this endpoint
+      // changed the artifact or that a prior repair was independently verified.
+      return res.json({ ok: true, clean: true, repaired: false, findings, attempts: 0 });
+    }
+
+    const attempts = artifactLintSteeringAttempts.get(run) ?? 0;
+    if (attempts >= MAX_ARTIFACT_LINT_STEERING_ATTEMPTS) {
+      return res.json({
+        ok: false,
+        repaired: false,
+        capped: true,
+        findings,
+        attempts,
+        message: 'Automatic artifact repair limit reached; return findings for review instead of steering again.',
+      });
+    }
+
+    const steeringText = [
+      'The generated HTML artifact failed the host quality checks. Repair the existing artifact in place, preserve its intended design and content, and do not merely describe the fix.',
+      artifactPath
+        ? `Target artifact path: ${JSON.stringify(artifactPath)}. Repair this file, not a different artifact.`
+        : 'Target artifact: the HTML file most recently produced or edited by this run. If several files are involved, identify the one matching the supplied HTML snapshot.',
+      'After editing, re-check the artifact against every finding below. Do not claim the issues are fixed unless the source actually changes and the updated artifact passes the checks.',
+      agentMessage,
+    ].join('\n\n');
+    const runtimeAccepts = runtimeAcceptsMidTurnInput(
+      typeof run.agentId === 'string' ? getAgentDef(run.agentId) : null,
+    );
+    const outcome = design.runs.steer(run, steeringText, runtimeAccepts);
+    if (!outcome.ok) {
+      return res.status(409).json({
+        ok: false,
+        repaired: false,
+        error: outcome.refusal === 'runtime_unsupported'
+          ? 'RUN_STEERING_UNSUPPORTED'
+          : 'RUN_STEERING_CLOSED',
+        findings,
+        attempts,
+      });
+    }
+
+    const nextAttempts = attempts + 1;
+    artifactLintSteeringAttempts.set(run, nextAttempts);
+    const messageId = randomUUID();
+    if (run.conversationId) {
+      const now = Date.now();
+      upsertMessage(db, run.conversationId, {
+        id: messageId,
+        role: 'user',
+        content: steeringText,
+        startedAt: Date.now(),
+        endedAt: Date.now(),
+      });
+      if (typeof run.projectId === 'string' && run.projectId) updateProject(db, run.projectId, {});
+    }
+    return res.json({
+      ok: true,
+      repaired: false,
+      steered: true,
+      messageId,
+      findings,
+      attempts: nextAttempts,
+      maxAttempts: MAX_ARTIFACT_LINT_STEERING_ATTEMPTS,
+    });
   });
 
   // B11 「引导对话」 — steer the turn that is ALREADY running.

@@ -143,6 +143,120 @@ describe('POST /api/runs/:id/steer', () => {
     expect(afterRefusal.some((message) => message.content === 'too late')).toBe(false);
   }, 45_000);
 
+  it('sends artifact lint findings into the live run and refuses feedback after the run closes', async () => {
+    binDir = await mkdtemp(path.join(os.tmpdir(), 'od-artifact-lint-steer-'));
+    const readyPath = path.join(binDir, 'ready');
+    const sinkPath = path.join(binDir, 'steered.txt');
+    const bin = await writeSteerableClaude(binDir, 'claude-steerable', readyPath, sinkPath);
+
+    clearTelemetryEnv();
+    started = await startServer({ port: 0, returnServer: true }) as StartedServer;
+    await putConfig(started.url, { CLAUDE_BIN: bin });
+    const project = await createProject(started.url);
+    const runId = await startRun(started.url, project, 'make a landing page');
+    await waitForFile(readyPath, 10_000);
+
+    const feedbackUrl = `${started.url}/api/runs/${encodeURIComponent(runId)}/artifact-lint-feedback`;
+    const html = '<html lang="en"><head><meta name="viewport" content="width=device-width"></head><body><img src="/hero.png"></body></html>';
+    const first = await fetch(feedbackUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ html, artifactPath: 'index.html' }),
+    });
+    expect(first.status).toBe(200);
+    const firstBody = await first.json() as { ok: boolean; steered: boolean; attempts: number };
+    expect(firstBody.ok).toBe(true);
+    expect(firstBody.steered).toBe(true);
+    expect(firstBody.attempts).toBe(1);
+
+    await waitForFile(sinkPath, 10_000);
+    const steeringText = await readFile(sinkPath, 'utf8');
+    expect(steeringText).toContain('image-missing-alt');
+    expect(steeringText).toContain('Target artifact path: "index.html"');
+    expect(steeringText).toContain('Fix:');
+
+    // The fake runtime completes after consuming one steer, so this next
+    // request also verifies closed-run refusals are not reported as success.
+    await waitForTerminal(started.url, runId);
+    const late = await fetch(feedbackUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ html }),
+    });
+    expect(late.status).toBe(409);
+    const lateBody = await late.json() as { ok: boolean; error: string };
+    expect(lateBody.ok).toBe(false);
+    expect(lateBody.error).toBe('RUN_STEERING_CLOSED');
+  }, 45_000);
+
+  it('repairs a generated HTML file in place and passes the repaired snapshot through lint again', async () => {
+    binDir = await mkdtemp(path.join(os.tmpdir(), 'od-artifact-lint-real-loop-'));
+    const readyPath = path.join(binDir, 'ready');
+    const sinkPath = path.join(binDir, 'steered.txt');
+
+    clearTelemetryEnv();
+    started = await startServer({ port: 0, returnServer: true }) as StartedServer;
+    const project = await createProject(started.url);
+    const dataDir = process.env.OD_DATA_DIR;
+    if (!dataDir) throw new Error('OD_DATA_DIR is required for the artifact repair loop test');
+    const artifactPath = path.join(dataDir, 'projects', project.projectId, 'index.html');
+    const initialHtml = '<!doctype html><html lang="en"><head><title>Product overview</title></head><body><main><h1>Product overview</h1><img src="/hero.png"></main></body></html>';
+    const repairedHtml = '<!doctype html><html lang="en"><head><title>Product overview</title><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><main><h1>Product overview</h1><img src="/hero.png" alt="Product overview dashboard"></main></body></html>';
+    const bin = await writeSteerableClaude(binDir, 'claude-artifact-repair', readyPath, sinkPath, {
+      artifactPath,
+      initialHtml,
+      repairedHtml,
+    });
+    await putConfig(started.url, { CLAUDE_BIN: bin });
+
+    const runId = await startRun(started.url, project, 'create a product overview page');
+    await waitForFile(readyPath, 10_000);
+    expect(await readFile(artifactPath, 'utf8')).toBe(initialHtml);
+
+    const feedbackUrl = `${started.url}/api/runs/${encodeURIComponent(runId)}/artifact-lint-feedback`;
+    const feedback = await fetch(feedbackUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ html: initialHtml, artifactPath: 'index.html' }),
+    });
+    expect(feedback.status).toBe(200);
+    const feedbackBody = await feedback.json() as {
+      ok: boolean;
+      steered: boolean;
+      attempts: number;
+    };
+    expect(feedbackBody).toMatchObject({ ok: true, steered: true, attempts: 1 });
+
+    // The fake runtime only writes the repaired version after it receives the
+    // actual steering frame, proving that feedback drove a file change.
+    await waitForFile(sinkPath, 10_000);
+    const steeringText = await readFile(sinkPath, 'utf8');
+    expect(steeringText).toContain('Target artifact path: "index.html"');
+    expect(steeringText).toContain('Edit the specified existing HTML file in place');
+    expect(await readFile(artifactPath, 'utf8')).toBe(repairedHtml);
+
+    const persistedArtifact = await fetch(
+      `${started.url}/api/projects/${encodeURIComponent(project.projectId)}/raw/index.html`,
+    );
+    expect(persistedArtifact.status).toBe(200);
+    expect(await persistedArtifact.text()).toBe(repairedHtml);
+    await waitForTerminal(started.url, runId);
+
+    const recheck = await fetch(feedbackUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ html: repairedHtml, artifactPath: 'index.html' }),
+    });
+    expect(recheck.status).toBe(200);
+    const recheckBody = await recheck.json() as {
+      ok: boolean;
+      clean: boolean;
+      repaired: boolean;
+      findings: unknown[];
+    };
+    expect(recheckBody).toMatchObject({ ok: true, clean: true, repaired: false, findings: [] });
+  }, 45_000);
+
   it('refuses a runtime whose stdin is closed together with the opening prompt', async () => {
     binDir = await mkdtemp(path.join(os.tmpdir(), 'od-b11-steer-codex-'));
     const readyPath = path.join(binDir, 'codex-ready');
@@ -229,6 +343,11 @@ async function writeSteerableClaude(
   name: string,
   readyPath: string,
   sinkPath: string,
+  options?: {
+    artifactPath?: string;
+    initialHtml?: string;
+    repairedHtml?: string;
+  },
 ): Promise<string> {
   const bin = path.join(dir, name);
   await writeFile(bin, `#!/usr/bin/env node
@@ -267,12 +386,18 @@ process.stdin.on('data', (chunk) => {
       : undefined;
     framesSeen += 1;
     if (framesSeen === 1) {
-      // The opening prompt. Announce readiness and keep waiting.
-      fs.writeFileSync(${JSON.stringify(readyPath)}, 'ready');
+      // The opening prompt. Optionally materialize a generated artifact before
+      // announcing readiness, so the test can exercise generation -> repair.
+      ${options?.artifactPath && options.initialHtml
+        ? `fs.mkdirSync(${JSON.stringify(path.dirname(options.artifactPath))}, { recursive: true });
+      fs.writeFileSync(${JSON.stringify(options.artifactPath)}, ${JSON.stringify(options.initialHtml)});\n      `
+        : ''}fs.writeFileSync(${JSON.stringify(readyPath)}, 'ready');
       continue;
     }
     // A steering frame arrived mid-turn.
-    fs.writeFileSync(${JSON.stringify(sinkPath)}, String(text == null ? '' : text) + '\\n');
+    ${options?.artifactPath && options.repairedHtml
+      ? `fs.writeFileSync(${JSON.stringify(options.artifactPath)}, ${JSON.stringify(options.repairedHtml)});\n    `
+      : ''}fs.writeFileSync(${JSON.stringify(sinkPath)}, String(text == null ? '' : text) + '\\n');
     w(JSON.stringify({
       type: 'assistant',
       parent_tool_use_id: null,

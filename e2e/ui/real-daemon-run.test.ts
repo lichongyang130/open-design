@@ -1,6 +1,6 @@
 import { expect, test } from '@/playwright/suite';
 import { ACTIVE_ARTIFACT_PREVIEW_SELECTOR } from '@/playwright/artifact-preview';
-import { readFile } from 'node:fs/promises';
+import { chmod, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { openNewProjectModal as openNewProjectModalFromProjects } from '@/playwright/rail';
 import { runErrorCard } from '@/playwright/chat';
@@ -130,6 +130,120 @@ test('[P0] real daemon run streams, persists, and previews an artifact', async (
   await expect(artifactPreview(page)).toBeVisible();
   await expect(artifactPreviewFrame(page).getByRole('heading', { name: GENERATED_HEADING })).toBeVisible();
   await expectProjectFileToContain(page, projectId, GENERATED_FILE, GENERATED_HEADING);
+});
+
+test('[P0] Studio automatically repairs generated HTML after artifact lint feedback', async ({ page, toolsDev }) => {
+  test.setTimeout(180_000);
+
+  const initialHtml = '<!doctype html><html lang="en"><head><title>Product overview</title></head><body><main><h1>Product overview</h1><img src="/hero.png"></main></body></html>';
+  const repairedHtml = '<!doctype html><html lang="en"><head><title>Product overview</title><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><main><h1>Product overview</h1><img src="/hero.png" alt="Product overview dashboard"></main></body></html>';
+  const runtime = await createArtifactLintRepairRuntime(
+    join(toolsDev.root, 'scratch', `fake-artifact-lint-loop-${Date.now()}`),
+    initialHtml,
+    repairedHtml,
+  );
+
+  const configResponse = await page.request.put('/api/app-config', {
+    data: {
+      onboardingCompleted: true,
+      agentId: 'claude',
+      agentModels: { claude: { model: 'default', reasoning: 'default' } },
+      agentCliEnv: { claude: runtime.env },
+      skillId: null,
+      designSystemId: null,
+    },
+  });
+  expect(configResponse.ok()).toBeTruthy();
+  await page.evaluate(installConfig, { key: STORAGE_KEY, id: 'claude', env: runtime.env });
+
+  const projectId = `artifact-lint-loop-${Date.now()}`;
+  const { conversationId } = await createProjectViaApi(
+    page,
+    projectId,
+    'Artifact lint automatic repair loop',
+  );
+  try {
+    await page.goto(`/projects/${projectId}/conversations/${conversationId}`, {
+      waitUntil: 'domcontentloaded',
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!/ERR_ABORTED|frame was detached/i.test(message)) throw error;
+  }
+  await waitForLoadingToClear(page);
+  await expectBrowserAgentConfig(page, 'claude');
+
+  const isLintFeedbackResponse = (response: Response) =>
+    response.url().includes('/artifact-lint-feedback')
+    && response.request().method() === 'POST';
+  const firstFeedbackPromise = page.waitForResponse(isLintFeedbackResponse, { timeout: T.long });
+  const repairedFeedbackPromise = page.waitForResponse((response) => {
+    if (!isLintFeedbackResponse(response)) return false;
+    try {
+      const body = response.request().postDataJSON() as { html?: string };
+      return typeof body.html === 'string'
+        && body.html.includes('alt="Product overview dashboard"');
+    } catch {
+      return false;
+    }
+  }, { timeout: T.long });
+
+  const createRunResponse = await sendPrompt(
+    page,
+    'Create a product overview page. The automated quality checker should repair any issues it finds.',
+    T.long,
+  );
+  const createdRun = await createRunResponse.json() as { runId: string };
+  expect(createdRun.runId).toBeTruthy();
+
+  // This response proves the Studio watcher posted the generated snapshot and
+  // the daemon steered the still-running model, without a manual API call.
+  const firstFeedback = await firstFeedbackPromise;
+  const firstFeedbackText = await firstFeedback.text();
+  expect(firstFeedback.ok(), firstFeedbackText).toBeTruthy();
+  const firstBody = JSON.parse(firstFeedbackText) as {
+    ok: boolean;
+    steered?: boolean;
+    findings?: Array<{ id: string }>;
+  };
+  expect(firstBody.ok).toBe(true);
+  expect(firstBody.steered).toBe(true);
+  expect(firstBody.findings?.map((finding) => finding.id)).toContain('image-missing-alt');
+
+  // The fixture only edits the file after consuming that steering message.
+  // Hold the run open briefly so the frontend can submit the changed snapshot
+  // and the daemon can return a clean lint result before the run ends.
+  const repairedFeedback = await repairedFeedbackPromise;
+  const repairedFeedbackText = await repairedFeedback.text();
+  expect(repairedFeedback.ok(), repairedFeedbackText).toBeTruthy();
+  const repairedBody = JSON.parse(repairedFeedbackText) as {
+    ok: boolean;
+    clean?: boolean;
+    steered?: boolean;
+    findings?: unknown[];
+  };
+  expect(repairedBody).toMatchObject({ ok: true, clean: true, findings: [] });
+  expect(repairedBody.steered).not.toBe(true);
+
+  await expectProjectFileToContain(
+    page,
+    projectId,
+    'index.html',
+    'alt="Product overview dashboard"',
+  );
+  const persisted = await readProjectFile(page, projectId, 'index.html');
+  expect(persisted).toBe(repairedHtml);
+
+  const steeringText = await readFile(runtime.steeringPath, 'utf8');
+  expect(steeringText).toContain('Target artifact path: "index.html"');
+  expect(steeringText).toContain('image-missing-alt');
+  expect(steeringText).toContain('Edit the specified existing HTML file in place');
+
+  await expect.poll(async () => {
+    const response = await page.request.get(`/api/runs/${encodeURIComponent(createdRun.runId)}`);
+    if (!response.ok()) return null;
+    return (await response.json() as { status?: string }).status ?? null;
+  }, { timeout: T.long }).toBe('succeeded');
 });
 
 test('[P1] execution plan connector stops before completed status markers', async ({ page }) => {
@@ -1759,6 +1873,124 @@ async function enableExperienceSurvey(page: Page) {
     deliveriesKey: EXPERIENCE_SURVEY_DELIVERIES_KEY,
     retiredKey: EXPERIENCE_SURVEY_RETIRED_KEY,
   });
+}
+
+async function createArtifactLintRepairRuntime(
+  root: string,
+  initialHtml: string,
+  repairedHtml: string,
+): Promise<{ bin: string; env: Record<string, string>; steeringPath: string }> {
+  await mkdir(root, { recursive: true });
+  const scriptPath = join(root, 'fake-claude-artifact-lint-loop.cjs');
+  const steeringPath = join(root, 'received-lint-feedback.txt');
+  const readyPath = join(root, 'generated-artifact-ready');
+  const bin = process.platform === 'win32'
+    ? join(root, 'fake-claude-artifact-lint-loop.cmd')
+    : scriptPath;
+
+  const script = `#!/usr/bin/env node
+const fs = require('node:fs');
+const initialHtml = ${JSON.stringify(initialHtml)};
+const repairedHtml = ${JSON.stringify(repairedHtml)};
+const steeringPath = ${JSON.stringify(steeringPath)};
+const readyPath = ${JSON.stringify(readyPath)};
+function writeJson(value) { process.stdout.write(JSON.stringify(value) + '\\n'); }
+if (process.argv.includes('--version')) {
+  process.stdout.write('claude-artifact-lint-e2e 1.0.0\\n');
+  process.exit(0);
+}
+if (process.argv.includes('--help')) {
+  process.stdout.write('--add-dir --include-partial-messages\\n');
+  process.exit(0);
+}
+writeJson({ type: 'system', subtype: 'init', model: 'fake-claude-artifact-lint', session_id: 'artifact-lint-loop' });
+writeJson({
+  type: 'assistant',
+  parent_tool_use_id: null,
+  message: {
+    id: 'msg-artifact-lint-wait',
+    content: [{ type: 'tool_use', id: 'tu_artifact_lint_wait', name: 'Task', input: { prompt: 'Hold for artifact quality feedback' } }],
+    stop_reason: 'tool_use',
+  },
+});
+let buffer = '';
+let framesSeen = 0;
+let finished = false;
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (chunk) => {
+  buffer += chunk;
+  let index;
+  while ((index = buffer.indexOf('\\n')) >= 0) {
+    const line = buffer.slice(0, index);
+    buffer = buffer.slice(index + 1);
+    if (!line.trim()) continue;
+    let frame;
+    try { frame = JSON.parse(line); } catch { continue; }
+    const text = frame && frame.message && Array.isArray(frame.message.content)
+      ? (frame.message.content.find((part) => part && part.type === 'text') || {}).text
+      : undefined;
+    framesSeen += 1;
+    if (framesSeen === 1) {
+      void saveArtifact(initialHtml).then(() => {
+        fs.writeFileSync(readyPath, 'generated');
+      }).catch(fail);
+      continue;
+    }
+    if (finished) return;
+    finished = true;
+    fs.writeFileSync(steeringPath, String(text == null ? '' : text));
+    void saveArtifact(repairedHtml).then(() => new Promise((resolve) => setTimeout(resolve, 3000)))
+      .then(() => {
+        writeJson({
+          type: 'assistant',
+          parent_tool_use_id: null,
+          message: {
+            id: 'msg-artifact-lint-repaired',
+            content: [{ type: 'text', text: 'Repaired index.html in place after the artifact lint feedback.' }],
+            stop_reason: 'end_turn',
+          },
+        });
+        writeJson({ type: 'result', subtype: 'success', is_error: false, result: 'done' });
+        setTimeout(() => process.exit(0), 30);
+      })
+      .catch(fail);
+    return;
+  }
+});
+async function saveArtifact(content) {
+  const projectId = process.env.OD_PROJECT_ID;
+  const daemonUrl = process.env.OD_DAEMON_URL;
+  if (!projectId || !daemonUrl) {
+    throw new Error('artifact lint fixture requires OD_PROJECT_ID and OD_DAEMON_URL');
+  }
+  const response = await fetch(new URL('/api/projects/' + encodeURIComponent(projectId) + '/files', daemonUrl), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'index.html', content }),
+  });
+  if (!response.ok) {
+    throw new Error('artifact file write failed: HTTP ' + response.status + ' ' + (await response.text()).slice(0, 500));
+  }
+}
+function fail(error) {
+  process.stderr.write(String(error && error.stack || error) + '\\n');
+  process.exitCode = 1;
+  setTimeout(() => process.exit(1), 20);
+}
+`;
+
+  await writeFile(scriptPath, script, 'utf8');
+  if (process.platform === 'win32') {
+    await writeFile(
+      bin,
+      ['@echo off', `"${process.execPath}" "${scriptPath}" %*`, ''].join('\r\n'),
+      'utf8',
+    );
+  } else {
+    await chmod(bin, 0o755);
+  }
+
+  return { bin, env: { CLAUDE_BIN: bin }, steeringPath };
 }
 
 async function configureFakeAgent(page: Page, agentId: FakeAgentId) {

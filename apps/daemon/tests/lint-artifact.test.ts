@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { lintArtifact, type LintFinding } from '../src/lint-artifact.js';
+import { lintArtifact, renderFindingsForAgent, type LintFinding } from '../src/lint-artifact.js';
 
 function requiredFinding(findings: LintFinding[], id: string): LintFinding {
   const hit = findings.find((finding) => finding.id === id);
@@ -1220,5 +1220,160 @@ describe('trust-gradient', () => {
     `;
     const findings = lintArtifact(html);
     expect(findings.find((f) => f.id === 'trust-gradient')).toBeDefined();
+  });
+});
+
+
+describe('document quality basics', () => {
+  it('flags a full HTML document without viewport metadata', () => {
+    const findings = lintArtifact('<!doctype html><html lang="en"><head><title>Demo</title></head><body><main>Demo</main></body></html>');
+    expect(requiredFinding(findings, 'missing-viewport').severity).toBe('P1');
+  });
+
+  it('does not flag a document that declares viewport metadata', () => {
+    const findings = lintArtifact('<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width, initial-scale=1"></head><body>Demo</body></html>');
+    expect(findings.find((f) => f.id === 'missing-viewport')).toBeUndefined();
+  });
+
+  it('flags a full HTML document without a language attribute', () => {
+    const findings = lintArtifact('<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"></head><body>Demo</body></html>');
+    expect(requiredFinding(findings, 'missing-document-language').severity).toBe('P2');
+  });
+
+  it('does not flag an HTML fragment for missing document metadata', () => {
+    const findings = lintArtifact('<main><h1>Fragment</h1></main>');
+    expect(findings.find((f) => f.id === 'missing-viewport')).toBeUndefined();
+    expect(findings.find((f) => f.id === 'missing-document-language')).toBeUndefined();
+  });
+});
+
+
+describe('accessibility and interaction basics', () => {
+  it('flags images without alt attributes', () => {
+    const findings = lintArtifact('<main><img src="/hero.png"></main>');
+    expect(requiredFinding(findings, 'image-missing-alt').severity).toBe('P1');
+  });
+
+  it('accepts unquoted alt text on an image', () => {
+    const findings = lintArtifact('<main><img src="/brand.svg" alt=Brand></main>');
+    expect(findings.find((f) => f.id === 'image-missing-alt')).toBeUndefined();
+  });
+
+  it('accepts informative and decorative images with alt attributes', () => {
+    const findings = lintArtifact('<main><img src="/hero.png" alt="Product dashboard"><img src="/divider.svg" alt=""></main>');
+    expect(findings.find((f) => f.id === 'image-missing-alt')).toBeUndefined();
+  });
+
+  it('flags icon-only buttons without an accessible name', () => {
+    const findings = lintArtifact('<button type="button"><svg viewBox="0 0 24 24"><path d="M0 0"></path></svg></button>');
+    expect(requiredFinding(findings, 'button-missing-name').severity).toBe('P1');
+  });
+
+  it('accepts buttons with visible text or aria-label', () => {
+    const findings = lintArtifact('<button>Save changes</button><button aria-label="Close dialog"><svg></svg></button>');
+    expect(findings.find((f) => f.id === 'button-missing-name')).toBeUndefined();
+  });
+
+  it('accepts an unquoted aria-label on an icon-only button', () => {
+    const findings = lintArtifact('<button aria-label=Close><svg></svg></button>');
+    expect(findings.find((f) => f.id === 'button-missing-name')).toBeUndefined();
+  });
+
+  it('does not accept an empty aria-label on an icon-only button', () => {
+    const findings = lintArtifact('<button aria-label=""><svg></svg></button>');
+    expect(requiredFinding(findings, 'button-missing-name').severity).toBe('P1');
+  });
+
+  it('flags placeholder navigation links', () => {
+    const findings = lintArtifact('<a href="#">Learn more</a>');
+    expect(requiredFinding(findings, 'placeholder-link').severity).toBe('P2');
+  });
+
+  it('flags unquoted placeholder navigation links', () => {
+    const findings = lintArtifact('<a href=#>Learn more</a><a href=javascript:void(0)>Action</a>');
+    expect(requiredFinding(findings, 'placeholder-link').severity).toBe('P2');
+  });
+
+  it('does not flag real navigation links', () => {
+    const findings = lintArtifact('<a href="/docs">Read documentation</a>');
+    expect(findings.find((f) => f.id === 'placeholder-link')).toBeUndefined();
+  });
+
+  it('flags links without a discernible name', () => {
+    const findings = lintArtifact('<a href="/settings"><svg aria-hidden="true"></svg></a>');
+    expect(requiredFinding(findings, 'link-missing-name').severity).toBe('P1');
+  });
+
+  it('accepts image links when the image has alt text', () => {
+    const findings = lintArtifact('<a href="/brand"><img src="/brand.svg" alt="Brand home"></a>');
+    expect(findings.find((f) => f.id === 'link-missing-name')).toBeUndefined();
+  });
+
+  it('accepts icon links with an explicit accessible name', () => {
+    const findings = lintArtifact('<a href="/settings" aria-label="Settings"><svg></svg></a>');
+    expect(findings.find((f) => f.id === 'link-missing-name')).toBeUndefined();
+  });
+
+  it('accepts an unquoted aria-label on an icon-only link', () => {
+    const findings = lintArtifact('<a href="/settings" aria-label=Settings><svg></svg></a>');
+    expect(findings.find((f) => f.id === 'link-missing-name')).toBeUndefined();
+  });
+
+  it('does not accept an empty aria-label on an icon-only link', () => {
+    const findings = lintArtifact('<a href="/settings" aria-label=""><svg></svg></a>');
+    expect(requiredFinding(findings, 'link-missing-name').severity).toBe('P1');
+  });
+
+  it('accepts unquoted alt text on an image-only link', () => {
+    const findings = lintArtifact('<a href="/brand"><img src="/brand.svg" alt=Brand></a>');
+    expect(findings.find((f) => f.id === 'link-missing-name')).toBeUndefined();
+  });
+});
+
+
+describe('agent correction feedback', () => {
+  it('returns no reminder for a clean artifact', () => {
+    expect(renderFindingsForAgent([])).toBe('');
+  });
+
+  it('asks the agent to re-emit a corrected artifact and orders blocking issues first', () => {
+    const reminder = renderFindingsForAgent([
+      {
+        severity: 'P2',
+        id: 'placeholder-link',
+        message: 'Placeholder link detected.',
+        fix: 'Replace it with a real destination.',
+        snippet: '<a href="#">More</a>',
+      },
+      {
+        severity: 'P0',
+        id: 'filler-copy',
+        message: 'Filler copy detected.',
+        fix: 'Replace it with brief-specific copy.',
+        snippet: 'Feature one',
+      },
+    ]);
+
+    expect(reminder).toContain('<artifact-lint>');
+    expect(reminder).toContain('Re-emit a corrected `<artifact>` in your next turn');
+    expect(reminder.indexOf('[P0] filler-copy')).toBeLessThan(reminder.indexOf('[P2] placeholder-link'));
+    expect(reminder).toContain('Fix: Replace it with brief-specific copy.');
+    expect(reminder).toContain('Snippet: `Feature one`');
+    expect(reminder).toContain('</artifact-lint>');
+  });
+
+  it('allows live-run feedback to request an in-place file edit', () => {
+    const reminder = renderFindingsForAgent([
+      {
+        severity: 'P1',
+        id: 'image-missing-alt',
+        message: 'Image has no accessible text.',
+        fix: 'Add useful alt text or an empty alt attribute for a decorative image.',
+        snippet: '<img src="hero.png">',
+      },
+    ], { instruction: 'Edit the existing HTML file in place.' });
+
+    expect(reminder).toContain('Edit the existing HTML file in place.');
+    expect(reminder).not.toContain('Re-emit a corrected `<artifact>` in your next turn');
   });
 });
