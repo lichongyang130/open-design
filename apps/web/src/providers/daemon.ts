@@ -1702,21 +1702,34 @@ export async function submitArtifactLintFeedback(
   }
 
   const body = await response.json().catch(() => null) as
-    | (Partial<ArtifactLintFeedbackResponse> & {
+    | {
+        ok?: boolean;
+        clean?: boolean;
+        repaired?: boolean;
+        steered?: boolean;
+        capped?: boolean;
+        attempts?: number;
+        messageId?: string;
         error?: string | { code?: string; message?: string };
-      })
+        message?: string;
+      }
     | null;
   const bodyError = body?.error;
   const error = typeof bodyError === 'string'
     ? bodyError
     : bodyError?.code ?? (!response.ok ? `HTTP_${response.status}` : undefined);
   const message = body?.message
-    ?? (typeof bodyError === 'object' ? bodyError.message : undefined)
+    ?? (typeof bodyError === 'object' && bodyError !== null ? bodyError.message : undefined)
     ?? (!response.ok ? 'artifact lint feedback was not accepted' : undefined);
 
   return {
-    ...(body ?? {}),
     ok: response.ok && body?.ok === true,
+    ...(body?.clean !== undefined ? { clean: body.clean } : {}),
+    ...(body?.repaired !== undefined ? { repaired: body.repaired } : {}),
+    ...(body?.steered !== undefined ? { steered: body.steered } : {}),
+    ...(body?.capped !== undefined ? { capped: body.capped } : {}),
+    ...(body?.attempts !== undefined ? { attempts: body.attempts } : {}),
+    ...(body?.messageId ? { messageId: body.messageId } : {}),
     ...(error ? { error } : {}),
     ...(message ? { message } : {}),
   };
