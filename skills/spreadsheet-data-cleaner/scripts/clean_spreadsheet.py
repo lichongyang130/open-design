@@ -97,7 +97,7 @@ def _read_csv(input_path: Path) -> tuple[list[list[str]], str, str]:
     payload = input_path.read_bytes()
     decoded: str | None = None
     encoding = "utf-8"
-    if payload.startswith(b"\\xef\\xbb\\xbf"):
+    if payload.startswith(b"\xef\xbb\xbf"):
         decoded = payload.decode("utf-8-sig")
         encoding = "utf-8-sig"
     else:
@@ -348,9 +348,9 @@ def clean_workbook(
                             },
                             report,
                         )
-                    if isinstance(cell.value, str) and cell.value.startswith("="):
-                        summary["formula_cells_preserved"] += 1
-
+            for cell in writable_cells:
+                if isinstance(cell.value, str) and cell.value.startswith("="):
+                    summary["formula_cells_preserved"] += 1
 
             values = tuple((type(cell.value).__name__, _json_value(cell.value)) for cell in cells)
             if all(is_blank(value) for value in values):
