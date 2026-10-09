@@ -1659,6 +1659,69 @@ export async function steerChatRun(
   return { ok: true, messageId: body?.messageId ?? '' };
 }
 
+export interface ArtifactLintFeedbackResponse {
+  ok: boolean;
+  clean?: boolean;
+  repaired?: boolean;
+  steered?: boolean;
+  capped?: boolean;
+  attempts?: number;
+  messageId?: string;
+  error?: string;
+  message?: string;
+}
+
+/**
+ * Send a generated HTML snapshot through the daemon's deterministic linter.
+ * When findings exist, the daemon steers the same live run so the agent can
+ * repair the named file without losing the work already performed.
+ */
+export async function submitArtifactLintFeedback(
+  req: { runId: string; artifactPath: string; html: string },
+  workspaceContext?: WorkspaceCollabContext | null,
+): Promise<ArtifactLintFeedbackResponse> {
+  let response: Response;
+  try {
+    response = await fetch(
+      `/api/runs/${encodeURIComponent(req.runId)}/artifact-lint-feedback`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(workspaceContext ? workspaceProjectHeaders(workspaceContext) : {}),
+        },
+        body: JSON.stringify({ html: req.html, artifactPath: req.artifactPath }),
+      },
+    );
+  } catch (err) {
+    return {
+      ok: false,
+      error: 'NETWORK_ERROR',
+      message: err instanceof Error ? err.message : String(err),
+    };
+  }
+
+  const body = await response.json().catch(() => null) as
+    | (Partial<ArtifactLintFeedbackResponse> & {
+        error?: string | { code?: string; message?: string };
+      })
+    | null;
+  const bodyError = body?.error;
+  const error = typeof bodyError === 'string'
+    ? bodyError
+    : bodyError?.code ?? (!response.ok ? `HTTP_${response.status}` : undefined);
+  const message = body?.message
+    ?? (typeof bodyError === 'object' ? bodyError.message : undefined)
+    ?? (!response.ok ? 'artifact lint feedback was not accepted' : undefined);
+
+  return {
+    ...(body ?? {}),
+    ok: response.ok && body?.ok === true,
+    ...(error ? { error } : {}),
+    ...(message ? { message } : {}),
+  };
+}
+
 export async function listActiveChatRuns(
   projectId: string,
   conversationId: string,
