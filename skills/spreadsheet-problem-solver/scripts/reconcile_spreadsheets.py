@@ -316,6 +316,13 @@ def reconcile(
     sheet_a: str | None = None,
     sheet_b: str | None = None,
 ) -> dict[str, Any]:
+    if not key_columns:
+        raise ReconciliationError("At least one --key column is required.")
+    if len(set(key_columns)) != len(key_columns):
+        raise ReconciliationError("Key columns must be unique; do not repeat the same --key value.")
+    if compare_columns and len(set(compare_columns)) != len(compare_columns):
+        raise ReconciliationError("Compare columns must be unique; do not repeat the same --compare value.")
+
     headers_a, records_a, warnings_a, chosen_sheet_a = read_table(input_a, sheet_a)
     headers_b, records_b, warnings_b, chosen_sheet_b = read_table(input_b, sheet_b)
     report = build_report(input_a, input_b, output_path, report_path)
