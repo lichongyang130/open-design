@@ -246,6 +246,37 @@ describe('historyWithApiAttachmentContext', () => {
     }
   });
 
+  it('tells the model to inspect the original workbook when spreadsheet preview is unavailable', async () => {
+    const history = await historyWithApiAttachmentContext(
+      [userMessage('msg-xlsx', 'Check this workbook', [{ path: 'monthly.xlsx', name: 'monthly.xlsx', kind: 'file' }])],
+      'msg-xlsx',
+      'project-1',
+      [projectFile('monthly.xlsx', 'spreadsheet')],
+    );
+
+    const content = history[0]?.content ?? '';
+    expect(content).toContain('Spreadsheet preview is unavailable');
+    expect(content).toContain('Inspect the original uploaded workbook directly');
+    expect(content).toContain('report the file as unreadable');
+    expect(content).not.toContain('Use only the metadata above');
+  });
+
+  it('keeps the user request alive when spreadsheet preview extraction throws', async () => {
+    mockedFetchProjectFilePreview.mockRejectedValueOnce(new Error('preview parser failed'));
+
+    const history = await historyWithApiAttachmentContext(
+      [userMessage('msg-xlsx-fail', 'Audit this workbook', [{ path: 'finance.xlsx', name: 'finance.xlsx', kind: 'file' }])],
+      'msg-xlsx-fail',
+      'project-1',
+      [projectFile('finance.xlsx', 'spreadsheet')],
+    );
+
+    const content = history[0]?.content ?? '';
+    expect(content).toContain('Audit this workbook');
+    expect(content).toContain('Spreadsheet preview extraction failed');
+    expect(content).toContain('Do not claim to have audited or repaired it');
+  });
+
   it('uses filename inference when the project file list has not refreshed yet', async () => {
     mockedFetchProjectFilePreview.mockResolvedValue({
       kind: 'pdf',
