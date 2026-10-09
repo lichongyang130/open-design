@@ -3268,7 +3268,7 @@ export function HomeView({
         // third way to say the same thing, wedged between the two. The
         // recommendation engine and `RecommendedStartRegion` are left intact;
         // only this mount point is gone.
-        recommendationSlot={artifactUpgradeSlot}
+        recommendationSlot={variant === 'page' ? null : artifactUpgradeSlot}
       />
 
       {variant === 'page' && prompt.trim().length === 0 && stagedFiles.length === 0 ? (
