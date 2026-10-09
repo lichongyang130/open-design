@@ -16,7 +16,7 @@ triggers:
   - "Excel formula errors"
   - "clean duplicate rows"
 od:
-  mode: prototype
+  mode: utility
   surface: web
   scenario: office
   category: office
