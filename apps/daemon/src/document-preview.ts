@@ -135,11 +135,22 @@ async function previewXlsx(zip: JSZip): Promise<PreviewSection[]> {
   const workbook = await readWorkbook(zip);
   const sections: PreviewSection[] = [];
   for (const sheet of workbook) {
-    const xml = await readZipText(zip, sheet.path).catch(() => '');
+    let xml: string;
+    try {
+      xml = await readZipText(zip, sheet.path);
+    } catch {
+      sections.push({
+        title: sheet.name,
+        lines: ['Worksheet content could not be read from the workbook XML. Do not assume this sheet is empty or claim it was audited.'],
+      });
+      continue;
+    }
     const lines = extractWorksheetRows(xml, sharedStrings, dateFormats);
     sections.push({
       title: sheet.name,
-      lines: lines.length > 0 ? lines : ['No readable cell values found.'],
+      lines: lines.length > 0
+        ? lines
+        : ['No stored cell entries were found in the parsed worksheet XML. This preview does not establish that the workbook was fully audited.'],
     });
   }
   return sections.length > 0
