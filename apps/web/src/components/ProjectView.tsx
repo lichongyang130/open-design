@@ -4559,7 +4559,7 @@ export function ProjectView({
   }, [project.id, projectRunAuthorityKey]);
 
   useEffect(() => {
-    const htmlFiles = projectFiles.filter((file) => /\\.html?$/i.test(file.name));
+    const htmlFiles = projectFiles.filter((file) => /\.html?$/i.test(file.name));
     const nextSnapshot = new Map(
       htmlFiles.map((file) => [file.name, `${file.mtime}:${file.size}`]),
     );
