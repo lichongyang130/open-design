@@ -4565,8 +4565,8 @@ export function ProjectView({
 
   useEffect(() => {
     const htmlFiles = projectFiles.filter((file) => /\.html?$/i.test(file.name));
-    const nextSnapshot = new Map(
-      htmlFiles.map((file) => [file.name, `${file.mtime}:${file.size}`]),
+    const nextSnapshot = new Map<string, string>(
+      htmlFiles.map((file) => [file.name, `${file.mtime}:${file.size}`] as const),
     );
     const previousSnapshot = artifactLintFileSnapshotRef.current;
     artifactLintFileSnapshotRef.current = nextSnapshot;
