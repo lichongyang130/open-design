@@ -368,7 +368,7 @@ def clean_workbook(
                 f"of {MAX_CELLS_PER_SHEET:,}. Export only the relevant range to CSV or split the task."
             )
     target_sheet_names = [worksheet.title for worksheet in targets]
-    initial_formula_count = _formula_count(workbook, targets)
+    initial_formula_count = _formula_count(workbook)
     summary = report["summary"]
     for worksheet in targets:
         summary["sheets_processed"] += 1
@@ -505,8 +505,7 @@ def clean_workbook(
                 try:
                     if verification.sheetnames != workbook.sheetnames:
                         raise CleanerError("Workbook validation failed: worksheet names changed.")
-                    verification_targets = [verification[name] for name in target_sheet_names]
-                    if _formula_count(verification, verification_targets) != initial_formula_count:
+                    if _formula_count(verification) != initial_formula_count:
                         raise CleanerError("Workbook validation failed: formula count changed.")
                 finally:
                     verification.close()
