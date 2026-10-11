@@ -109,13 +109,33 @@ function resolveCustomModelGenerationConfig(value: unknown): OpenAiCompatibleDes
   }
   const serverManaged = provider.credentialSource === 'designbuddy_custom_model';
   if (serverManaged) {
-    const baseUrl = process.env.OD_CUSTOM_MODEL_BASE_URL?.trim() || '';
-    const apiKey = process.env.OD_CUSTOM_MODEL_API_KEY?.trim() || '';
-    const model = process.env.OD_CUSTOM_MODEL_NAME?.trim() || '';
-    if (!baseUrl || !apiKey || !model) {
+    // Keep Open Design's existing OD_* names authoritative, while accepting
+    // DesignBuddy's original server-side model settings as compatible aliases.
+    // This lets the DesignBuddy custom-model option reuse the daemon proxy
+    // without exposing a server-owned API key to browser storage or requests.
+    const baseUrl =
+      process.env.OD_CUSTOM_MODEL_BASE_URL?.trim()
+      || process.env.DESIGNBUDDY_MODEL_BASE_URL?.trim()
+      || '';
+    const apiKey =
+      process.env.OD_CUSTOM_MODEL_API_KEY?.trim()
+      || process.env.DESIGNBUDDY_MODEL_API_KEY?.trim()
+      || '';
+    const model =
+      process.env.OD_CUSTOM_MODEL_NAME?.trim()
+      || process.env.DESIGNBUDDY_MODEL_ID?.trim()
+      || '';
+    let isLoopback = false;
+    try {
+      const hostname = new URL(baseUrl).hostname.toLowerCase();
+      isLoopback = ['localhost', '127.0.0.1', '::1', '[::1]'].includes(hostname);
+    } catch {
+      // The shared provider validation below will return the actionable URL error.
+    }
+    if (!baseUrl || !model || (!apiKey && !isLoopback)) {
       throw new OpenAiCompatibleDesignError(
         'CUSTOM_MODEL_NOT_CONFIGURED',
-        'The server-managed custom model is not configured. Set OD_CUSTOM_MODEL_BASE_URL, OD_CUSTOM_MODEL_API_KEY, and OD_CUSTOM_MODEL_NAME, then restart the daemon.',
+        'The server-managed custom model is not configured. Set OD_CUSTOM_MODEL_BASE_URL / OD_CUSTOM_MODEL_NAME (and OD_CUSTOM_MODEL_API_KEY for remote endpoints), or the compatible DESIGNBUDDY_MODEL_BASE_URL / DESIGNBUDDY_MODEL_ID / DESIGNBUDDY_MODEL_API_KEY variables, then restart the daemon.',
         503,
       );
     }
